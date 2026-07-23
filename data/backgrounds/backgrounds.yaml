@@ -1,0 +1,118 @@
+id: srd5.2-backgrounds
+name: "SRD 5.2 Backgrounds"
+version: "1.0.0"
+license: OGL
+attribution: "Wizards of the Coast — Player's Handbook (2024)"
+
+backgrounds:
+  - id: acolyte
+    name: Acolyte
+    abilityScoreOptions: [INT, WIS, CHA]
+    skills: [insight, religion]
+    tools: [calligraphers-supplies]
+    feat: magic-initiate-cleric
+
+  - id: artisan
+    name: Artisan
+    abilityScoreOptions: [STR, DEX, INT]
+    skills: [investigation, persuasion]
+    tools: [artisans-tools]
+    feat: crafter
+
+  - id: charlatan
+    name: Charlatan
+    abilityScoreOptions: [DEX, CON, CHA]
+    skills: [deception, sleight-of-hand]
+    tools: [forgery-kit]
+    feat: skilled
+
+  - id: criminal
+    name: Criminal
+    abilityScoreOptions: [DEX, CON, INT]
+    skills: [stealth, sleight-of-hand]
+    tools: [thieves-tools]
+    feat: alert
+
+  - id: entertainer
+    name: Entertainer
+    abilityScoreOptions: [DEX, CON, CHA]
+    skills: [acrobatics, performance]
+    tools: [musical-instrument]
+    feat: musician
+
+  - id: farmer
+    name: Farmer
+    abilityScoreOptions: [STR, CON, WIS]
+    skills: [animal-handling, nature]
+    tools: [farming-tools]
+    feat: tough
+
+  - id: guard
+    name: Guard
+    abilityScoreOptions: [STR, CON, WIS]
+    skills: [athletics, perception]
+    tools: [gaming-set]
+    feat: alert
+
+  - id: guide
+    name: Guide
+    abilityScoreOptions: [DEX, CON, WIS]
+    skills: [survival, stealth]
+    tools: [cartographers-tools]
+    feat: magic-initiate-druid
+
+  - id: hermit
+    name: Hermit
+    abilityScoreOptions: [CON, WIS, CHA]
+    skills: [medicine, religion]
+    tools: [herbalism-kit]
+    feat: healer
+
+  - id: merchant
+    name: Merchant
+    abilityScoreOptions: [CON, INT, CHA]
+    skills: [animal-handling, persuasion]
+    tools: [navigators-tools]
+    feat: lucky
+
+  - id: noble
+    name: Noble
+    abilityScoreOptions: [STR, INT, CHA]
+    skills: [history, persuasion]
+    tools: [gaming-set]
+    feat: skilled
+
+  - id: sage
+    name: Sage
+    abilityScoreOptions: [CON, INT, WIS]
+    skills: [arcana, history]
+    tools: [calligraphers-supplies]
+    feat: magic-initiate-wizard
+
+  - id: sailor
+    name: Sailor
+    abilityScoreOptions: [STR, DEX, WIS]
+    skills: [athletics, perception]
+    tools: [navigators-tools]
+    feat: tavern-brawler
+
+  - id: scribe
+    name: Scribe
+    abilityScoreOptions: [DEX, INT, WIS]
+    skills: [investigation, perception]
+    tools: [calligraphers-supplies]
+    feat: skilled
+
+  - id: soldier
+    name: Soldier
+    abilityScoreOptions: [STR, DEX, CON]
+    skills: [athletics, intimidation]
+    tools: [gaming-set]
+    feat: savage-attacker
+
+  - id: wayfarer
+    name: Wayfarer
+    abilityScoreOptions: [DEX, WIS, CHA]
+    skills: [insight, stealth]
+    tools: [thieves-tools]
+    feat: lucky

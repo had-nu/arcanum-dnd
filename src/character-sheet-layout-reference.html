@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reference: D&D Beyond 2024 Character Sheet Layout</title>
+<style>
+/* Reset + theme */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:#0f0f15;
+  color:#e0d8c8;
+  font-family:Georgia,'Times New Roman',serif;
+  padding:40px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+}
+.sheet-wrapper{
+  max-width:1000px;
+  width:100%;
+  background:#1a1a24;
+  border:1px solid #2a2a3e;
+  border-radius:12px;
+  padding:32px;
+  box-shadow:0 8px 40px rgba(0,0,0,0.5);
+}
+
+/* ── HEADER ── */
+.sheet-header{
+  display:grid;
+  grid-template-columns:80px 1fr auto;
+  gap:20px;
+  align-items:center;
+  padding-bottom:24px;
+  border-bottom:2px solid #c9a94e;
+  margin-bottom:24px;
+}
+.portrait{
+  width:80px;height:80px;
+  border-radius:50%;
+  background:linear-gradient(135deg,#2a2a3e,#1a1a24);
+  border:2px solid #c9a94e;
+  display:flex;align-items:center;justify-content:center;
+  font-size:2em;color:#c9a94e;
+}
+.name-area{}
+.name-area h1{font-size:1.8em;color:#f0e8d8;letter-spacing:1px}
+.name-area .subtitle{color:#998e7a;font-style:italic;font-size:0.9em}
+.header-stats{
+  display:flex;gap:12px;
+}
+.header-stat{
+  text-align:center;
+  padding:8px 16px;
+  background:#0f0f15;
+  border:1px solid #2a2a3e;
+  border-radius:8px;
+  min-width:70px;
+}
+.header-stat .label{color:#998e7a;font-size:0.65em;text-transform:uppercase;letter-spacing:1px}
+.header-stat .value{color:#c9a94e;font-size:1.6em;font-weight:700;line-height:1.2}
+.header-stat .desc{color:#998e7a;font-size:0.7em}
+
+/* ── TOP STAT BAR ── */
+.stat-bar{
+  display:grid;
+  grid-template-columns:repeat(6,1fr);
+  gap:12px;
+  margin-bottom:28px;
+}
+.stat-block{
+  background:linear-gradient(180deg,#1f1f2e,#15151e);
+  border:1px solid #2a2a3e;
+  border-radius:8px;
+  padding:14px 10px;
+  text-align:center;
+}
+.stat-block .label{color:#998e7a;font-size:0.65em;text-transform:uppercase;letter-spacing:1px}
+.stat-block .value{color:#f0e8d8;font-size:1.8em;font-weight:700}
+.stat-block .sub{color:#c9a94e;font-size:0.75em}
+.hp-block{grid-column:span 2;display:flex;flex-direction:column;justify-content:center}
+.hp-bar{
+  display:flex;align-items:center;gap:8px;justify-content:center;margin-top:4px;
+}
+.hp-current{
+  font-size:1.4em;font-weight:700;color:#5a9a6a;
+}
+.hp-sep{color:#998e7a;font-size:1em}
+.hp-max{font-size:1.4em;font-weight:700;color:#f0e8d8}
+
+/* ── MAIN 2-COLUMN ── */
+.sheet-body{
+  display:grid;
+  grid-template-columns:280px 1fr;
+  gap:28px;
+}
+
+/* ── LEFT COLUMN: ABILITIES ── */
+.abilities-section{}
+.ability-card{
+  display:grid;
+  grid-template-columns:48px 1fr;
+  gap:10px;
+  align-items:center;
+  padding:10px 12px;
+  background:#0f0f15;
+  border:1px solid #2a2a3e;
+  border-radius:8px;
+  margin-bottom:8px;
+  cursor:pointer;
+  transition:border-color 0.2s;
+}
+.ability-card:hover{border-color:#c9a94e}
+.ability-card.prof-save{border-color:#3a3a4e}
+.ability-score-circle{
+  width:48px;height:48px;
+  border-radius:50%;
+  border:2px solid #2a2a3e;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  background:#15151e;
+}
+.ability-score-circle .mod{font-size:1.1em;font-weight:700;color:#f0e8d8;line-height:1.1}
+.ability-score-circle .score{font-size:0.7em;color:#998e7a}
+.ability-info{display:flex;flex-direction:column}
+.ability-info .name{font-size:0.85em;color:#f0e8d8;text-transform:uppercase;letter-spacing:1px}
+.ability-info .save-row{display:flex;gap:10px;margin-top:2px}
+.ability-info .save{color:#998e7a;font-size:0.75em}
+.ability-info .save.prof{color:#c9a94e}
+
+/* ── RIGHT COLUMN ── */
+.right-col{}
+
+/* skills */
+.section-title{
+  font-size:0.9em;
+  color:#c9a94e;
+  text-transform:uppercase;
+  letter-spacing:2px;
+  margin-bottom:10px;
+  padding-bottom:4px;
+  border-bottom:1px solid #2a2a3e;
+}
+.skills-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  column-gap:16px;
+  row-gap:3px;
+  margin-bottom:24px;
+}
+.skill-row{
+  display:flex;
+  justify-content:space-between;
+  padding:3px 8px;
+  border-radius:4px;
+  font-size:0.82em;
+  cursor:pointer;
+}
+.skill-row:hover{background:#1f1f2e}
+.skill-row .skill-name{color:#998e7a}
+.skill-row .skill-name.prof{color:#f0e8d8;font-weight:600}
+.skill-row .skill-bonus{color:#c9a94e;font-family:monospace}
+.skill-row .skill-ability{color:#554;font-size:0.75em;margin-left:4px}
+
+/* features */
+.feature-card{
+  padding:12px;
+  background:#0f0f15;
+  border:1px solid #2a2a3e;
+  border-radius:8px;
+  margin-bottom:8px;
+}
+.feature-card h4{color:#f0e8d8;font-size:0.85em;margin-bottom:4px}
+.feature-card .source{color:#c9a94e;font-size:0.7em;font-style:italic}
+.feature-card p{color:#998e7a;font-size:0.78em;line-height:1.5;margin-top:4px}
+
+/* combat section */
+.combat-section{margin-bottom:24px}
+.combat-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:8px;
+}
+.combat-item{
+  text-align:center;
+  padding:10px;
+  background:#0f0f15;
+  border:1px solid #2a2a3e;
+  border-radius:8px;
+}
+.combat-item .label{color:#998e7a;font-size:0.65em;text-transform:uppercase}
+.combat-item .value{color:#f0e8d8;font-size:1.2em;font-weight:600}
+
+/* spells */
+.spell-section{margin-top:20px}
+.spell-level-group{margin-bottom:12px}
+.spell-level-header{
+  display:flex;align-items:center;gap:8px;
+  color:#c9a94e;font-size:0.85em;margin-bottom:6px;
+}
+.spell-level-header .slots{
+  color:#998e7a;font-size:0.8em;
+}
+.spell-chip{
+  display:inline-block;
+  padding:3px 10px;
+  background:#0f0f15;
+  border:1px solid #2a2a3e;
+  border-radius:12px;
+  font-size:0.78em;
+  color:#998e7a;
+  margin:2px;
+  cursor:pointer;
+}
+.spell-chip.prepared{color:#f0e8d8;border-color:#c9a94e}
+
+/* ── ACTIONS ── */
+.actions{display:flex;gap:12px;justify-content:center;margin-top:28px;padding-top:20px;border-top:1px solid #2a2a3e}
+.btn{
+  padding:10px 28px;
+  border-radius:8px;
+  border:1px solid #c9a94e;
+  background:transparent;
+  color:#c9a94e;
+  font-family:inherit;
+  font-size:0.9em;
+  cursor:pointer;
+  transition:all 0.2s;
+}
+.btn:hover{background:#c9a94e;color:#0f0f15}
+.btn-primary{background:#c9a94e;color:#0f0f15;font-weight:700}
+.btn-primary:hover{background:#a8882e;border-color:#a8882e}
+
+/* ── NOTE ── */
+.note{
+  margin-top:20px;
+  text-align:center;
+  color:#554;
+  font-size:0.75em;
+  font-style:italic;
+}
+
+@media(max-width:800px){
+  .sheet-body{grid-template-columns:1fr}
+  .stat-bar{grid-template-columns:repeat(3,1fr)}
+  .skills-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="sheet-wrapper">
+  <!-- ─── HEADER ─── -->
+  <div class="sheet-header">
+    <div class="portrait">K</div>
+    <div class="name-area">
+      <h1>Kaelen Dawnbringer</h1>
+      <div class="subtitle">Level 4 · Fighter (Champion) · Human · Soldier</div>
+    </div>
+    <div class="header-stats">
+      <div class="header-stat">
+        <div class="label">AC</div>
+        <div class="value">18</div>
+        <div class="desc">Chain Mail</div>
+      </div>
+      <div class="header-stat">
+        <div class="label">HP</div>
+        <div class="value" style="color:#5a9a6a">38</div>
+        <div class="desc">/ 38</div>
+      </div>
+      <div class="header-stat">
+        <div class="label">Init</div>
+        <div class="value">+2</div>
+        <div class="desc">DEX</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── TOP STAT BAR ─── -->
+  <div class="stat-bar">
+    <div class="stat-block">
+      <div class="label">Prof Bonus</div>
+      <div class="value">+3</div>
+    </div>
+    <div class="stat-block">
+      <div class="label">Speed</div>
+      <div class="value">30</div>
+      <div class="sub">ft</div>
+    </div>
+    <div class="stat-block">
+      <div class="label">Hit Dice</div>
+      <div class="value">4d10</div>
+    </div>
+    <div class="stat-block">
+      <div class="label">Passive Percep.</div>
+      <div class="value">13</div>
+    </div>
+    <div class="stat-block">
+      <div class="label">Inspiration</div>
+      <div class="value">✕</div>
+    </div>
+    <div class="stat-block hp-block">
+      <div class="label">Hit Points</div>
+      <div class="hp-bar">
+        <span class="hp-current">38</span>
+        <span class="hp-sep">/</span>
+        <span class="hp-max">38</span>
+        <span class="hp-sep">|</span>
+        <span style="color:#998e7a;font-size:0.85em">Temp: 0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── BODY ─── -->
+  <div class="sheet-body">
+
+    <!-- LEFT: ABILITY SCORES -->
+    <div class="abilities-section">
+      <div class="section-title">Ability Scores</div>
+
+      <div class="ability-card prof-save">
+        <div class="ability-score-circle">
+          <span class="mod">+4</span>
+          <span class="score">18</span>
+        </div>
+        <div class="ability-info">
+          <span class="name">Strength</span>
+          <div class="save-row">
+            <span class="save prof">Save +7</span>
+            <span class="save">Athletics +7</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="ability-card">
+        <div class="ability-score-circle">
+          <span class="mod">+2</span>
+          <span class="score">14</span>
+        </div>
+        <div class="ability-info">
+          <span class="name">Dexterity</span>
+          <div class="save-row">
+            <span class="save">Save +2</span>
+            <span class="save">Acro +2, Stealth +2</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="ability-card">
+        <div class="ability-score-circle">
+          <span class="mod">+2</span>
+          <span class="score">15</span>
+        </div>
+        <div class="ability-info">
+          <span class="name">Constitution</span>
+          <div class="save-row">
+            <span class="save prof">Save +5</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="ability-card">
+        <div class="ability-score-circle">
+          <span class="mod">+1</span>
+          <span class="score">12</span>
+        </div>
+        <div class="ability-info">
+          <span class="name">Intelligence</span>
+          <div class="save-row">
+            <span class="save">Save +1</span>
+            <span class="save">Investigation +3</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="ability-card">
+        <div class="ability-score-circle">
+          <span class="mod">+0</span>
+          <span class="score">10</span>
+        </div>
+        <div class="ability-info">
+          <span class="name">Wisdom</span>
+          <div class="save-row">
+            <span class="save">Save +0</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="ability-card">
+        <div class="ability-score-circle">
+          <span class="mod">-1</span>
+          <span class="score">8</span>
+        </div>
+        <div class="ability-info">
+          <span class="name">Charisma</span>
+          <div class="save-row">
+            <span class="save">Save -1</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div class="right-col">
+
+      <!-- combat -->
+      <div class="combat-section">
+        <div class="section-title">Combat</div>
+        <div class="combat-grid">
+          <div class="combat-item">
+            <div class="label">AC</div>
+            <div class="value">18</div>
+          </div>
+          <div class="combat-item">
+            <div class="label">Initiative</div>
+            <div class="value">+2</div>
+          </div>
+          <div class="combat-item">
+            <div class="label">Speed</div>
+            <div class="value">30ft</div>
+          </div>
+          <div class="combat-item">
+            <div class="label">Prof Bonus</div>
+            <div class="value">+3</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- skills -->
+      <div class="section-title">Skills</div>
+      <div class="skills-grid">
+        <div class="skill-row"><span class="skill-name">Acrobatics</span><span class="skill-bonus">+2</span><span class="skill-ability">(DEX)</span></div>
+        <div class="skill-row"><span class="skill-name prof">Athletics</span><span class="skill-bonus">+7</span><span class="skill-ability">(STR)</span></div>
+        <div class="skill-row"><span class="skill-name">Arcana</span><span class="skill-bonus">+1</span><span class="skill-ability">(INT)</span></div>
+        <div class="skill-row"><span class="skill-name">Animal Handling</span><span class="skill-bonus">+0</span><span class="skill-ability">(WIS)</span></div>
+        <div class="skill-row"><span class="skill-name">Deception</span><span class="skill-bonus">-1</span><span class="skill-ability">(CHA)</span></div>
+        <div class="skill-row"><span class="skill-name">History</span><span class="skill-bonus">+1</span><span class="skill-ability">(INT)</span></div>
+        <div class="skill-row"><span class="skill-name">Insight</span><span class="skill-bonus">+0</span><span class="skill-ability">(WIS)</span></div>
+        <div class="skill-row"><span class="skill-name prof">Intimidation</span><span class="skill-bonus">+2</span><span class="skill-ability">(CHA)</span></div>
+        <div class="skill-row"><span class="skill-name">Investigation</span><span class="skill-bonus">+3</span><span class="skill-ability">(INT)</span></div>
+        <div class="skill-row"><span class="skill-name">Medicine</span><span class="skill-bonus">+0</span><span class="skill-ability">(WIS)</span></div>
+        <div class="skill-row"><span class="skill-name">Nature</span><span class="skill-bonus">+1</span><span class="skill-ability">(INT)</span></div>
+        <div class="skill-row"><span class="skill-name prof">Perception</span><span class="skill-bonus">+3</span><span class="skill-ability">(WIS)</span></div>
+        <div class="skill-row"><span class="skill-name">Performance</span><span class="skill-bonus">-1</span><span class="skill-ability">(CHA)</span></div>
+        <div class="skill-row"><span class="skill-name">Persuasion</span><span class="skill-bonus">-1</span><span class="skill-ability">(CHA)</span></div>
+        <div class="skill-row"><span class="skill-name">Religion</span><span class="skill-bonus">+1</span><span class="skill-ability">(INT)</span></div>
+        <div class="skill-row"><span class="skill-name">Sleight of Hand</span><span class="skill-bonus">+2</span><span class="skill-ability">(DEX)</span></div>
+        <div class="skill-row"><span class="skill-name">Stealth</span><span class="skill-bonus">+2</span><span class="skill-ability">(DEX)</span></div>
+        <div class="skill-row"><span class="skill-name">Survival</span><span class="skill-bonus">+0</span><span class="skill-ability">(WIS)</span></div>
+      </div>
+
+      <!-- features -->
+      <div class="section-title">Features & Traits</div>
+      <div class="feature-card">
+        <h4>Fighting Style: Great Weapon Fighting</h4>
+        <span class="source">Fighter 1</span>
+        <p>When you roll a 1 or 2 on a damage die for an attack you make with a melee weapon that you are wielding with two hands, you can reroll the die and must use the new roll.</p>
+      </div>
+      <div class="feature-card">
+        <h4>Second Wind</h4>
+        <span class="source">Fighter 1</span>
+        <p>On your turn, you can use a bonus action to regain hit points equal to 1d10 + your fighter level (4). You can use this feature once per short or long rest.</p>
+      </div>
+      <div class="feature-card">
+        <h4>Action Surge</h4>
+        <span class="source">Fighter 2</span>
+        <p>On your turn, you can take one additional action. You can use this feature once per short or long rest.</p>
+      </div>
+      <div class="feature-card">
+        <h4>Champion: Improved Critical</h4>
+        <span class="source">Fighter 3</span>
+        <p>Your attack rolls score a critical hit on a roll of 19 or 20.</p>
+      </div>
+
+      <!-- equipment -->
+      <div class="feature-card" style="margin-top:16px">
+        <h4>Equipment</h4>
+        <p style="color:#998e7a;font-size:0.82em">
+          Chain Mail · Greatsword · Longbow · Dungeoneer's Pack<br>
+          Explorer's Pack · Shield (soldier)
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── ACTIONS ─── -->
+  <div class="actions">
+    <button class="btn" onclick="window.print()">Print / PDF</button>
+    <button class="btn btn-primary">Download Character Sheet</button>
+  </div>
+
+  <div class="note">
+    Target layout for Arcanum character builder frontend · D&D Beyond 2024-inspired
+  </div>
+</div>
+
+</body>
+</html>

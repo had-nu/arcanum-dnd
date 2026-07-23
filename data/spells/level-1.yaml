@@ -1,0 +1,890 @@
+id: srd5.2-spells-level1
+name: "SRD 5.2 Level 1 Spells"
+version: "1.0.0"
+license: OGL
+attribution: "Wizards of the Coast — Player's Handbook (2024)"
+
+spells:
+  - id: alarm
+    name: Alarm
+    level: 1
+    school: abjuration
+    castingTime: minute
+    range: 30 feet
+    components:
+      verbal: true
+      somatic: true
+      material: true
+      materialDesc: a tiny bell and a piece of fine silver wire
+    duration: 8 hours
+
+  - id: animal-friendship
+    name: Animal Friendship
+    level: 1
+    school: enchantment
+    castingTime: action
+    range: 30 feet
+    components:
+      verbal: true
+      somatic: true
+      material: true
+      materialDesc: a morsel of food
+    duration: 24 hours
+
+  - id: arcane-vigor
+    name: Arcane Vigor
+    level: 1
+    school: abjuration
+    castingTime: action
+    range: self
+    components:
+      verbal: true
+      somatic: true
+    duration: instantaneous
+
+  - id: armor-of-agathys
+    name: Armor of Agathys
+    level: 1
+    school: abjuration
+    castingTime: bonus-action
+    range: self
+    components:
+      verbal: true
+      somatic: true
+      material: true
+      materialDesc: a cup of water
+    duration: 1 hour
+    effects:
+      - kind: AddDamageToAttacker
+        damageDice: 5
+
+  - id: arms-of-hadar
+    name: Arms of Hadar
+    level: 1
+    school: conjuration
+    castingTime: action
+    range: self
+    components:
+      verbal: true
+      somatic: true
+    duration: instantaneous
+    damage:
+      type: necrotic
+      dice: 2d6
+
+  - id: bane
+    name: Bane
+    level: 1
+    school: enchantment
+    castingTime: action
+    range: 30 feet
+    components:
+      verbal: true
+      somatic: true
+      material: true
+      materialDesc: a drop of blood
+    duration: concentration
+    concentration: true
+
+  - id: beast-sense
+    name: Beast Sense
+    level: 1
+    school: divination
+    castingTime: action
+    range: touch
+    components:
+      verbal: true
+      somatic: true
+    duration: concentration
+    concentration: true
+
+  - id: bless
+    name: Bless
+    level: 1
+    school: enchantment
+    castingTime: action
+    range: 30 feet
+    components:
+      verbal: true
+      somatic: true
+      material: true
+      materialDesc: a sprinkling of holy water
+    duration: concentration
+    concentration: true
+    effects:
+      - kind: Custom
+        handlerId: spell.bless.d20-bonus
+
+  - id: burning-hands
+    name: Burning Hands
+    level: 1
+    school: evocation
+    castingTime: action
+    range: self
+    components:
+      verbal: true
+      somatic: true
+    duration: instantaneous
+    damage:
+      type: fire
+      dice: 3d6
+
+  - id: charm-person
+    name: Charm Person
+    level: 1
+    school: enchantment
+    castingTime: action
+    range: 30 feet
+    components:
+      verbal: true
+      somatic: true
+    duration: 1 hour
+
+  - id: chromatic-orb
+    name: Chromatic Orb
+    level: 1
+    school: evocation
+    castingTime: action
+    range: 90 feet
+    components:
+      verbal: true
+      somatic: true
+      material: true
+      materialDesc: a diamond worth 50 GP
+    duration: instantaneous
+    damage:
+      type: acid
+      dice: 3d8
+    attack: true
+
+  - id: color-spray
+    name: Color Spray
+    level: 1
+    school: illusion
+    castingTime: action
+    range: self
+    components:
+      verbal: true
+      somatic: true
+      material: true
+      materialDesc: a pinch of colored sand
+    duration: instantaneous
+
+  - id: command
+    name: Command
+    level: 1
+    school: enchantment
+    castingTime: action
+    range: 60 feet
+    components:
+      verbal: true
+    duration: 1 round
+
+  - id: compel-duel
+    name: Compelled Duel
+    level: 1
+    school: enchantment
+    castingTime: bonus-action
+    range: 30 feet
+    components:
+      verbal: true
+    duration: concentration
+    concentration: true
+
+  - id: comprehend-languages
+    name: Comprehend Languages
+    level: 1
+    school: divination
+    castingTime: action
+    range: self
+    components:
+      verbal: true
+      somatic: true
+      material: true
+      materialDesc: a pinch of soot and salt
+    duration: 1 hour
+
+  - id: create-or-destroy-water
+    name: Create or Destroy Water
+    level: 1
+    school: transmutation
+    castingTime: action
+    range: 30 feet
+    components:
+      verbal: true
+      somatic: true
+      material: true
+      materialDesc: a drop of water
+    duration: instantaneous
+
+  - id: cure-wounds
+    name: Cure Wounds
+    level: 1
+    school: evocation
+    castingTime: action
+    range: touch
+    components:
+      verbal: true
+      somatic: true
+    duration: instantaneous
+    healing: 1d8+mod
+
+  - id: detect-evil-and-good
+    name: Detect Evil and Good
+    level: 1
+    school: divination
+    castingTime: action
+    range: self
+    components:
+      verbal: true
+      somatic: true
+    duration: concentration
+    concentration: true
+
+  - id: detect-magic
+    name: Detect Magic
+    level: 1
+    school: divination
+    castingTime: action
+    range: self
+    components:
+      verbal: true
+      somatic: true
+    duration: concentration
+    concentration: true
+
+  - id: detect-poison-and-disease
+    name: Detect Poison and Disease
+    level: 1
+    school: divination
+    castingTime: action
+    range: self
+    components:
+      verbal: true
+      somatic: true
+      material: true
+      materialDesc: a yew leaf
+    duration: concentration
+    concentration: true
+
+  - id: disguise-self
+    name: Disguise Self
+    level: 1
+    school: illusion
+    castingTime: action
+    range: self
+    components:
+      verbal: true
+      somatic: true
+    duration: 1 hour
+
+  - id: dissonant-whispers
+    name: Dissonant Whispers
+    level: 1
+    school: enchantment
+    castingTime: action
+    range: 60 feet
+    components:
+      verbal: true
+    duration: instantaneous
+    damage:
+      type: psychic
+      dice: 3d6
+
+  - id: divine-favor
+    name: Divine Favor
+    level: 1
+    school: evocation
+    castingTime: bonus-action
+    range: self
+    components:
+      verbal: true
+      somatic: true
+    duration: concentration
+    concentration: true
+
+  - id: divine-smite
+    name: Divine Smite
+    level: 1
+    school: evocation
+    castingTime: bonus-action
+    range: self
+    components:
+      verbal: true
+    duration: 1 minute
+    damage:
+      type: radiant
+      dice: 2d8
+
+  - id: ensnaring-strike
+    name: Ensnaring Strike
+    level: 1
+    school: conjuration
+    castingTime: bonus-action
+    range: self
+    components:
+      verbal: true
+    duration: concentration
+    concentration: true
+
+  - id: entangle
+    name: Entangle
+    level: 1
+    school: conjuration
+    castingTime: action
+    range: 90 feet
+    components:
+      verbal: true
+      somatic: true
+    duration: concentration
+    concentration: true
+
+  - id: expeditious-retreat
+    name: Expeditious Retreat
+    level: 1
+    school: transmutation
+    castingTime: bonus-action
+    range: self
+    components:
+      verbal: true
+      somatic: true
+    duration: concentration
+    concentration: true
+
+  - id: faerie-fire
+    name: Faerie Fire
+    level: 1
+    school: evocation
+    castingTime: action
+    range: 60 feet
+    components:
+      verbal: true
+    duration: concentration
+    concentration: true
+
+  - id: false-life
+    name: False Life
+    level: 1
+    school: necromancy
+    castingTime: action
+    range: self
+    components:
+      verbal: true
+      somatic: true
+      material: true
+      materialDesc: a drop of alcohol
+    duration: 1 hour
+
+  - id: feather-fall
+    name: Feather Fall
+    level: 1
+    school: transmutation
+    castingTime: reaction
+    range: 60 feet
+    components:
+      verbal: true
+      material: true
+      materialDesc: a small feather or piece of down
+    duration: 1 minute
+
+  - id: find-familiar
+    name: Find Familiar
+    level: 1
+    school: conjuration
+    castingTime: hour
+    range: 10 feet
+    components:
+      verbal: true
+      somatic: true
+      material: true
+      materialDesc: incense, charcoal, herbs worth 10 GP
+    duration: instantaneous
+
+  - id: fog-cloud
+    name: Fog Cloud
+    level: 1
+    school: conjuration
+    castingTime: action
+    range: 120 feet
+    components:
+      verbal: true
+      somatic: true
+    duration: concentration
+    concentration: true
+
+  - id: goodberry
+    name: Goodberry
+    level: 1
+    school: conjuration
+    castingTime: action
+    range: self
+    components:
+      verbal: true
+      somatic: true
+      material: true
+      materialDesc: a sprig of mistletoe
+    duration: 24 hours
+
+  - id: grease
+    name: Grease
+    level: 1
+    school: conjuration
+    castingTime: action
+    range: 60 feet
+    components:
+      verbal: true
+      somatic: true
+      material: true
+      materialDesc: a bit of pork rind or butter
+    duration: 1 minute
+
+  - id: guiding-bolt
+    name: Guiding Bolt
+    level: 1
+    school: evocation
+    castingTime: action
+    range: 120 feet
+    components:
+      verbal: true
+      somatic: true
+    duration: 1 round
+    damage:
+      type: radiant
+      dice: 4d6
+    attack: true
+
+  - id: hail-of-thorns
+    name: Hail of Thorns
+    level: 1
+    school: conjuration
+    castingTime: bonus-action
+    range: self
+    components:
+      verbal: true
+    duration: concentration
+    concentration: true
+
+  - id: healing-word
+    name: Healing Word
+    level: 1
+    school: evocation
+    castingTime: bonus-action
+    range: 60 feet
+    components:
+      verbal: true
+    duration: instantaneous
+    healing: 1d4+mod
+
+  - id: hellish-rebuke
+    name: Hellish Rebuke
+    level: 1
+    school: evocation
+    castingTime: reaction
+    range: 60 feet
+    components:
+      verbal: true
+      somatic: true
+    duration: instantaneous
+    damage:
+      type: fire
+      dice: 2d10
+
+  - id: heroism
+    name: Heroism
+    level: 1
+    school: enchantment
+    castingTime: action
+    range: touch
+    components:
+      verbal: true
+      somatic: true
+    duration: concentration
+    concentration: true
+
+  - id: hex
+    name: Hex
+    level: 1
+    school: enchantment
+    castingTime: bonus-action
+    range: 90 feet
+    components:
+      verbal: true
+      somatic: true
+      material: true
+      materialDesc: the petrified eye of a newt
+    duration: concentration
+    concentration: true
+
+  - id: hunters-mark
+    name: Hunter's Mark
+    level: 1
+    school: divination
+    castingTime: bonus-action
+    range: 90 feet
+    components:
+      verbal: true
+    duration: concentration
+    concentration: true
+
+  - id: ice-knife
+    name: Ice Knife
+    level: 1
+    school: conjuration
+    castingTime: action
+    range: 120 feet
+    components:
+      verbal: true
+      somatic: true
+      material: true
+      materialDesc: a drop of water
+    duration: instantaneous
+    damage:
+      type: cold
+      dice: 1d10
+    attack: true
+
+  - id: identify
+    name: Identify
+    level: 1
+    school: divination
+    castingTime: minute
+    range: touch
+    components:
+      verbal: true
+      somatic: true
+      material: true
+      materialDesc: a pearl worth 100 GP
+    duration: instantaneous
+
+  - id: illusory-script
+    name: Illusory Script
+    level: 1
+    school: illusion
+    castingTime: minute
+    range: touch
+    components:
+      verbal: true
+      somatic: true
+      material: true
+      materialDesc: a lead-based ink
+    duration: 10 days
+
+  - id: inflict-wounds
+    name: Inflict Wounds
+    level: 1
+    school: necromancy
+    castingTime: action
+    range: touch
+    components:
+      verbal: true
+      somatic: true
+    duration: instantaneous
+    damage:
+      type: necrotic
+      dice: 3d10
+    attack: true
+
+  - id: jump
+    name: Jump
+    level: 1
+    school: transmutation
+    castingTime: action
+    range: touch
+    components:
+      verbal: true
+      somatic: true
+      material: true
+      materialDesc: a grasshopper's hind leg
+    duration: 1 minute
+
+  - id: longstrider
+    name: Longstrider
+    level: 1
+    school: transmutation
+    castingTime: action
+    range: touch
+    components:
+      verbal: true
+      somatic: true
+      material: true
+      materialDesc: a pinch of dirt
+    duration: 1 hour
+    effects:
+      - kind: AddSpeed
+        value: 10
+
+  - id: mage-armor
+    name: Mage Armor
+    level: 1
+    school: abjuration
+    castingTime: action
+    range: touch
+    components:
+      verbal: true
+      somatic: true
+      material: true
+      materialDesc: a piece of cured leather
+    duration: 8 hours
+    effects:
+      - kind: SetBaseAC
+        value: 13
+
+  - id: magic-missile
+    name: Magic Missile
+    level: 1
+    school: evocation
+    castingTime: action
+    range: 120 feet
+    components:
+      verbal: true
+      somatic: true
+    duration: instantaneous
+    damage:
+      type: force
+      dice: 1d4+1
+
+  - id: protection-from-evil-and-good
+    name: Protection from Evil and Good
+    level: 1
+    school: abjuration
+    castingTime: action
+    range: touch
+    components:
+      verbal: true
+      somatic: true
+      material: true
+      materialDesc: holy water or powdered silver
+    duration: concentration
+    concentration: true
+
+  - id: purify-food-and-drink
+    name: Purify Food and Drink
+    level: 1
+    school: transmutation
+    castingTime: action
+    range: 10 feet
+    components:
+      verbal: true
+      somatic: true
+    duration: instantaneous
+
+  - id: ray-of-sickness
+    name: Ray of Sickness
+    level: 1
+    school: necromancy
+    castingTime: action
+    range: 60 feet
+    components:
+      verbal: true
+      somatic: true
+    duration: instantaneous
+    damage:
+      type: poison
+      dice: 3d8
+    attack: true
+
+  - id: sanctuary
+    name: Sanctuary
+    level: 1
+    school: abjuration
+    castingTime: bonus-action
+    range: 30 feet
+    components:
+      verbal: true
+      somatic: true
+      material: true
+      materialDesc: a silver mirror
+    duration: 1 minute
+
+  - id: searing-smite
+    name: Searing Smite
+    level: 1
+    school: evocation
+    castingTime: bonus-action
+    range: self
+    components:
+      verbal: true
+    duration: concentration
+    concentration: true
+    damage:
+      type: fire
+      dice: 1d6
+
+  - id: shield
+    name: Shield
+    level: 1
+    school: abjuration
+    castingTime: reaction
+    range: self
+    components:
+      verbal: true
+      somatic: true
+    duration: 1 round
+    effects:
+      - kind: AddAC
+        value: 5
+
+  - id: shield-of-faith
+    name: Shield of Faith
+    level: 1
+    school: abjuration
+    castingTime: bonus-action
+    range: 60 feet
+    components:
+      verbal: true
+      somatic: true
+      material: true
+      materialDesc: a parchment with a holy symbol
+    duration: concentration
+    concentration: true
+    effects:
+      - kind: AddAC
+        value: 2
+
+  - id: silent-image
+    name: Silent Image
+    level: 1
+    school: illusion
+    castingTime: action
+    range: 60 feet
+    components:
+      verbal: true
+      somatic: true
+      material: true
+      materialDesc: a bit of fleece
+    duration: concentration
+    concentration: true
+
+  - id: sleep
+    name: Sleep
+    level: 1
+    school: enchantment
+    castingTime: action
+    range: 90 feet
+    components:
+      verbal: true
+      somatic: true
+      material: true
+      materialDesc: a pinch of sand
+    duration: 1 minute
+
+  - id: speak-with-animals
+    name: Speak with Animals
+    level: 1
+    school: divination
+    castingTime: action
+    range: self
+    components:
+      verbal: true
+      somatic: true
+    duration: 10 minutes
+
+  - id: tashas-hideous-laughter
+    name: Tasha's Hideous Laughter
+    level: 1
+    school: enchantment
+    castingTime: action
+    range: 30 feet
+    components:
+      verbal: true
+      somatic: true
+      material: true
+      materialDesc: tiny tarts and a feather
+    duration: concentration
+    concentration: true
+
+  - id: tensers-floating-disk
+    name: Tenser's Floating Disk
+    level: 1
+    school: conjuration
+    castingTime: action
+    range: 30 feet
+    components:
+      verbal: true
+      somatic: true
+      material: true
+      materialDesc: a drop of mercury
+    duration: 1 hour
+
+  - id: thunderous-smite
+    name: Thunderous Smite
+    level: 1
+    school: evocation
+    castingTime: bonus-action
+    range: self
+    components:
+      verbal: true
+    duration: 1 minute
+    damage:
+      type: thunder
+      dice: 2d6
+
+  - id: thunderwave
+    name: Thunderwave
+    level: 1
+    school: evocation
+    castingTime: action
+    range: self
+    components:
+      verbal: true
+      somatic: true
+    duration: instantaneous
+    damage:
+      type: thunder
+      dice: 2d8
+
+  - id: unseen-servant
+    name: Unseen Servant
+    level: 1
+    school: conjuration
+    castingTime: action
+    range: 60 feet
+    components:
+      verbal: true
+      somatic: true
+      material: true
+      materialDesc: a piece of string
+    duration: 1 hour
+
+  - id: witch-bolt
+    name: Witch Bolt
+    level: 1
+    school: evocation
+    castingTime: action
+    range: 30 feet
+    components:
+      verbal: true
+      somatic: true
+      material: true
+      materialDesc: a twig from a tree hit by lightning
+    duration: concentration
+    concentration: true
+    damage:
+      type: lightning
+      dice: 1d12
+    attack: true
+
+  - id: wrathful-smite
+    name: Wrathful Smite
+    level: 1
+    school: evocation
+    castingTime: bonus-action
+    range: self
+    components:
+      verbal: true
+    duration: concentration
+    concentration: true
+    damage:
+      type: psychic
+      dice: 1d6
+
+  - id: zone-of-truth
+    name: Zone of Truth
+    level: 1
+    school: enchantment
+    castingTime: action
+    range: 60 feet
+    components:
+      verbal: true
+      somatic: true
+    duration: 10 minutes

@@ -1,0 +1,470 @@
+id: srd5.2-spells-cantrips
+name: "SRD 5.2 Cantrips"
+version: "1.0.0"
+license: OGL
+attribution: "Wizards of the Coast — Player's Handbook (2024)"
+
+spells:
+  - id: acid-splash
+    name: Acid Splash
+    level: 0
+    school: evocation
+    castingTime: action
+    range: 60 feet
+    components:
+      verbal: true
+      somatic: true
+    duration: instantaneous
+    damage:
+      type: acid
+      dice: 1d6
+
+  - id: blade-ward
+    name: Blade Ward
+    level: 0
+    school: abjuration
+    castingTime: action
+    range: self
+    components:
+      verbal: true
+      somatic: true
+    duration: 1 round
+    effects:
+      - kind: Resistance
+        damageType: bludgeoning
+      - kind: Resistance
+        damageType: slashing
+      - kind: Resistance
+        damageType: piercing
+
+  - id: chill-touch
+    name: Chill Touch
+    level: 0
+    school: necromancy
+    castingTime: action
+    range: 120 feet
+    components:
+      verbal: true
+      somatic: true
+    duration: instantaneous
+    damage:
+      type: necrotic
+      dice: 1d8
+    attack: true
+
+  - id: dancing-lights
+    name: Dancing Lights
+    level: 0
+    school: evocation
+    castingTime: action
+    range: 120 feet
+    components:
+      verbal: true
+      somatic: true
+      material: true
+      materialDesc: a bit of phosphorus or wychwood
+    duration: concentration
+    concentration: true
+
+  - id: druidcraft
+    name: Druidcraft
+    level: 0
+    school: transmutation
+    castingTime: action
+    range: 30 feet
+    components:
+      verbal: true
+      somatic: true
+    duration: instantaneous
+
+  - id: eldritch-blast
+    name: Eldritch Blast
+    level: 0
+    school: evocation
+    castingTime: action
+    range: 120 feet
+    components:
+      verbal: true
+      somatic: true
+    duration: instantaneous
+    damage:
+      type: force
+      dice: 1d10
+    attack: true
+
+  - id: elementalism
+    name: Elementalism
+    level: 0
+    school: transmutation
+    castingTime: action
+    range: 30 feet
+    components:
+      verbal: true
+      somatic: true
+    duration: instantaneous
+
+  - id: fire-bolt
+    name: Fire Bolt
+    level: 0
+    school: evocation
+    castingTime: action
+    range: 120 feet
+    components:
+      verbal: true
+      somatic: true
+    duration: instantaneous
+    damage:
+      type: fire
+      dice: 1d10
+    attack: true
+
+  - id: friends
+    name: Friends
+    level: 0
+    school: enchantment
+    castingTime: action
+    range: self
+    components:
+      verbal: true
+      somatic: true
+      material: true
+      materialDesc: a bit of makeup
+    duration: concentration
+    concentration: true
+
+  - id: guidance
+    name: Guidance
+    level: 0
+    school: divination
+    castingTime: action
+    range: touch
+    components:
+      verbal: true
+      somatic: true
+    duration: concentration
+    concentration: true
+    effects:
+      - kind: Custom
+        handlerId: spell.guidance.d20-bonus
+
+  - id: light
+    name: Light
+    level: 0
+    school: evocation
+    castingTime: action
+    range: touch
+    components:
+      verbal: true
+      material: true
+      materialDesc: a firefly or glowing moss
+    duration: 1 hour
+
+  - id: mage-hand
+    name: Mage Hand
+    level: 0
+    school: conjuration
+    castingTime: action
+    range: 30 feet
+    components:
+      verbal: true
+      somatic: true
+    duration: 1 minute
+
+  - id: mending
+    name: Mending
+    level: 0
+    school: transmutation
+    castingTime: minute
+    range: touch
+    components:
+      verbal: true
+      somatic: true
+      material: true
+      materialDesc: two lodestones
+    duration: instantaneous
+
+  - id: message
+    name: Message
+    level: 0
+    school: transmutation
+    castingTime: action
+    range: 120 feet
+    components:
+      verbal: true
+      somatic: true
+      material: true
+      materialDesc: a short piece of copper wire
+    duration: 1 round
+
+  - id: mind-sliver
+    name: Mind Sliver
+    level: 0
+    school: enchantment
+    castingTime: action
+    range: 60 feet
+    components:
+      verbal: true
+    duration: instantaneous
+    damage:
+      type: psychic
+      dice: 1d6
+
+  - id: minor-illusion
+    name: Minor Illusion
+    level: 0
+    school: illusion
+    castingTime: action
+    range: 30 feet
+    components:
+      verbal: true
+      somatic: true
+      material: true
+      materialDesc: a bit of fleece
+    duration: 1 minute
+
+  - id: poison-spray
+    name: Poison Spray
+    level: 0
+    school: conjuration
+    castingTime: action
+    range: 30 feet
+    components:
+      verbal: true
+      somatic: true
+    duration: instantaneous
+    damage:
+      type: poison
+      dice: 1d12
+
+  - id: prestidigitation
+    name: Prestidigitation
+    level: 0
+    school: transmutation
+    castingTime: action
+    range: 10 feet
+    components:
+      verbal: true
+      somatic: true
+    duration: 1 hour
+
+  - id: produce-flame
+    name: Produce Flame
+    level: 0
+    school: conjuration
+    castingTime: action
+    range: self
+    components:
+      verbal: true
+      somatic: true
+    duration: 10 minutes
+    damage:
+      type: fire
+      dice: 1d8
+
+  - id: ray-of-frost
+    name: Ray of Frost
+    level: 0
+    school: evocation
+    castingTime: action
+    range: 60 feet
+    components:
+      verbal: true
+      somatic: true
+    duration: instantaneous
+    damage:
+      type: cold
+      dice: 1d8
+    attack: true
+
+  - id: resistance
+    name: Resistance
+    level: 0
+    school: abjuration
+    castingTime: action
+    range: touch
+    components:
+      verbal: true
+      somatic: true
+      material: true
+      materialDesc: a miniature cloak
+    duration: concentration
+    concentration: true
+
+  - id: sacred-flame
+    name: Sacred Flame
+    level: 0
+    school: evocation
+    castingTime: action
+    range: 60 feet
+    components:
+      verbal: true
+      somatic: true
+    duration: instantaneous
+    damage:
+      type: radiant
+      dice: 1d8
+
+  - id: shillelagh
+    name: Shillelagh
+    level: 0
+    school: transmutation
+    castingTime: bonus-action
+    range: touch
+    components:
+      verbal: true
+      somatic: true
+      material: true
+      materialDesc: mistletoe
+    duration: 1 minute
+
+  - id: shocking-grasp
+    name: Shocking Grasp
+    level: 0
+    school: evocation
+    castingTime: action
+    range: touch
+    components:
+      verbal: true
+      somatic: true
+    duration: instantaneous
+    damage:
+      type: lightning
+      dice: 1d8
+    attack: true
+
+  - id: sorcerous-burst
+    name: Sorcerous Burst
+    level: 0
+    school: evocation
+    castingTime: action
+    range: 120 feet
+    components:
+      verbal: true
+      somatic: true
+    duration: instantaneous
+    damage:
+      type: chaos
+      dice: 1d8
+    attack: true
+
+  - id: spare-the-dying
+    name: Spare the Dying
+    level: 0
+    school: necromancy
+    castingTime: action
+    range: touch
+    components:
+      verbal: true
+      somatic: true
+    duration: instantaneous
+
+  - id: starry-wisp
+    name: Starry Wisp
+    level: 0
+    school: evocation
+    castingTime: action
+    range: 60 feet
+    components:
+      verbal: true
+      somatic: true
+    duration: instantaneous
+    damage:
+      type: radiant
+      dice: 1d8
+    attack: true
+
+  - id: thaumaturgy
+    name: Thaumaturgy
+    level: 0
+    school: transmutation
+    castingTime: action
+    range: 30 feet
+    components:
+      verbal: true
+    duration: 1 minute
+
+  - id: thorn-whip
+    name: Thorn Whip
+    level: 0
+    school: transmutation
+    castingTime: action
+    range: 30 feet
+    components:
+      verbal: true
+      somatic: true
+      material: true
+      materialDesc: the stem of a plant with thorns
+    duration: instantaneous
+    damage:
+      type: piercing
+      dice: 1d6
+    attack: true
+
+  - id: thunderclap
+    name: Thunderclap
+    level: 0
+    school: evocation
+    castingTime: action
+    range: self
+    components:
+      verbal: true
+      somatic: true
+    duration: instantaneous
+    damage:
+      type: thunder
+      dice: 1d6
+
+  - id: toll-the-dead
+    name: Toll the Dead
+    level: 0
+    school: necromancy
+    castingTime: action
+    range: 60 feet
+    components:
+      verbal: true
+      somatic: true
+    duration: instantaneous
+    damage:
+      type: necrotic
+      dice: 1d8
+
+  - id: true-strike
+    name: True Strike
+    level: 0
+    school: divination
+    castingTime: action
+    range: self
+    components:
+      verbal: true
+      somatic: true
+    duration: instantaneous
+    attack: true
+
+  - id: vicious-mockery
+    name: Vicious Mockery
+    level: 0
+    school: enchantment
+    castingTime: action
+    range: 60 feet
+    components:
+      verbal: true
+    duration: instantaneous
+    damage:
+      type: psychic
+      dice: 1d6
+
+  - id: word-of-radiance
+    name: Word of Radiance
+    level: 0
+    school: evocation
+    castingTime: action
+    range: self
+    components:
+      verbal: true
+      somatic: true
+      material: true
+      materialDesc: a source of light
+    duration: instantaneous
+    damage:
+      type: radiant
+      dice: 1d6
