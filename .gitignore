@@ -1,17 +1,33 @@
-# Go
-dist/
+# Large assets
+*.7z
+*.pdf
+*.iso
+*.dmg
+*.zip
+*.tar.gz
+
+# Large asset directories
+src/arts/Cartas de Magias*/
+src/arts/D&D 5/
+
+# Build artifacts
 *.exe
-*.test
-*.out
+*.dll
+*.so
+*.dylib
 
 # IDE
-.idea/
 .vscode/
+.idea/
 *.swp
+*.swo
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Build
-/tmp/
+# Logs
+*.log
+
+# Docker
+.docker/
