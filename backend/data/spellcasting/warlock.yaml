@@ -1,0 +1,126 @@
+class: warlock
+spellcasting:
+  type: pact
+  ability: CHA
+  knownCaster: true
+  progression:
+    - level: 1
+      cantripsKnown: 2
+      spellsKnown: 2
+      spellSlots: {1: 1}
+      spellList: [eldritch-blast, charm-person]
+      mysticArcanum: {}
+    - level: 2
+      cantripsKnown: 2
+      spellsKnown: 3
+      spellSlots: {1: 2}
+      spellList: [eldritch-blast, charm-person, hex]
+      mysticArcanum: {}
+    - level: 3
+      cantripsKnown: 2
+      spellsKnown: 4
+      spellSlots: {2: 2}
+      spellList: [eldritch-blast, charm-person, hex, invisibility]
+      mysticArcanum: {}
+    - level: 4
+      cantripsKnown: 2
+      spellsKnown: 5
+      spellSlots: {2: 2}
+      spellList: [eldritch-blast, charm-person, hex, invisibility, suggestion]
+      mysticArcanum: {}
+    - level: 5
+      cantripsKnown: 2
+      spellsKnown: 6
+      spellSlots: {3: 2}
+      spellList: [eldritch-blast, charm-person, hex, invisibility, suggestion, hold-person]
+      mysticArcanum: {}
+    - level: 6
+      cantripsKnown: 2
+      spellsKnown: 7
+      spellSlots: {3: 2}
+      spellList: [eldritch-blast, charm-person, hex, invisibility, suggestion, hold-person, counterspell]
+      mysticArcanum: {}
+    - level: 7
+      cantripsKnown: 2
+      spellsKnown: 8
+      spellSlots: {4: 2}
+      spellList: [eldritch-blast, charm-person, hex, invisibility, suggestion, hold-person, counterspell, dimension-door]
+      mysticArcanum: {6: [arcane-gate, circle-of-death, conjure-fey, create-undead, eyebite, flesh-to-stone, mass-suggestion, true-seeing]}
+    - level: 8
+      cantripsKnown: 2
+      spellsKnown: 9
+      spellSlots: {4: 2}
+      spellList: [eldritch-blast, charm-person, hex, invisibility, suggestion, hold-person, counterspell, dimension-door, banishment]
+      mysticArcanum: {6: [arcane-gate, circle-of-death, conjure-fey, create-undead, eyebite, flesh-to-stone, mass-suggestion, true-seeing]}
+    - level: 9
+      cantripsKnown: 2
+      spellsKnown: 10
+      spellSlots: {5: 2}
+      spellList: [eldritch-blast, charm-person, hex, invisibility, suggestion, hold-person, counterspell, dimension-door, banishment, hold-monster]
+      mysticArcanum: {6: [arcane-gate, circle-of-death, conjure-fey, create-undead, eyebite, flesh-to-stone, mass-suggestion, true-seeing], 7: [etherealness, finger-of-death, forcecage, mirage-arcane, plane-shift, reverse-gravity, teleport]}
+    - level: 10
+      cantripsKnown: 3
+      spellsKnown: 10
+      spellSlots: {5: 2}
+      spellList: [eldritch-blast, charm-person, hex, invisibility, suggestion, hold-person, counterspell, dimension-door, banishment, hold-monster]
+      mysticArcanum: {6: [arcane-gate, circle-of-death, conjure-fey, create-undead, eyebite, flesh-to-stone, mass-suggestion, true-seeing], 7: [etherealness, finger-of-death, forcecage, mirage-arcane, plane-shift, reverse-gravity, teleport]}
+    - level: 11
+      cantripsKnown: 3
+      spellsKnown: 11
+      spellSlots: {5: 2}
+      spellList: [eldritch-blast, charm-person, hex, invisibility, suggestion, hold-person, counterspell, dimension-door, banishment, hold-monster]
+      mysticArcanum: {6: [arcane-gate, circle-of-death, conjure-fey, create-undead, eyebite, flesh-to-stone, mass-suggestion, true-seeing], 7: [etherealness, finger-of-death, forcecage, mirage-arcane, plane-shift, reverse-gravity, teleport]}
+    - level: 12
+      cantripsKnown: 3
+      spellsKnown: 11
+      spellSlots: {5: 2}
+      spellList: [eldritch-blast, charm-person, hex, invisibility, suggestion, hold-person, counterspell, dimension-door, banishment, hold-monster]
+      mysticArcanum: {6: [arcane-gate, circle-of-death, conjure-fey, create-undead, eyebite, flesh-to-stone, mass-suggestion, true-seeing], 7: [etherealness, finger-of-death, forcecage, mirage-arcane, plane-shift, reverse-gravity, teleport]}
+    - level: 13
+      cantripsKnown: 3
+      spellsKnown: 12
+      spellSlots: {5: 2}
+      spellList: [eldritch-blast, charm-person, hex, invisibility, suggestion, hold-person, counterspell, dimension-door, banishment, hold-monster]
+      mysticArcanum: {6: [arcane-gate, circle-of-death, conjure-fey, create-undead, eyebite, flesh-to-stone, mass-suggestion, true-seeing], 7: [etherealness, finger-of-death, forcecage, mirage-arcane, plane-shift, reverse-gravity, teleport], 8: [demiplane, dominate-monster, feeblemind, glibness, power-word-stun, teleportation-circle]}
+    - level: 14
+      cantripsKnown: 3
+      spellsKnown: 12
+      spellSlots: {5: 2}
+      spellList: [eldritch-blast, charm-person, hex, invisibility, suggestion, hold-person, counterspell, dimension-door, banishment, hold-monster]
+      mysticArcanum: {6: [arcane-gate, circle-of-death, conjure-fey, create-undead, eyebite, flesh-to-stone, mass-suggestion, true-seeing], 7: [etherealness, finger-of-death, forcecage, mirage-arcane, plane-shift, reverse-gravity, teleport], 8: [demiplane, dominate-monster, feeblemind, glibness, power-word-stun, teleportation-circle]}
+    - level: 15
+      cantripsKnown: 3
+      spellsKnown: 13
+      spellSlots: {5: 2}
+      spellList: [eldritch-blast, charm-person, hex, invisibility, suggestion, hold-person, counterspell, dimension-door, banishment, hold-monster]
+      mysticArcanum: {6: [arcane-gate, circle-of-death, conjure-fey, create-undead, eyebite, flesh-to-stone, mass-suggestion, true-seeing], 7: [etherealness, finger-of-death, forcecage, mirage-arcane, plane-shift, reverse-gravity, teleport], 8: [demiplane, dominate-monster, feeblemind, glibness, power-word-stun, teleportation-circle]}
+    - level: 16
+      cantripsKnown: 3
+      spellsKnown: 13
+      spellSlots: {5: 2}
+      spellList: [eldritch-blast, charm-person, hex, invisibility, suggestion, hold-person, counterspell, dimension-door, banishment, hold-monster]
+      mysticArcanum: {6: [arcane-gate, circle-of-death, conjure-fey, create-undead, eyebite, flesh-to-stone, mass-suggestion, true-seeing], 7: [etherealness, finger-of-death, forcecage, mirage-arcane, plane-shift, reverse-gravity, teleport], 8: [demiplane, dominate-monster, feeblemind, glibness, power-word-stun, teleportation-circle]}
+    - level: 17
+      cantripsKnown: 3
+      spellsKnown: 14
+      spellSlots: {5: 2}
+      spellList: [eldritch-blast, charm-person, hex, invisibility, suggestion, hold-person, counterspell, dimension-door, banishment, hold-monster]
+      mysticArcanum: {6: [arcane-gate, circle-of-death, conjure-fey, create-undead, eyebite, flesh-to-stone, mass-suggestion, true-seeing], 7: [etherealness, finger-of-death, forcecage, mirage-arcane, plane-shift, reverse-gravity, teleport], 8: [demiplane, dominate-monster, feeblemind, glibness, power-word-stun, teleportation-circle], 9: [foresight, gate, imprisonment, meteor-swarm, power-word-kill, true-polymorph, wish]}
+    - level: 18
+      cantripsKnown: 3
+      spellsKnown: 14
+      spellSlots: {5: 2}
+      spellList: [eldritch-blast, charm-person, hex, invisibility, suggestion, hold-person, counterspell, dimension-door, banishment, hold-monster]
+      mysticArcanum: {6: [arcane-gate, circle-of-death, conjure-fey, create-undead, eyebite, flesh-to-stone, mass-suggestion, true-seeing], 7: [etherealness, finger-of-death, forcecage, mirage-arcane, plane-shift, reverse-gravity, teleport], 8: [demiplane, dominate-monster, feeblemind, glibness, power-word-stun, teleportation-circle], 9: [foresight, gate, imprisonment, meteor-swarm, power-word-kill, true-polymorph, wish]}
+    - level: 19
+      cantripsKnown: 3
+      spellsKnown: 15
+      spellSlots: {5: 2}
+      spellList: [eldritch-blast, charm-person, hex, invisibility, suggestion, hold-person, counterspell, dimension-door, banishment, hold-monster]
+      mysticArcanum: {6: [arcane-gate, circle-of-death, conjure-fey, create-undead, eyebite, flesh-to-stone, mass-suggestion, true-seeing], 7: [etherealness, finger-of-death, forcecage, mirage-arcane, plane-shift, reverse-gravity, teleport], 8: [demiplane, dominate-monster, feeblemind, glibness, power-word-stun, teleportation-circle], 9: [foresight, gate, imprisonment, meteor-swarm, power-word-kill, true-polymorph, wish]}
+    - level: 20
+      cantripsKnown: 3
+      spellsKnown: 15
+      spellSlots: {5: 2}
+      spellList: [eldritch-blast, charm-person, hex, invisibility, suggestion, hold-person, counterspell, dimension-door, banishment, hold-monster]
+      mysticArcanum: {6: [arcane-gate, circle-of-death, conjure-fey, create-undead, eyebite, flesh-to-stone, mass-suggestion, true-seeing], 7: [etherealness, finger-of-death, forcecage, mirage-arcane, plane-shift, reverse-gravity, teleport], 8: [demiplane, dominate-monster, feeblemind, glibness, power-word-stun, teleportation-circle], 9: [foresight, gate, imprisonment, meteor-swarm, power-word-kill, true-polymorph, wish]}

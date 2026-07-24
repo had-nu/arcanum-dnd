@@ -1,0 +1,653 @@
+id: srd5.2-feats
+name: "SRD 5.2 Feats"
+version: "1.0.0"
+license: OGL
+attribution: "Wizards of the Coast — Player's Handbook (2024)"
+
+feats:
+  # ── Origin Feats ──────────────────────────────────
+  - id: alert
+    name: Alert
+    effects:
+      - kind: Custom
+        handlerId: feat.alert.initiative-bonus
+
+  - id: crafter
+    name: Crafter
+    effects:
+      - kind: Custom
+        handlerId: feat.crafter.tool-proficiency
+      - kind: Custom
+        handlerId: feat.crafter.discount
+      - kind: Custom
+        handlerId: feat.crafter.crafting-speed
+
+  - id: healer
+    name: Healer
+    effects:
+      - kind: Custom
+        handlerId: feat.healer.heal-kit
+      - kind: Custom
+        handlerId: feat.healer.stabilize
+
+  - id: lucky
+    name: Lucky
+    effects:
+      - kind: RollAdvantage
+        targetSkill: initiative
+
+  - id: magic-initiate-cleric
+    name: Magic Initiate (Cleric)
+    effects:
+      - kind: Custom
+        handlerId: feat.magic-initiate.cantrips
+      - kind: Custom
+        handlerId: feat.magic-initiate.level1-spell
+
+  - id: magic-initiate-druid
+    name: Magic Initiate (Druid)
+    effects:
+      - kind: Custom
+        handlerId: feat.magic-initiate.cantrips
+      - kind: Custom
+        handlerId: feat.magic-initiate.level1-spell
+
+  - id: magic-initiate-wizard
+    name: Magic Initiate (Wizard)
+    effects:
+      - kind: Custom
+        handlerId: feat.magic-initiate.cantrips
+      - kind: Custom
+        handlerId: feat.magic-initiate.level1-spell
+
+  - id: musician
+    name: Musician
+    effects:
+      - kind: GrantProficiency
+        proficiencySkill: performance
+      - kind: Custom
+        handlerId: feat.musician.inspiration
+
+  - id: savage-attacker
+    name: Savage Attacker
+    effects:
+      - kind: Custom
+        handlerId: feat.savage-attacker.reroll-damage
+
+  - id: skilled
+    name: Skilled
+    effects:
+      - kind: GrantProficiency
+
+  - id: tavern-brawler
+    name: Tavern Brawler
+    effects:
+      - kind: Custom
+        handlerId: feat.tavern-brawler.improv-weapon
+      - kind: Custom
+        handlerId: feat.tavern-brawler.grapple-damage
+      - kind: Custom
+        handlerId: feat.tavern-brawler.bonus-action-grapple
+
+  # ── General Feats ─────────────────────────────────
+  - id: ability-score-improvement
+    name: Ability Score Improvement
+    effects:
+      - kind: Custom
+        handlerId: feat.asi.increase
+
+  - id: actor
+    name: Actor
+    prerequisites:
+      ability: CHA
+      abilityMin: 17
+    effects:
+      - kind: Custom
+        handlerId: feat.actor.improvisation
+      - kind: Custom
+        handlerId: feat.actor.mimicry
+
+  - id: athlete
+    name: Athlete
+    effects:
+      - kind: Custom
+        handlerId: feat.athlete.asi
+      - kind: Custom
+        handlerId: feat.athlete.climb-speed
+
+  - id: charger
+    name: Charger
+    effects:
+      - kind: Custom
+        handlerId: feat.charger.dash-attack
+
+  - id: chef
+    name: Chef
+    effects:
+      - kind: Custom
+        handlerId: feat.chef.cook-treats
+
+  - id: crossbow-expert
+    name: Crossbow Expert
+    effects:
+      - kind: Custom
+        handlerId: feat.crossbow-expert.ignore-range-disadvantage
+      - kind: Custom
+        handlerId: feat.crossbow-expert.bonus-action-attack
+      - kind: Custom
+        handlerId: feat.crossbow-expert.no-adjacent-disadvantage
+
+  - id: crusher
+    name: Crusher
+    effects:
+      - kind: Custom
+        handlerId: feat.crusher.asi
+      - kind: Custom
+        handlerId: feat.crusher.push
+      - kind: Custom
+        handlerId: feat.crusher.crit-boon
+
+  - id: defensive-duelist
+    name: Defensive Duelist
+    prerequisites:
+      ability: DEX
+      abilityMin: 13
+    effects:
+      - kind: Custom
+        handlerId: feat.defensive-duelist.reaction-ac-bonus
+
+  - id: dual-wielder
+    name: Dual Wielder
+    effects:
+      - kind: Custom
+        handlerId: feat.dual-wielder.non-light-weapons
+      - kind: Custom
+        handlerId: feat.dual-wielder.ac-bonus
+      - kind: Custom
+        handlerId: feat.dual-wielder.draw-two
+
+  - id: durable
+    name: Durable
+    effects:
+      - kind: Custom
+        handlerId: feat.durable.asi
+      - kind: Custom
+        handlerId: feat.durable.hd-regain
+
+  - id: elemental-adept
+    name: Elemental Adept
+    effects:
+      - kind: Custom
+        handlerId: feat.elemental-adept.ignore-resistance
+
+  - id: fey-touched
+    name: Fey-Touched
+    effects:
+      - kind: Custom
+        handlerId: feat.fey-touched.asi
+      - kind: Custom
+        handlerId: feat.fey-touched.misty-step
+      - kind: Custom
+        handlerId: feat.fey-touched.level1-spell
+
+  - id: grappler
+    name: Grappler
+    prerequisites:
+      ability: STR
+      abilityMin: 13
+    effects:
+      - kind: Custom
+        handlerId: feat.grappler.attack-bonus-grappled
+      - kind: Custom
+        handlerId: feat.grappler.move-grappled
+
+  - id: great-weapon-master
+    name: Great Weapon Master
+    effects:
+      - kind: Custom
+        handlerId: feat.gwm.proficiency-bonus-damage
+
+  - id: heavily-armored
+    name: Heavily Armored
+    prerequisites:
+      ability: STR
+      abilityMin: 15
+    effects:
+      - kind: Custom
+        handlerId: feat.heavily-armored.grant-heavy-training
+      - kind: Custom
+        handlerId: feat.heavily-armored.asi
+
+  - id: heavy-armor-master
+    name: Heavy Armor Master
+    prerequisites:
+      ability: STR
+      abilityMin: 17
+    effects:
+      - kind: Custom
+        handlerId: feat.heavy-armor-master.asi
+      - kind: Custom
+        handlerId: feat.heavy-armor-master.damage-reduction
+
+  - id: inspiring-leader
+    name: Inspiring Leader
+    prerequisites:
+      ability: CHA
+      abilityMin: 13
+    effects:
+      - kind: Custom
+        handlerId: feat.inspiring-leader.temp-hp
+
+  - id: keen-mind
+    name: Keen Mind
+    effects:
+      - kind: Custom
+        handlerId: feat.keen-mind.asi
+      - kind: Custom
+        handlerId: feat.keen-mind.remember-direction
+      - kind: Custom
+        handlerId: feat.keen-mind.remember-timeline
+
+  - id: lightly-armored
+    name: Lightly Armored
+    effects:
+      - kind: Custom
+        handlerId: feat.lightly-armored.grant-light-training
+      - kind: Custom
+        handlerId: feat.lightly-armored.asi
+
+  - id: mage-slayer
+    name: Mage Slayer
+    effects:
+      - kind: Custom
+        handlerId: feat.mage-slayer.melee-reaction
+      - kind: Custom
+        handlerId: feat.mage-slayer.save-advantage
+      - kind: Custom
+        handlerId: feat.mage-slayer.ward-interruption
+
+  - id: martial-weapon-training
+    name: Martial Weapon Training
+    effects:
+      - kind: Custom
+        handlerId: feat.martial-weapon-training.grant-proficiency
+
+  - id: medium-armor-master
+    name: Medium Armor Master
+    prerequisites:
+      armor-training: [medium]
+    effects:
+      - kind: Custom
+        handlerId: feat.medium-armor-master.dex-cap-3
+
+  - id: moderately-armored
+    name: Moderately Armored
+    prerequisites:
+      ability: DEX
+      abilityMin: 13
+    effects:
+      - kind: Custom
+        handlerId: feat.moderately-armored.grant-medium-training
+      - kind: Custom
+        handlerId: feat.moderately-armored.grant-shield-training
+      - kind: Custom
+        handlerId: feat.moderately-armored.asi
+
+  - id: mounted-combatant
+    name: Mounted Combatant
+    effects:
+      - kind: Custom
+        handlerId: feat.mounted-combatant.adv-vs-smaller-mount
+      - kind: Custom
+        handlerId: feat.mounted-combatant.redirect-attack
+      - kind: Custom
+        handlerId: feat.mounted-combatant.mount-save-proficiency
+
+  - id: observant
+    name: Observant
+    effects:
+      - kind: Custom
+        handlerId: feat.observant.passive-perception-bonus
+      - kind: Custom
+        handlerId: feat.observant.asi
+      - kind: Custom
+        handlerId: feat.observant.lip-reading
+
+  - id: piercer
+    name: Piercer
+    effects:
+      - kind: Custom
+        handlerId: feat.piercer.asi
+      - kind: Custom
+        handlerId: feat.piercer.reroll-low-damage
+      - kind: Custom
+        handlerId: feat.piercer.crit-bonus
+
+  - id: poisoner
+    name: Poisoner
+    effects:
+      - kind: Custom
+        handlerId: feat.poisoner.poison-damage
+      - kind: Custom
+        handlerId: feat.poisoner.ignore-poison-resistance
+      - kind: Custom
+        handlerId: feat.poisoner.bonus-action-apply
+
+  - id: polearm-master
+    name: Polearm Master
+    effects:
+      - kind: Custom
+        handlerId: feat.polearm-master.bonus-action-attack
+      - kind: Custom
+        handlerId: feat.polearm-master.reaction-approach-attack
+
+  - id: resilient
+    name: Resilient
+    effects:
+      - kind: Custom
+        handlerId: feat.resilient.asi
+      - kind: Custom
+        handlerId: feat.resilient.save-proficiency
+
+  - id: ritual-caster
+    name: Ritual Caster
+    prerequisites:
+      ability: INT
+      abilityMin: 13
+    effects:
+      - kind: Custom
+        handlerId: feat.ritual-caster.ritual-book
+
+  - id: sentinel
+    name: Sentinel
+    effects:
+      - kind: Custom
+        handlerId: feat.sentinel.opportunity-speed-zero
+      - kind: Custom
+        handlerId: feat.sentinel.opportunity-hit
+      - kind: Custom
+        handlerId: feat.sentinel.ally-reaction-attack
+
+  - id: shadow-touched
+    name: Shadow-Touched
+    effects:
+      - kind: Custom
+        handlerId: feat.shadow-touched.asi
+      - kind: Custom
+        handlerId: feat.shadow-touched.invisibility
+      - kind: Custom
+        handlerId: feat.shadow-touched.level1-spell
+
+  - id: sharpshooter
+    name: Sharpshooter
+    effects:
+      - kind: Custom
+        handlerId: feat.sharpshooter.ignore-cover
+      - kind: Custom
+        handlerId: feat.sharpshooter.ignore-long-range-disadvantage
+      - kind: Custom
+        handlerId: feat.sharpshooter.proficiency-bonus-damage
+
+  - id: shield-master
+    name: Shield Master
+    effects:
+      - kind: Custom
+        handlerId: feat.shield-master.shove-bonus-action
+      - kind: Custom
+        handlerId: feat.shield-master.shield-save-bonus
+      - kind: Custom
+        handlerId: feat.shield-master.reaction-no-damage
+
+  - id: skill-expert
+    name: Skill Expert
+    effects:
+      - kind: Custom
+        handlerId: feat.skill-expert.asi
+      - kind: Custom
+        handlerId: feat.skill-expert.skill-proficiency
+      - kind: Custom
+        handlerId: feat.skill-expert.skill-expertise
+
+  - id: skulker
+    name: Skulker
+    effects:
+      - kind: Custom
+        handlerId: feat.skulker.hide-on-light-obscured
+      - kind: Custom
+        handlerId: feat.skulker.ranged-miss-no-reveal
+      - kind: Custom
+        handlerId: feat.skulker.lightly-obscured-hide
+
+  - id: slasher
+    name: Slasher
+    effects:
+      - kind: Custom
+        handlerId: feat.slasher.asi
+      - kind: Custom
+        handlerId: feat.slasher.speed-reduction
+      - kind: Custom
+        handlerId: feat.slasher.crit-boon
+
+  - id: speedy
+    name: Speedy
+    effects:
+      - kind: Custom
+        handlerId: feat.speedy.speed-increase
+      - kind: Custom
+        handlerId: feat.speedy.dash-difficult-terrain
+      - kind: Custom
+        handlerId: feat.speedy.disengage-dodge-bonus
+
+  - id: spell-sniper
+    name: Spell Sniper
+    effects:
+      - kind: Custom
+        handlerId: feat.spell-sniper.ignore-cover
+      - kind: Custom
+        handlerId: feat.spell-sniper.double-range
+      - kind: Custom
+        handlerId: feat.spell-sniper.bonus-cantrip
+
+  - id: telekinetic
+    name: Telekinetic
+    effects:
+      - kind: Custom
+        handlerId: feat.telekinetic.asi
+      - kind: Custom
+        handlerId: feat.telekinetic.mage-hand
+      - kind: Custom
+        handlerId: feat.telekinetic.shove-bonus-action
+
+  - id: telepathic
+    name: Telepathic
+    effects:
+      - kind: Custom
+        handlerId: feat.telepathic.asi
+      - kind: Custom
+        handlerId: feat.telepathic.telepathy
+
+  - id: war-caster
+    name: War Caster
+    prerequisites:
+      spellcasting: true
+    effects:
+      - kind: Custom
+        handlerId: feat.war-caster.concentration-advantage
+      - kind: Custom
+        handlerId: feat.war-caster.reaction-spell
+      - kind: Custom
+        handlerId: feat.war-caster.somatic-with-weapon
+
+  # ── Fighting Style Feats ─────────────────────────
+  - id: archery
+    name: Archery
+    effects:
+      - kind: AddAttack
+        value: 2
+        targetAttack: true
+
+  - id: blind-fighting
+    name: Blind Fighting
+    effects:
+      - kind: GrantSense
+        language: Blindsight 10ft
+
+  - id: defense
+    name: Defense
+    effects:
+      - kind: AddAC
+        value: 1
+        targetAC: true
+
+  - id: dueling
+    name: Dueling
+    effects:
+      - kind: AddDamage
+        value: 2
+        targetDamage: true
+
+  - id: great-weapon-fighting
+    name: Great Weapon Fighting
+    effects:
+      - kind: Custom
+        handlerId: feat.gwf.reroll-1-or-2
+
+  - id: interception
+    name: Interception
+    effects:
+      - kind: Custom
+        handlerId: feat.interception.reaction-reduce-damage
+
+  - id: protection
+    name: Protection
+    effects:
+      - kind: Custom
+        handlerId: feat.protection.reaction-impose-disadvantage
+
+  - id: superior-technique
+    name: Superior Technique
+    effects:
+      - kind: Custom
+        handlerId: feat.superior-technique.battle-master-die
+
+  - id: thrown-weapon-fighting
+    name: Thrown Weapon Fighting
+    effects:
+      - kind: Custom
+        handlerId: feat.thrown-weapon-fighting.draw-as-attack
+      - kind: Custom
+        handlerId: feat.thrown-weapon-fighting.damage-bonus
+
+  - id: two-weapon-fighting
+    name: Two-Weapon Fighting
+    effects:
+      - kind: Custom
+        handlerId: feat.twf.add-ability-mod-to-offhand
+
+  - id: unarmed-fighting
+    name: Unarmed Fighting
+    effects:
+      - kind: Custom
+        handlerId: feat.unarmed-fighting.damage-die
+      - kind: Custom
+        handlerId: feat.unarmed-fighting.grapple-damage
+
+  # ── Epic Boon Feats ─────────────────────────────
+  - id: boon-of-combat-prowess
+    name: Boon of Combat Prowess
+    prerequisites:
+      level: 19
+    effects:
+      - kind: Custom
+        handlerId: feat.boon-combat-prowess.miss-to-hit
+
+  - id: boon-of-dimensional-travel
+    name: Boon of Dimensional Travel
+    prerequisites:
+      level: 19
+    effects:
+      - kind: Custom
+        handlerId: feat.boon-dimensional-travel.bonus-action-teleport
+
+  - id: boon-of-energy-resistance
+    name: Boon of Energy Resistance
+    prerequisites:
+      level: 19
+    effects:
+      - kind: Resistance
+        damageType: force
+
+  - id: boon-of-fate
+    name: Boon of Fate
+    prerequisites:
+      level: 19
+    effects:
+      - kind: Custom
+        handlerId: feat.boon-fate.reroll-d20
+
+  - id: boon-of-fortitude
+    name: Boon of Fortitude
+    prerequisites:
+      level: 19
+    effects:
+      - kind: Custom
+        handlerId: feat.boon-fortitude.max-hp-doubled
+
+  - id: boon-of-irresistible-offense
+    name: Boon of Irresistible Offense
+    prerequisites:
+      level: 19
+    effects:
+      - kind: Custom
+        handlerId: feat.boon-irresistible-offense.ignore-damage-resistance
+
+  - id: boon-of-recovery
+    name: Boon of Recovery
+    prerequisites:
+      level: 19
+    effects:
+      - kind: Custom
+        handlerId: feat.boon-recovery.heal-half-hp
+
+  - id: boon-of-skill
+    name: Boon of Skill
+    prerequisites:
+      level: 19
+    effects:
+      - kind: Custom
+        handlerId: feat.boon-skill.all-proficiencies
+
+  - id: boon-of-speed
+    name: Boon of Speed
+    prerequisites:
+      level: 19
+    effects:
+      - kind: AddSpeed
+        value: 30
+
+  - id: boon-of-spell-recall
+    name: Boon of Spell Recall
+    prerequisites:
+      level: 19
+      spellcasting: true
+    effects:
+      - kind: Custom
+        handlerId: feat.boon-spell-recall.free-cast
+
+  - id: boon-of-the-night-spirit
+    name: Boon of the Night Spirit
+    prerequisites:
+      level: 19
+    effects:
+      - kind: Custom
+        handlerId: feat.boon-night-spirit.bonus-action-hide
+      - kind: Custom
+        handlerId: feat.boon-night-spirit.darkness-teleport
+
+  - id: boon-of-truesight
+    name: Boon of Truesight
+    prerequisites:
+      level: 19
+    effects:
+      - kind: GrantSense
+        language: Truesight 60ft

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"log"
@@ -18,6 +19,7 @@ import (
 	contentpack "github.com/hadnu/arcanum/internal/content"
 	"github.com/hadnu/arcanum/internal/engine"
 	"github.com/hadnu/arcanum/internal/engine/derive"
+	"github.com/hadnu/arcanum/internal/config"
 	"github.com/hadnu/arcanum/internal/rng"
 	"github.com/hadnu/arcanum/internal/schemas/events"
 	scontent "github.com/hadnu/arcanum/internal/schemas/content"
@@ -29,7 +31,7 @@ type Server struct {
 	content  scontent.ResolvedContent
 	engine   *engine.Engine
 	campaign engine.Campaign
-	webDir   string
+	config   *config.Config
 }
 
 type BuildRequest struct {
@@ -68,13 +70,13 @@ type featureView struct {
 }
 
 type ContentResponse struct {
-	Classes     []contentEntry   `json:"classes"`
-	Backgrounds []contentEntry   `json:"backgrounds"`
-	Species     []speciesEntry   `json:"species"`
-	Abilities   []abilityEntry   `json:"abilities"`
-	Skills      []skillEntry     `json:"skills"`
-	Feats       map[string]featAPIEntry `json:"feats"`
-	SpellCasterClasses []string  `json:"spellCasterClasses"`
+	Classes             []contentEntry   `json:"classes"`
+	Backgrounds         []contentEntry   `json:"backgrounds"`
+	Species             []speciesEntry   `json:"species"`
+	Abilities           []abilityEntry   `json:"abilities"`
+	Skills              []skillEntry     `json:"skills"`
+	Feats               map[string]featAPIEntry `json:"feats"`
+	SpellCasterClasses  []string         `json:"spellCasterClasses"`
 }
 
 type featAPIEntry struct {
@@ -168,15 +170,24 @@ type spellEntry struct {
 	Ritual    bool   `json:"ritual,omitempty"`
 }
 
+type HealthResponse struct {
+	Status    string `json:"status"`
+	Version   string `json:"version"`
+	Timestamp string `json:"timestamp"`
+}
+
 func main() {
-	webDir := flag.String("web-dir", "web", "path to web static files directory")
-	addr := flag.String("addr", ":8080", "server listen address")
 	flag.Parse()
 
-	log.Println("Arcanum Server starting...")
-	log.Printf("Web directory: %s", *webDir)
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
+	}
 
-	content, err := contentpack.LoadAllFromDataDir("data")
+	log.Println("Arcanum Server starting...")
+	log.Printf("Server address: %s", cfg.Server.Addr)
+
+	content, err := contentpack.LoadAllFromDataDir(cfg.Data.ContentDir)
 	if err != nil {
 		log.Fatalf("Failed to load content: %v", err)
 	}
@@ -188,25 +199,38 @@ func main() {
 	e := engine.NewEngine(content, randSource)
 	campaign := e.CreateCampaign("Arcanum Web")
 
-	srv := &Server{content: content, engine: e, campaign: campaign, webDir: *webDir}
+	srv := &Server{content: content, engine: e, campaign: campaign, config: cfg}
 
 	mux := http.NewServeMux()
+	mux.HandleFunc("GET /health", srv.handleHealth)
 	mux.HandleFunc("GET /api/content", srv.handleContent)
 	mux.HandleFunc("GET /api/spells", srv.handleSpells)
 	mux.HandleFunc("POST /api/build", srv.handleBuild)
 	mux.HandleFunc("GET /api/characters", srv.handleListCharacters)
+	mux.HandleFunc("POST /api/characters", srv.handleSaveCharacter)
 	mux.HandleFunc("GET /api/characters/{name}", srv.handleGetCharacter)
 	mux.HandleFunc("PUT /api/characters/{name}", srv.handleSaveCharacter)
 	mux.HandleFunc("DELETE /api/characters/{name}", srv.handleDeleteCharacter)
+
+	// Static files (frontend build)
+	if cfg.Server.Addr != "" {
+		staticDir := "./frontend/dist"
+		if _, err := os.Stat(staticDir); err == nil {
+			mux.Handle("GET /assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(staticDir+"/assets"))))
+			mux.HandleFunc("GET /", srv.handleSPA(staticDir))
+		}
+	}
+
+	// Fallback to old web dir for dev
 	mux.HandleFunc("GET /", srv.handleWeb)
 
-	mux.Handle("GET /static/", http.StripPrefix("/static/", noCache(http.FileServer(http.Dir(*webDir)))))
+	handler := corsMiddleware(cfg)(mux)
 
 	server := &http.Server{
-		Addr:         *addr,
-		Handler:      corsMiddleware(mux),
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 30 * time.Second,
+		Addr:         cfg.Server.Addr,
+		Handler:      handler,
+		ReadTimeout:  cfg.Server.ReadTimeout,
+		WriteTimeout: cfg.Server.WriteTimeout,
 	}
 
 	go func() {
@@ -220,32 +244,71 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	log.Println("Shutting down...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), cfg.Server.ShutdownGrace)
+	defer cancel()
+	if err := server.Shutdown(ctx); err != nil {
+		log.Fatalf("Server forced to shutdown: %v", err)
+	}
 }
 
-func corsMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusOK)
+func corsMiddleware(cfg *config.Config) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			origin := r.Header.Get("Origin")
+			allowed := false
+			for _, o := range cfg.CORS.AllowedOrigins {
+				if o == "*" || o == origin {
+					allowed = true
+					break
+				}
+			}
+			if allowed {
+				w.Header().Set("Access-Control-Allow-Origin", origin)
+			} else if len(cfg.CORS.AllowedOrigins) > 0 {
+				w.Header().Set("Access-Control-Allow-Origin", cfg.CORS.AllowedOrigins[0])
+			}
+			w.Header().Set("Access-Control-Allow-Methods", strings.Join(cfg.CORS.AllowedMethods, ", "))
+			w.Header().Set("Access-Control-Allow-Headers", strings.Join(cfg.CORS.AllowedHeaders, ", "))
+			if r.Method == http.MethodOptions {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
+	resp := HealthResponse{
+		Status:    "ok",
+		Version:   "0.2.0",
+		Timestamp: time.Now().Format(time.RFC3339),
+	}
+	writeJSON(w, resp)
+}
+
+func (s *Server) handleSPA(staticDir string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Don't intercept API routes or static assets
+		if strings.HasPrefix(r.URL.Path, "/api/") || strings.HasPrefix(r.URL.Path, "/assets/") {
+			http.NotFound(w, r)
 			return
 		}
-		next.ServeHTTP(w, r)
-	})
-}
-
-func noCache(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
-		w.Header().Set("Pragma", "no-cache")
-		w.Header().Set("Expires", "0")
-		next.ServeHTTP(w, r)
-	})
+		http.ServeFile(w, r, filepath.Join(staticDir, "index.html"))
+	}
 }
 
 func (s *Server) handleWeb(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, filepath.Join(s.webDir, "index.html"))
+	webDir := "./cmd/server/web"
+	if _, err := os.Stat(webDir); err == nil {
+		http.ServeFile(w, r, filepath.Join(webDir, "index.html"))
+		return
+	}
+	// Fallback: serve a simple message
+	w.Header().Set("Content-Type", "text/html")
+	w.Write([]byte(`<!DOCTYPE html><html><body style="font-family:sans-serif;padding:2rem;max-width:600px;margin:0 auto">
+<h1>Arcanum</h1><p>Frontend not built. Run <code>cd frontend && npm run build</code> first.</p></body></html>`))
 }
 
 func (s *Server) handleContent(w http.ResponseWriter, r *http.Request) {
@@ -253,21 +316,15 @@ func (s *Server) handleContent(w http.ResponseWriter, r *http.Request) {
 
 	for _, c := range s.content.Classes {
 		saves := make([]string, len(c.SavingThrows))
-		for i, s := range c.SavingThrows {
-			saves[i] = string(s)
-		}
+		for i, s := range c.SavingThrows { saves[i] = string(s) }
 		primary := make([]string, len(c.PrimaryAbility))
-		for i, a := range c.PrimaryAbility {
-			primary[i] = string(a)
-		}
+		for i, a := range c.PrimaryAbility { primary[i] = string(a) }
 
 		var skillChoices int
 		var skillPool []string
 		for _, si := range c.Proficiencies.Skills {
 			skillChoices = si.Choose
-			for _, sk := range si.From {
-				skillPool = append(skillPool, string(sk))
-			}
+			for _, sk := range si.From { skillPool = append(skillPool, string(sk)) }
 			break
 		}
 
@@ -275,9 +332,7 @@ func (s *Server) handleContent(w http.ResponseWriter, r *http.Request) {
 		subclassLevel := 0
 		var features []featureDef
 		for _, lvl := range c.Levels {
-			if len(lvl.SpellSlots) > 0 {
-				hasSpells = true
-			}
+			if len(lvl.SpellSlots) > 0 { hasSpells = true }
 			for _, fid := range lvl.Features {
 				if subclassLevel == 0 && len(fid) > 9 && fid[len(fid)-9:] == ".subclass" {
 					subclassLevel = lvl.Level
@@ -295,59 +350,35 @@ func (s *Server) handleContent(w http.ResponseWriter, r *http.Request) {
 
 		var subClasses []subClassEntry
 		for _, sc := range c.SubClasses {
-			subClasses = append(subClasses, subClassEntry{
-				ID:          string(sc.ID),
-				Name:        sc.Name,
-				Description: sc.Description,
-			})
+			subClasses = append(subClasses, subClassEntry{ID: string(sc.ID), Name: sc.Name, Description: sc.Description})
 		}
 
 		resp.Classes = append(resp.Classes, contentEntry{
-			ID:             string(c.ID),
-			Name:           c.Name,
-			HitDie:         string(c.HitDie),
-			SavingThrows:   saves,
-			PrimaryAbility: primary,
-			SkillChoices:   skillChoices,
-			SkillPool:      skillPool,
-			Spellcaster:    hasSpells,
-			SubClasses:     subClasses,
-			SubclassLevel:  subclassLevel,
-			Features:       features,
-			Spellcasting:   buildSpellcastingEntry(c, s.content),
+			ID: string(c.ID), Name: c.Name, HitDie: string(c.HitDie),
+			SavingThrows: saves, PrimaryAbility: primary,
+			SkillChoices: skillChoices, SkillPool: skillPool,
+			Spellcaster: hasSpells, SubClasses: subClasses, SubclassLevel: subclassLevel,
+			Features: features, Spellcasting: buildSpellcastingEntry(c, s.content),
 		})
 	}
 
 	for _, bg := range s.content.Backgrounds {
 		skills := make([]string, len(bg.Skills))
-		for i, sk := range bg.Skills {
-			skills[i] = string(sk)
-		}
+		for i, sk := range bg.Skills { skills[i] = string(sk) }
 		feat := ""
 		if bg.Feat != nil {
-			if f, ok := s.content.Feats[*bg.Feat]; ok {
-				feat = f.Name
-			}
+			if f, ok := s.content.Feats[*bg.Feat]; ok { feat = f.Name }
 		}
 		resp.Backgrounds = append(resp.Backgrounds, contentEntry{
-			ID:     string(bg.ID),
-			Name:   bg.Name,
-			Skills: skills,
-			Feat:   feat,
+			ID: string(bg.ID), Name: bg.Name, Skills: skills, Feat: feat,
 		})
 	}
 
 	for _, sp := range s.content.Species {
 		var variants []variantEntry
-		for _, v := range sp.Variants {
-			variants = append(variants, variantEntry{ID: v.ID, Name: v.Name})
-		}
+		for _, v := range sp.Variants { variants = append(variants, variantEntry{ID: v.ID, Name: v.Name}) }
 		resp.Species = append(resp.Species, speciesEntry{
-			ID:       string(sp.ID),
-			Name:     sp.Name,
-			Size:     string(sp.Size),
-			Speed:    sp.Speed.Walk,
-			Variants: variants,
+			ID: string(sp.ID), Name: sp.Name, Size: string(sp.Size), Speed: sp.Speed.Walk, Variants: variants,
 		})
 	}
 
@@ -371,11 +402,7 @@ func (s *Server) handleContent(w http.ResponseWriter, r *http.Request) {
 			types.SkillReligion: "Religion", types.SkillSleightOfHand: "Sleight of Hand",
 			types.SkillStealth: "Stealth", types.SkillSurvival: "Survival",
 		}
-		resp.Skills = append(resp.Skills, skillEntry{
-			ID:      string(sk),
-			Name:    names[sk],
-			Ability: string(types.SkillAbility[sk]),
-		})
+		resp.Skills = append(resp.Skills, skillEntry{ID: string(sk), Name: names[sk], Ability: string(types.SkillAbility[sk])})
 	}
 
 	for _, c := range s.content.Classes {
@@ -401,39 +428,25 @@ func (s *Server) handleSpells(w http.ResponseWriter, r *http.Request) {
 	maxLevel := r.URL.Query().Get("level")
 	levelStr := r.URL.Query().Get("lvl")
 
-	resp := SpellsResponse{
-		Leveled: make([][]spellEntry, 9),
-	}
+	resp := SpellsResponse{Leveled: make([][]spellEntry, 9)}
 
-	// If class is specified, use class-level spell lists; otherwise return all spells
 	if classID != "" {
 		cls, ok := s.content.Classes[types.ClassID(classID)]
 		if ok {
-			// Get the level entry for the requested level (default to level 1)
 			requestedLevel := 1
 			if levelStr != "" {
 				requestedLevel = atoi(levelStr)
-				if requestedLevel < 1 || requestedLevel > 20 {
-					requestedLevel = 1
-				}
+				if requestedLevel < 1 || requestedLevel > 20 { requestedLevel = 1 }
 			}
 
-			// Find the level entry for the requested level
 			var levelEntry *scontent.LevelEntry
 			for _, lvl := range cls.Levels {
-				if lvl.Level == requestedLevel {
-					levelEntry = &lvl
-					break
-				}
+				if lvl.Level == requestedLevel { levelEntry = &lvl; break }
 			}
-
-			// If not found, use the highest level <= requested level
 			if levelEntry == nil {
 				for _, lvl := range cls.Levels {
 					if lvl.Level <= requestedLevel {
-						if levelEntry == nil || lvl.Level > levelEntry.Level {
-							levelEntry = &lvl
-						}
+						if levelEntry == nil || lvl.Level > levelEntry.Level { levelEntry = &lvl }
 					}
 				}
 			}
@@ -442,23 +455,12 @@ func (s *Server) handleSpells(w http.ResponseWriter, r *http.Request) {
 				for _, spellID := range levelEntry.Spells {
 					if sp, ok := s.content.Spells[spellID]; ok {
 						entry := spellEntry{
-							ID:            string(sp.ID),
-							Name:          sp.Name,
-							Level:         sp.Level,
-							School:        string(sp.School),
-							Time:          sp.CastingTime,
-							Range:         sp.Range,
-							Duration:      sp.Duration,
-							Concentration: sp.Concentration,
-							Ritual:        sp.Ritual,
-							Attack:        sp.Attack,
+							ID: string(sp.ID), Name: sp.Name, Level: sp.Level, School: string(sp.School),
+							Time: sp.CastingTime, Range: sp.Range, Duration: sp.Duration,
+							Concentration: sp.Concentration, Ritual: sp.Ritual, Attack: sp.Attack,
 						}
-						if sp.Damage != nil {
-							entry.Damage = sp.Damage.Dice
-						}
-						if sp.Save != nil {
-							entry.Save = string(*sp.Save)
-						}
+						if sp.Damage != nil { entry.Damage = sp.Damage.Dice }
+						if sp.Save != nil { entry.Save = string(*sp.Save) }
 						if sp.Level == 0 {
 							resp.Cantrips = append(resp.Cantrips, entry)
 						} else if sp.Level <= 9 && sp.Level >= 1 {
@@ -471,26 +473,14 @@ func (s *Server) handleSpells(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	} else {
-		// Return all spells (backward compatibility)
 		for _, sp := range s.content.Spells {
 			entry := spellEntry{
-				ID:            string(sp.ID),
-				Name:          sp.Name,
-				Level:         sp.Level,
-				School:        string(sp.School),
-				Time:          sp.CastingTime,
-				Range:         sp.Range,
-				Duration:      sp.Duration,
-				Concentration: sp.Concentration,
-				Ritual:        sp.Ritual,
-				Attack:        sp.Attack,
+				ID: string(sp.ID), Name: sp.Name, Level: sp.Level, School: string(sp.School),
+				Time: sp.CastingTime, Range: sp.Range, Duration: sp.Duration,
+				Concentration: sp.Concentration, Ritual: sp.Ritual, Attack: sp.Attack,
 			}
-			if sp.Damage != nil {
-				entry.Damage = sp.Damage.Dice
-			}
-			if sp.Save != nil {
-				entry.Save = string(*sp.Save)
-			}
+			if sp.Damage != nil { entry.Damage = sp.Damage.Dice }
+			if sp.Save != nil { entry.Save = string(*sp.Save) }
 			if sp.Level == 0 {
 				resp.Cantrips = append(resp.Cantrips, entry)
 			} else if sp.Level <= 9 && sp.Level >= 1 {
@@ -515,23 +505,11 @@ func (s *Server) handleBuild(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
-	if req.Name == "" {
-		http.Error(w, "Name is required", http.StatusBadRequest)
-		return
-	}
-	if len(req.Classes) == 0 {
-		http.Error(w, "At least one class required", http.StatusBadRequest)
-		return
-	}
-	if _, ok := s.content.Species[req.SpeciesID]; !ok {
-		http.Error(w, "Invalid species", http.StatusBadRequest)
-		return
-	}
-	if req.Level < 1 || req.Level > 20 {
-		req.Level = 1
-	}
+	if req.Name == "" { http.Error(w, "Name is required", http.StatusBadRequest); return }
+	if len(req.Classes) == 0 { http.Error(w, "At least one class required", http.StatusBadRequest); return }
+	if _, ok := s.content.Species[req.SpeciesID]; !ok { http.Error(w, "Invalid species", http.StatusBadRequest); return }
+	if req.Level < 1 || req.Level > 20 { req.Level = 1 }
 
-	// validate classes and compute hp/saves
 	totalHP := 0
 	saveSet := map[types.AbilityScore]bool{}
 	var classNames []string
@@ -539,71 +517,46 @@ func (s *Server) handleBuild(w http.ResponseWriter, r *http.Request) {
 
 	for _, cr := range req.Classes {
 		cls, ok := s.content.Classes[cr.ID]
-		if !ok {
-			http.Error(w, "Invalid class: "+string(cr.ID), http.StatusBadRequest)
-			return
-		}
+		if !ok { http.Error(w, "Invalid class: "+string(cr.ID), http.StatusBadRequest); return }
 		totalHP += computeHP(cls.HitDie, req.AbilityScores.CON, cr.Level)
-		for _, s := range cls.SavingThrows {
-			saveSet[s] = true
-		}
+		for _, s := range cls.SavingThrows { saveSet[s] = true }
 		classNames = append(classNames, cls.Name)
 
-		// collect features for this class up to the chosen level
 		for _, lvl := range cls.Levels {
-			if lvl.Level > cr.Level {
-				continue
-			}
+			if lvl.Level > cr.Level { continue }
 			for _, fid := range lvl.Features {
 				allFeatures = append(allFeatures, featureView{
-					Class: cls.Name, Level: lvl.Level,
-					ID: string(fid), Name: featureName(s.content, fid),
+					Class: cls.Name, Level: lvl.Level, ID: string(fid), Name: featureName(s.content, fid),
 				})
 			}
 			if lvl.Feat != nil {
 				allFeatures = append(allFeatures, featureView{
-					Class: cls.Name, Level: lvl.Level,
-					ID: string(*lvl.Feat), Name: featureName(s.content, *lvl.Feat),
+					Class: cls.Name, Level: lvl.Level, ID: string(*lvl.Feat), Name: featureName(s.content, *lvl.Feat),
 				})
 			}
 		}
 	}
 
-	if totalHP < 1 {
-		totalHP = 1
-	}
-
+	if totalHP < 1 { totalHP = 1 }
 	saves := make([]types.AbilityScore, 0, len(saveSet))
-	for s := range saveSet {
-		saves = append(saves, s)
-	}
+	for s := range saveSet { saves = append(saves, s) }
 
-	// skills: background + chosen
 	skillLevels := map[types.Skill]types.ProficiencyLevel{}
 	bg, hasBg := s.content.Backgrounds[req.BackgroundID]
 	if hasBg {
-		for _, sk := range bg.Skills {
-			skillLevels[sk] = types.ProficiencyProficient
-		}
+		for _, sk := range bg.Skills { skillLevels[sk] = types.ProficiencyProficient }
 	}
 	for _, sk := range req.Skills {
-		if _, ok := skillLevels[sk]; !ok {
-			skillLevels[sk] = types.ProficiencyProficient
-		}
+		if _, ok := skillLevels[sk]; !ok { skillLevels[sk] = types.ProficiencyProficient }
 	}
 
-	// feats
 	var featIDs []types.FeatID
 	for _, f := range req.Feats {
 		fid := types.FeatID(f)
-		if _, ok := s.content.Feats[fid]; ok {
-			featIDs = append(featIDs, fid)
-		}
+		if _, ok := s.content.Feats[fid]; ok { featIDs = append(featIDs, fid) }
 	}
 	if hasBg && bg.Feat != nil {
-		if _, ok := s.content.Feats[*bg.Feat]; ok {
-			featIDs = append(featIDs, *bg.Feat)
-		}
+		if _, ok := s.content.Feats[*bg.Feat]; ok { featIDs = append(featIDs, *bg.Feat) }
 	}
 
 	evtEvt := events.CharacterCreatedEvent{
@@ -625,71 +578,42 @@ func (s *Server) handleBuild(w http.ResponseWriter, r *http.Request) {
 		evtEvt.Classes = append(evtEvt.Classes, events.ClassEntry{ClassID: cr.ID, Level: cr.Level})
 	}
 
-	evt := events.Event{
-		Type:             events.EventCharacterCreated,
-		CharacterCreated: &evtEvt,
-	}
-
+	evt := events.Event{Type: events.EventCharacterCreated, CharacterCreated: &evtEvt}
 	s.campaign = s.engine.Commit(s.campaign, []events.Event{evt})
 	char, ok := s.campaign.State.Characters[evtEvt.CharacterID]
-	if !ok {
-		http.Error(w, "Character not found in state", http.StatusInternalServerError)
-		return
-	}
+	if !ok { http.Error(w, "Character not found in state", http.StatusInternalServerError); return }
 
 	sheet := derive.BuildCharacterSheet(*char, s.content)
 	for i, cv := range sheet.Classes {
-		if c, ok := s.content.Classes[cv.ID]; ok {
-			sheet.Classes[i].Name = c.Name
-		}
+		if c, ok := s.content.Classes[cv.ID]; ok { sheet.Classes[i].Name = c.Name }
 	}
 
 	yamlBytes, _ := yaml.Marshal(sheet)
 
 	resp := BuildResponse{
-		ID:       evtEvt.CharacterID,
-		Sheet:    &sheet,
-		Classes:  classNames,
-		Event:    evt,
-		YAML:     string(yamlBytes),
-		Features: allFeatures,
+		ID: evtEvt.CharacterID, Sheet: &sheet, Classes: classNames, Event: evt,
+		YAML: string(yamlBytes), Features: allFeatures,
 	}
-
 	writeJSON(w, resp)
 }
 
 func buildSpellcastingEntry(cls *scontent.Class, content scontent.ResolvedContent) *SpellcastingEntry {
-	if cls.Spellcasting == nil {
-		return nil
-	}
+	if cls.Spellcasting == nil { return nil }
 	entry := &SpellcastingEntry{
-		Type:   string(cls.Spellcasting.Type),
-		Ability: string(cls.Spellcasting.Ability),
+		Type: string(cls.Spellcasting.Type), Ability: string(cls.Spellcasting.Ability),
 		RitualCasting: cls.Spellcasting.RitualCasting,
 	}
 
 	for _, lvl := range cls.Levels {
-		if lvl.CantripsKnown > 0 {
-			entry.CantripsKnown = append(entry.CantripsKnown, lvl.CantripsKnown)
-		}
-		if lvl.PreparedSpells > 0 {
-			entry.PreparedSpells = append(entry.PreparedSpells, lvl.PreparedSpells)
-		}
-		if lvl.SpellsKnown > 0 {
-			entry.SpellsKnown = append(entry.SpellsKnown, lvl.SpellsKnown)
-		}
+		if lvl.CantripsKnown > 0 { entry.CantripsKnown = append(entry.CantripsKnown, lvl.CantripsKnown) }
+		if lvl.PreparedSpells > 0 { entry.PreparedSpells = append(entry.PreparedSpells, lvl.PreparedSpells) }
+		if lvl.SpellsKnown > 0 { entry.SpellsKnown = append(entry.SpellsKnown, lvl.SpellsKnown) }
 		if lvl.SpellSlots != nil {
-			if entry.SpellSlots == nil {
-				entry.SpellSlots = make(map[string]int)
-			}
-			for k, v := range lvl.SpellSlots {
-				entry.SpellSlots[strconv.Itoa(k)] = v
-			}
+			if entry.SpellSlots == nil { entry.SpellSlots = make(map[string]int) }
+			for k, v := range lvl.SpellSlots { entry.SpellSlots[strconv.Itoa(k)] = v }
 		}
 		if len(lvl.Spells) > 0 {
-			if entry.SpellLists == nil {
-				entry.SpellLists = make(map[int][]string)
-			}
+			if entry.SpellLists == nil { entry.SpellLists = make(map[int][]string) }
 			spellNames := make([]string, len(lvl.Spells))
 			for i, spellID := range lvl.Spells {
 				if sp, ok := content.Spells[spellID]; ok {
@@ -701,20 +625,13 @@ func buildSpellcastingEntry(cls *scontent.Class, content scontent.ResolvedConten
 			entry.SpellLists[lvl.Level] = spellNames
 		}
 	}
-
-	if cls.Spellcasting.RitualCasting {
-		entry.RitualCasting = true
-	}
-
+	if cls.Spellcasting.RitualCasting { entry.RitualCasting = true }
 	return entry
 }
 
 func featureName(content scontent.ResolvedContent, fid types.FeatID) string {
-	if f, ok := content.Feats[fid]; ok {
-		return f.Name
-	}
+	if f, ok := content.Feats[fid]; ok { return f.Name }
 	s := string(fid)
-	// format "class.fighter.fighting-style" -> "Fighting Style"
 	parts := strings.Split(s, ".")
 	if len(parts) > 0 {
 		last := parts[len(parts)-1]
@@ -736,22 +653,15 @@ func computeHP(hitDie types.HitDie, con int, level int) int {
 
 func hitDieMax(hd types.HitDie) int {
 	switch hd {
-	case types.HitDieD6:
-		return 6
-	case types.HitDieD8:
-		return 8
-	case types.HitDieD10:
-		return 10
-	case types.HitDieD12:
-		return 12
-	default:
-		return 8
+	case types.HitDieD6: return 6
+	case types.HitDieD8: return 8
+	case types.HitDieD10: return 10
+	case types.HitDieD12: return 12
+	default: return 8
 	}
 }
 
-func abilityMod(score int) int {
-	return (score - 10) / 2
-}
+func abilityMod(score int) int { return (score - 10) / 2 }
 
 func atoi(s string) int {
 	v := 0
@@ -797,7 +707,7 @@ type SavedCharacter struct {
 	BGHair          string              `json:"bgHair,omitempty" yaml:"bgHair,omitempty"`
 	BGNotes         string              `json:"bgNotes,omitempty" yaml:"bgNotes,omitempty"`
 	XP              int                 `json:"xp" yaml:"xp"`
-	ProgressionType string              `json:"progressionType" yaml:"progressionType"` // "milestone" or "xp"
+	ProgressionType string              `json:"progressionType" yaml:"progressionType"`
 	CreatedAt       string              `json:"createdAt" yaml:"createdAt"`
 	UpdatedAt       string              `json:"updatedAt" yaml:"updatedAt"`
 }
@@ -824,47 +734,29 @@ func sanitizeName(name string) string {
 	s = safeNameRegex.ReplaceAllString(s, "-")
 	s = strings.ReplaceAll(s, "--", "-")
 	s = strings.Trim(s, "-")
-	if s == "" {
-		s = "unnamed"
-	}
+	if s == "" { s = "unnamed" }
 	return s
 }
 
-func charactersDir() string {
-	return "data/characters"
-}
+func charactersDir() string { return "data/characters" }
 
 func (s *Server) handleListCharacters(w http.ResponseWriter, r *http.Request) {
 	dir := charactersDir()
 	entries, err := os.ReadDir(dir)
-	if err != nil {
-		writeJSON(w, []CharacterSummary{})
-		return
-	}
+	if err != nil { writeJSON(w, []CharacterSummary{}); return }
 
 	var chars []CharacterSummary
 	for _, e := range entries {
-		if e.IsDir() || !strings.HasSuffix(e.Name(), ".yaml") {
-			continue
-		}
+		if e.IsDir() || !strings.HasSuffix(e.Name(), ".yaml") { continue }
 		data, err := os.ReadFile(filepath.Join(dir, e.Name()))
-		if err != nil {
-			continue
-		}
+		if err != nil { continue }
 		var ch SavedCharacter
-		if err := yaml.Unmarshal(data, &ch); err != nil {
-			continue
-		}
-	 classNames := make([]string, len(ch.Classes))
-		for i, c := range ch.Classes {
-			classNames[i] = c.Name
-		}
+		if err := yaml.Unmarshal(data, &ch); err != nil { continue }
+		classNames := make([]string, len(ch.Classes))
+		for i, c := range ch.Classes { classNames[i] = c.Name }
 		chars = append(chars, CharacterSummary{
-			Name:      ch.Name,
-			Level:     ch.Level,
-			Classes:   strings.Join(classNames, " / "),
-			Species:   ch.SpeciesID,
-			UpdatedAt: ch.UpdatedAt,
+			Name: ch.Name, Level: ch.Level, Classes: strings.Join(classNames, " / "),
+			Species: ch.SpeciesID, UpdatedAt: ch.UpdatedAt,
 		})
 	}
 	writeJSON(w, chars)
@@ -872,84 +764,45 @@ func (s *Server) handleListCharacters(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleGetCharacter(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
-	if name == "" {
-		http.Error(w, "Name required", http.StatusBadRequest)
-		return
-	}
+	if name == "" { http.Error(w, "Name required", http.StatusBadRequest); return }
 	safe := sanitizeName(name)
 	data, err := os.ReadFile(filepath.Join(charactersDir(), safe+".yaml"))
-	if err != nil {
-		http.Error(w, "Character not found", http.StatusNotFound)
-		return
-	}
+	if err != nil { http.Error(w, "Character not found", http.StatusNotFound); return }
 	var ch SavedCharacter
-	if err := yaml.Unmarshal(data, &ch); err != nil {
-		http.Error(w, "Invalid character data", http.StatusInternalServerError)
-		return
-	}
+	if err := yaml.Unmarshal(data, &ch); err != nil { http.Error(w, "Invalid character data", http.StatusInternalServerError); return }
 	writeJSON(w, ch)
 }
 
 func (s *Server) handleSaveCharacter(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
-	if name == "" {
-		http.Error(w, "Name required", http.StatusBadRequest)
-		return
-	}
-
 	var ch SavedCharacter
-	if err := json.NewDecoder(r.Body).Decode(&ch); err != nil {
-		http.Error(w, "Invalid JSON", http.StatusBadRequest)
-		return
-	}
-	ch.Name = name
-
-	if ch.Abilities == nil {
-		ch.Abilities = make(map[string]int)
-	}
-	if ch.ProgressionType == "" {
-		ch.ProgressionType = "milestone"
-	}
-	if ch.CreatedAt == "" {
-		ch.CreatedAt = time.Now().Format(time.RFC3339)
-	}
+	if err := json.NewDecoder(r.Body).Decode(&ch); err != nil { http.Error(w, "Invalid JSON", http.StatusBadRequest); return }
+	if name == "" { name = ch.Name }
+	if name == "" { http.Error(w, "Name required", http.StatusBadRequest); return }
+	if ch.Abilities == nil { ch.Abilities = make(map[string]int) }
+	if ch.ProgressionType == "" { ch.ProgressionType = "milestone" }
+	if ch.CreatedAt == "" { ch.CreatedAt = time.Now().Format(time.RFC3339) }
 	ch.UpdatedAt = time.Now().Format(time.RFC3339)
 
-	// compute level from classes
 	totalLevel := 0
-	for _, c := range ch.Classes {
-		totalLevel += c.Level
-	}
+	for _, c := range ch.Classes { totalLevel += c.Level }
 	ch.Level = totalLevel
 
 	data, err := yaml.Marshal(ch)
-	if err != nil {
-		http.Error(w, "Failed to marshal character", http.StatusInternalServerError)
-		return
-	}
+	if err != nil { http.Error(w, "Failed to marshal character", http.StatusInternalServerError); return }
 
 	safe := sanitizeName(name)
 	os.MkdirAll(charactersDir(), 0755)
 	path := filepath.Join(charactersDir(), safe+".yaml")
-	if err := os.WriteFile(path, data, 0644); err != nil {
-		http.Error(w, "Failed to save character", http.StatusInternalServerError)
-		return
-	}
-
+	if err := os.WriteFile(path, data, 0644); err != nil { http.Error(w, "Failed to save character", http.StatusInternalServerError); return }
 	writeJSON(w, map[string]string{"status": "saved", "path": path})
 }
 
 func (s *Server) handleDeleteCharacter(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
-	if name == "" {
-		http.Error(w, "Name required", http.StatusBadRequest)
-		return
-	}
+	if name == "" { http.Error(w, "Name required", http.StatusBadRequest); return }
 	safe := sanitizeName(name)
 	path := filepath.Join(charactersDir(), safe+".yaml")
-	if err := os.Remove(path); err != nil {
-		http.Error(w, "Character not found", http.StatusNotFound)
-		return
-	}
+	if err := os.Remove(path); err != nil { http.Error(w, "Character not found", http.StatusNotFound); return }
 	writeJSON(w, map[string]string{"status": "deleted"})
 }

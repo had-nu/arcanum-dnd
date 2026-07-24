@@ -1,0 +1,257 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-parchment: #fdfbf7;
+    --color-parchment-dark: #1a1a1a;
+    --color-ink: #1e293b;
+    --color-ink-light: #64748b;
+    --color-blood: #8b1a1a;
+    --color-blood-light: #dc2626;
+    --color-gold: #d97706;
+    --color-stone: #78716c;
+    --color-border: #d6d3d1;
+  }
+
+  .dark {
+    --color-parchment: #1a1a1a;
+    --color-parchment-dark: #0f0f0f;
+    --color-ink: #f1f5f9;
+    --color-ink-light: #94a3b8;
+    --color-border: #3f3f46;
+  }
+
+  * {
+    @apply border-stone-200 dark:border-stone-700;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-parchment text-ink font-sans antialiased;
+    background-image: var(--background-parchment);
+    background-size: cover;
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
+
+  ::selection {
+    @apply bg-blood-500/30 text-ink;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-blood-500 ring-offset-2 ring-offset-parchment;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply btn bg-blood-600 text-white hover:bg-blood-700 active:bg-blood-800 focus-visible:ring-blood-500;
+  }
+
+  .btn-secondary {
+    @apply btn bg-stone-100 text-ink hover:bg-stone-200 active:bg-stone-300 focus-visible:ring-stone-400 dark:bg-stone-800 dark:text-ink dark:hover:bg-stone-700;
+  }
+
+  .btn-outline {
+    @apply btn border-2 border-stone-300 bg-transparent hover:bg-stone-100 active:bg-stone-200 focus-visible:ring-stone-400 dark:border-stone-600 dark:hover:bg-stone-800;
+  }
+
+  .btn-ghost {
+    @apply btn bg-transparent hover:bg-stone-100 active:bg-stone-200 focus-visible:ring-stone-400 dark:hover:bg-stone-800;
+  }
+
+  .btn-danger {
+    @apply btn bg-red-600 text-white hover:bg-red-700 active:bg-red-800 focus-visible:ring-red-500;
+  }
+
+  .input {
+    @apply w-full px-3 py-2 text-sm bg-white border border-stone-300 rounded-lg placeholder:text-stone-400 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-blood-500 focus:border-transparent dark:bg-stone-800 dark:border-stone-600 dark:placeholder:text-stone-500;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-ink mb-1.5;
+  }
+
+  .card {
+    @apply bg-white/90 dark:bg-stone-900/90 backdrop-blur-sm rounded-xl border border-stone-200 dark:border-stone-700 shadow-sm;
+  }
+
+  .card-hover {
+    @apply card hover:shadow-md hover:border-stone-300 dark:hover:border-stone-600 transition-shadow duration-200;
+  }
+
+  .sheet {
+    @apply fixed inset-y-0 right-0 z-50 w-full max-w-2xl bg-parchment border-l border-stone-300 dark:border-stone-700 shadow-2xl transform transition-transform duration-300 ease-in-out;
+  }
+
+  .modal-overlay {
+    @apply fixed inset-0 z-40 bg-black/50 backdrop-blur-sm;
+  }
+
+  .modal-content {
+    @apply fixed inset-y-1/2 left-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-2xl p-6;
+  }
+
+  .step-indicator {
+    @apply relative flex items-center justify-center w-10 h-10 rounded-full text-sm font-semibold transition-all duration-200;
+  }
+
+  .step-active {
+    @apply step-indicator bg-blood-600 text-white;
+  }
+
+  .step-completed {
+    @apply step-indicator bg-gold-500 text-white;
+  }
+
+  .step-pending {
+    @apply step-indicator bg-stone-200 text-stone-500 dark:bg-stone-700 dark:text-stone-400;
+  }
+
+  .ability-score {
+    @apply flex flex-col items-center p-4 bg-stone-50 dark:bg-stone-800 rounded-xl border border-stone-200 dark:border-stone-700;
+  }
+
+  .ability-value {
+    @apply text-4xl font-bold text-ink;
+  }
+
+  .ability-mod {
+    @apply text-lg font-medium text-blood-600 dark:text-blood-400;
+  }
+
+  .ability-label {
+    @apply text-xs font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400 mt-1;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-class {
+    @apply badge bg-blood-100 text-blood-800 dark:bg-blood-900/30 dark:text-blood-300;
+  }
+
+  .badge-species {
+    @apply badge bg-stone-100 text-stone-800 dark:bg-stone-800 dark:text-stone-200;
+  }
+
+  .badge-background {
+    @apply badge bg-gold-100 text-gold-800 dark:bg-gold-900/30 dark:text-gold-300;
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: theme('colors.stone.300') transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: theme('colors.stone.300');
+    border-radius: 3px;
+  }
+
+  .dark .scrollbar-thin {
+    scrollbar-color: theme('colors.stone.600') transparent;
+  }
+
+  .dark .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: theme('colors.stone.600');
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .animate-slide-in {
+    animation: slideIn 0.3s ease-out;
+  }
+
+  .animate-slide-out {
+    animation: slideOut 0.3s ease-in;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.2s ease-out;
+  }
+
+  @keyframes slideIn {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideOut {
+    from {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    to {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes scaleIn {
+    from {
+      transform: scale(0.95);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  .print-sheet {
+    @apply bg-white text-black;
+  }
+
+  @media print {
+    .no-print {
+      display: none !important;
+    }
+    .print-sheet {
+      background: white !important;
+      color: black !important;
+      box-shadow: none !important;
+      border: none !important;
+    }
+    body {
+      background: white !important;
+    }
+  }
+}

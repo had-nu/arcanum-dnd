@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+  <title>attack-light</title>
+  <g id="107e4339-f47c-4453-8072-3a5ca772e1cd" data-name="attack - w">
+    <polygon points="20 0 13 0 19 1 20 7 20 0" fill="#fff"/>
+    <polygon points="18 2 6 1 17 3 19 14 18 2" fill="#fff"/>
+    <path d="M10,5,6,13l1,1,8-4V5ZM7,13l4-7h3Z" fill="#fff"/>
+    <path d="M8,15.5V17L6,15,3,18c-.52.52-1.49-.51-1-1l3-3L3,12H4.5Z" fill="#fff"/>
+  </g>
+</svg>

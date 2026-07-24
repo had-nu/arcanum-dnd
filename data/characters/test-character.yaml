@@ -1,0 +1,24 @@
+name: Test Character
+classes:
+    - id: fighter
+      name: Fighter
+      level: 3
+backgroundId: soldier
+backgroundName: Soldier
+speciesId: human
+level: 3
+abilityMethod: standard
+abilities:
+    CHA: 8
+    CON: 14
+    DEX: 14
+    INT: 10
+    STR: 16
+    WIS: 12
+skills:
+    - athletics
+    - insight
+xp: 0
+progressionType: milestone
+createdAt: "2026-07-24T23:15:30+01:00"
+updatedAt: "2026-07-24T23:15:30+01:00"

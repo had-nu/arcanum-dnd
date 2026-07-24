@@ -1,0 +1,829 @@
+openapi: 3.1.0
+info:
+  title: Arcanum API
+  version: 0.2.0
+  description: D&D 5.5e Character & Campaign Manager API
+servers:
+  - url: http://localhost:8080/api
+    description: Development server
+paths:
+  /health:
+    get:
+      operationId: health
+      summary: Health check
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+
+  /content:
+    get:
+      operationId: getContent
+      summary: Get all content packs (classes, species, backgrounds, feats, abilities, skills)
+      responses:
+        '200':
+          description: Content response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentResponse'
+
+  /spells:
+    get:
+      operationId: getSpells
+      summary: Get spells, optionally filtered by class and level
+      parameters:
+        - name: class
+          in: query
+          description: Class ID to filter spells
+          schema:
+            type: string
+        - name: level
+          in: query
+          description: Maximum spell level (1-9)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 9
+        - name: lvl
+          in: query
+          description: Character level for class spell list (1-20)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 20
+      responses:
+        '200':
+          description: Spells response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpellsResponse'
+
+  /build:
+    post:
+      operationId: buildCharacter
+      summary: Build a character from choices
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BuildRequest'
+      responses:
+        '200':
+          description: Built character with sheet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BuildResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /characters:
+    get:
+      operationId: listCharacters
+      summary: List all saved characters
+      responses:
+        '200':
+          description: List of character summaries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CharacterSummary'
+    post:
+      operationId: saveCharacter
+      summary: Save a character
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveCharacterRequest'
+      responses:
+        '201':
+          description: Character saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SavedCharacter'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /characters/{name}:
+    get:
+      operationId: getCharacter
+      summary: Get a character by name
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Character data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SavedCharacter'
+        '404':
+          description: Character not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      operationId: updateCharacter
+      summary: Update a character
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveCharacterRequest'
+      responses:
+        '200':
+          description: Character updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SavedCharacter'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Character not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      operationId: deleteCharacter
+      summary: Delete a character
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Character deleted
+        '404':
+          description: Character not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    Health:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        version:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+        details:
+          type: object
+
+    ContentResponse:
+      type: object
+      properties:
+        classes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClassEntry'
+        backgrounds:
+          type: array
+          items:
+            $ref: '#/components/schemas/BackgroundEntry'
+        species:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpeciesEntry'
+        abilities:
+          type: array
+          items:
+            $ref: '#/components/schemas/AbilityEntry'
+        skills:
+          type: array
+          items:
+            $ref: '#/components/schemas/SkillEntry'
+        feats:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/FeatEntry'
+        spellCasterClasses:
+          type: array
+          items:
+            type: string
+
+    ClassEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        hitDie:
+          type: string
+        savingThrows:
+          type: array
+          items:
+            type: string
+        primaryAbility:
+          type: array
+          items:
+            type: string
+        skillChoices:
+          type: integer
+        skillPool:
+          type: array
+          items:
+            type: string
+        spellcaster:
+          type: boolean
+        subClasses:
+          type: array
+          items:
+            $ref: '#/components/schemas/SubClassEntry'
+        subclassLevel:
+          type: integer
+        features:
+          type: array
+          items:
+            $ref: '#/components/schemas/FeatureDef'
+        spellcasting:
+          $ref: '#/components/schemas/SpellcastingEntry'
+
+    SubClassEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+
+    FeatureDef:
+      type: object
+      properties:
+        level:
+          type: integer
+        id:
+          type: string
+        name:
+          type: string
+
+    SpellcastingEntry:
+      type: object
+      properties:
+        type:
+          type: string
+        ability:
+          type: string
+        cantripsKnown:
+          type: array
+          items:
+            type: integer
+        preparedSpells:
+          type: array
+          items:
+            type: integer
+        spellsKnown:
+          type: array
+          items:
+            type: integer
+        spellSlots:
+          type: object
+          additionalProperties:
+            type: integer
+        ritualCasting:
+          type: boolean
+        spellLists:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+
+    BackgroundEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        skills:
+          type: array
+          items:
+            type: string
+        feat:
+          type: string
+
+    SpeciesEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        size:
+          type: string
+        speed:
+          type: integer
+        variants:
+          type: array
+          items:
+            $ref: '#/components/schemas/VariantEntry'
+
+    VariantEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+
+    AbilityEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+
+    SkillEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        ability:
+          type: string
+
+    FeatEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        prerequisites:
+          type: object
+
+    SpellsResponse:
+      type: object
+      properties:
+        cantrips:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpellEntry'
+        leveled:
+          type: array
+          items:
+            type: array
+            items:
+              $ref: '#/components/schemas/SpellEntry'
+
+    SpellEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        level:
+          type: integer
+        school:
+          type: string
+        time:
+          type: string
+        range:
+          type: string
+        duration:
+          type: string
+        concentration:
+          type: boolean
+        damage:
+          type: string
+        save:
+          type: string
+        attack:
+          type: boolean
+        ritual:
+          type: boolean
+
+    BuildRequest:
+      type: object
+      required: [name, classes, backgroundId, speciesId, level, abilityScores, skills]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 64
+        classes:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/ClassReq'
+        backgroundId:
+          type: string
+        speciesId:
+          type: string
+        speciesVariant:
+          type: string
+        level:
+          type: integer
+          minimum: 1
+          maximum: 20
+        abilityScores:
+          $ref: '#/components/schemas/AbilityScores'
+        abilityMethod:
+          type: string
+          enum: [standard, point-buy, roll]
+        skills:
+          type: array
+          items:
+            type: string
+        spells:
+          type: array
+          items:
+            type: string
+        feats:
+          type: array
+          items:
+            type: string
+
+    ClassReq:
+      type: object
+      required: [id, level]
+      properties:
+        id:
+          type: string
+        level:
+          type: integer
+          minimum: 1
+          maximum: 20
+
+    AbilityScores:
+      type: object
+      required: [STR, DEX, CON, INT, WIS, CHA]
+      properties:
+        STR:
+          type: integer
+          minimum: 1
+          maximum: 30
+        DEX:
+          type: integer
+          minimum: 1
+          maximum: 30
+        CON:
+          type: integer
+          minimum: 1
+          maximum: 30
+        INT:
+          type: integer
+          minimum: 1
+          maximum: 30
+        WIS:
+          type: integer
+          minimum: 1
+          maximum: 30
+        CHA:
+          type: integer
+          minimum: 1
+          maximum: 30
+
+    BuildResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        sheet:
+          $ref: '#/components/schemas/CharacterSheet'
+        classes:
+          type: array
+          items:
+            type: string
+        event:
+          $ref: '#/components/schemas/Event'
+        yaml:
+          type: string
+        features:
+          type: array
+          items:
+            $ref: '#/components/schemas/FeatureView'
+
+    FeatureView:
+      type: object
+      properties:
+        class:
+          type: string
+        level:
+          type: integer
+        name:
+          type: string
+        id:
+          type: string
+
+    CharacterSheet:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        level:
+          type: integer
+        classes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClassSummary'
+        species:
+          type: string
+        background:
+          type: string
+        abilityScores:
+          $ref: '#/components/schemas/AbilityScores'
+        hp:
+          $ref: '#/components/schemas/HP'
+        ac:
+          type: integer
+        savingThrows:
+          type: object
+          additionalProperties:
+            type: integer
+        skills:
+          type: object
+          additionalProperties:
+            type: integer
+        attacks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Attack'
+        spellSlots:
+          type: object
+          additionalProperties:
+            type: integer
+        spells:
+          type: array
+          items:
+            type: string
+        features:
+          type: array
+          items:
+            $ref: '#/components/schemas/FeatureView'
+
+    ClassSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        level:
+          type: integer
+        subclass:
+          type: string
+
+    HP:
+      type: object
+      properties:
+        current:
+          type: integer
+        max:
+          type: integer
+        temp:
+          type: integer
+
+    Attack:
+      type: object
+      properties:
+        name:
+          type: string
+        bonus:
+          type: integer
+        damage:
+          type: string
+        type:
+          type: string
+        range:
+          type: string
+
+    Event:
+      type: object
+      properties:
+        type:
+          type: string
+        characterCreated:
+          $ref: '#/components/schemas/CharacterCreatedEvent'
+
+    CharacterCreatedEvent:
+      type: object
+      properties:
+        characterId:
+          type: string
+        name:
+          type: string
+        speciesId:
+          type: string
+        speciesVariant:
+          type: string
+        backgroundId:
+          type: string
+        level:
+          type: integer
+        abilityScores:
+          $ref: '#/components/schemas/AbilityScores'
+        maxHP:
+          type: integer
+        savingThrows:
+          type: array
+          items:
+            type: string
+        skills:
+          type: object
+          additionalProperties:
+            type: string
+        spells:
+          type: array
+          items:
+            type: string
+        feats:
+          type: array
+          items:
+            type: string
+        abilityMethod:
+          type: string
+        classes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClassEntryEvent'
+
+    ClassEntryEvent:
+      type: object
+      properties:
+        classId:
+          type: string
+        level:
+          type: integer
+
+    SavedCharacter:
+      type: object
+      properties:
+        name:
+          type: string
+        classes:
+          type: array
+          items:
+            $ref: '#/components/schemas/SavedClass'
+        backgroundId:
+          type: string
+        backgroundName:
+          type: string
+        speciesId:
+          type: string
+        speciesVariant:
+          type: string
+        speciesHybrid:
+          type: string
+        level:
+          type: integer
+        abilityMethod:
+          type: string
+        abilities:
+          type: object
+          additionalProperties:
+            type: integer
+        skills:
+          type: array
+          items:
+            type: string
+        spells:
+          type: array
+          items:
+            type: string
+        feats:
+          type: array
+          items:
+            type: string
+        equipment:
+          type: array
+          items:
+            type: string
+        subclassId:
+          type: string
+        bgAlignment:
+          type: string
+        bgFaith:
+          type: string
+        bgTrait:
+          type: string
+        bgIdeal:
+          type: string
+        bgBond:
+          type: string
+        bgFlaw:
+          type: string
+        bgAge:
+          type: string
+        bgHeight:
+          type: string
+        bgWeight:
+          type: string
+        bgEyes:
+          type: string
+        bgSkin:
+          type: string
+        bgHair:
+          type: string
+        bgNotes:
+          type: string
+        xp:
+          type: integer
+        progressionType:
+          type: string
+          enum: [milestone, xp]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    SavedClass:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        level:
+          type: integer
+        subclassId:
+          type: string
+
+    SaveCharacterRequest:
+      allOf:
+        - $ref: '#/components/schemas/SavedCharacter'
+        - type: object
+          properties:
+            name:
+              type: string
+
+    CharacterSummary:
+      type: object
+      properties:
+        name:
+          type: string
+        level:
+          type: integer
+        classes:
+          type: string
+        species:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time

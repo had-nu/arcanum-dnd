@@ -1,0 +1,106 @@
+class: wizard
+spellcasting:
+  type: full
+  ability: INT
+  knownCaster: false
+  progression:
+    - level: 1
+      cantripsKnown: 3
+      preparedSpells: 6
+      spellSlots: {1: 2}
+      spellList: [fire-bolt, mage-hand, minor-illusion, ray-of-frost, shocking-grasp, burning-hands, magic-missile, shield, detect-magic, identify, mage-armor]
+    - level: 2
+      cantripsKnown: 3
+      preparedSpells: 7
+      spellSlots: {1: 3}
+      spellList: [fire-bolt, mage-hand, minor-illusion, ray-of-frost, shocking-grasp, burning-hands, magic-missile, shield, detect-magic, identify, mage-armor, misty-step, invisibility, shatter]
+    - level: 3
+      cantripsKnown: 3
+      preparedSpells: 8
+      spellSlots: {1: 4, 2: 2}
+      spellList: [fire-bolt, mage-hand, minor-illusion, ray-of-frost, shocking-grasp, burning-hands, magic-missile, shield, detect-magic, identify, mage-armor, misty-step, invisibility, shatter, fireball, lightning-bolt, counterspell]
+    - level: 4
+      cantripsKnown: 4
+      preparedSpells: 9
+      spellSlots: {1: 4, 2: 3}
+      spellList: [fire-bolt, mage-hand, minor-illusion, ray-of-frost, shocking-grasp, burning-hands, magic-missile, shield, detect-magic, identify, mage-armor, misty-step, invisibility, shatter, fireball, lightning-bolt, counterspell, dispel-magic, polymorph, dimension-door]
+    - level: 5
+      cantripsKnown: 4
+      preparedSpells: 10
+      spellSlots: {1: 4, 2: 3, 3: 2}
+      spellList: [fire-bolt, mage-hand, minor-illusion, ray-of-frost, shocking-grasp, burning-hands, magic-missile, shield, detect-magic, identify, mage-armor, misty-step, invisibility, shatter, fireball, lightning-bolt, counterspell, dispel-magic, polymorph, dimension-door, wall-of-force, teleportation-circle]
+    - level: 6
+      cantripsKnown: 4
+      preparedSpells: 11
+      spellSlots: {1: 4, 2: 3, 3: 3}
+      spellList: [fire-bolt, mage-hand, minor-illusion, ray-of-frost, shocking-grasp, burning-hands, magic-missile, shield, detect-magic, identify, mage-armor, misty-step, invisibility, shatter, fireball, lightning-bolt, counterspell, dispel-magic, polymorph, dimension-door, wall-of-force, teleportation-circle, forcecage, plane-shift]
+    - level: 7
+      cantripsKnown: 4
+      preparedSpells: 12
+      spellSlots: {1: 4, 2: 3, 3: 3, 4: 1}
+      spellList: [fire-bolt, mage-hand, minor-illusion, ray-of-frost, shocking-grasp, burning-hands, magic-missile, shield, detect-magic, identify, mage-armor, misty-step, invisibility, shatter, fireball, lightning-bolt, counterspell, dispel-magic, polymorph, dimension-door, wall-of-force, teleportation-circle, forcecage, plane-shift, delayed-blast-fireball, reverse-gravity]
+    - level: 8
+      cantripsKnown: 4
+      preparedSpells: 13
+      spellSlots: {1: 4, 2: 3, 3: 3, 4: 2}
+      spellList: [fire-bolt, mage-hand, minor-illusion, ray-of-frost, shocking-grasp, burning-hands, magic-missile, shield, detect-magic, identify, mage-armor, misty-step, invisibility, shatter, fireball, lightning-bolt, counterspell, dispel-magic, polymorph, dimension-door, wall-of-force, teleportation-circle, forcecage, plane-shift, delayed-blast-fireball, reverse-gravity, maze, clone]
+    - level: 9
+      cantripsKnown: 4
+      preparedSpells: 14
+      spellSlots: {1: 4, 2: 3, 3: 3, 4: 3, 5: 1}
+      spellList: [fire-bolt, mage-hand, minor-illusion, ray-of-frost, shocking-grasp, burning-hands, magic-missile, shield, detect-magic, identify, mage-armor, misty-step, invisibility, shatter, fireball, lightning-bolt, counterspell, dispel-magic, polymorph, dimension-door, wall-of-force, teleportation-circle, forcecage, plane-shift, delayed-blast-fireball, reverse-gravity, maze, clone, meteor-swarm, true-polymorph, wish, time-stop]
+    - level: 10
+      cantripsKnown: 5
+      preparedSpells: 15
+      spellSlots: {1: 4, 2: 3, 3: 3, 4: 3, 5: 2}
+      spellList: [fire-bolt, mage-hand, minor-illusion, ray-of-frost, shocking-grasp, burning-hands, magic-missile, shield, detect-magic, identify, mage-armor, misty-step, invisibility, shatter, fireball, lightning-bolt, counterspell, dispel-magic, polymorph, dimension-door, wall-of-force, teleportation-circle, forcecage, plane-shift, delayed-blast-fireball, reverse-gravity, maze, clone, meteor-swarm, true-polymorph, wish, time-stop]
+    - level: 11
+      cantripsKnown: 5
+      preparedSpells: 16
+      spellSlots: {1: 4, 2: 3, 3: 3, 4: 3, 5: 3}
+      spellList: [fire-bolt, mage-hand, minor-illusion, ray-of-frost, shocking-grasp, burning-hands, magic-missile, shield, detect-magic, identify, mage-armor, misty-step, invisibility, shatter, fireball, lightning-bolt, counterspell, dispel-magic, polymorph, dimension-door, wall-of-force, teleportation-circle, forcecage, plane-shift, delayed-blast-fireball, reverse-gravity, maze, clone, meteor-swarm, true-polymorph, wish, time-stop]
+    - level: 12
+      cantripsKnown: 5
+      preparedSpells: 16
+      spellSlots: {1: 4, 2: 3, 3: 3, 4: 3, 5: 3}
+      spellList: [fire-bolt, mage-hand, minor-illusion, ray-of-frost, shocking-grasp, burning-hands, magic-missile, shield, detect-magic, identify, mage-armor, misty-step, invisibility, shatter, fireball, lightning-bolt, counterspell, dispel-magic, polymorph, dimension-door, wall-of-force, teleportation-circle, forcecage, plane-shift, delayed-blast-fireball, reverse-gravity, maze, clone, meteor-swarm, true-polymorph, wish, time-stop]
+    - level: 13
+      cantripsKnown: 5
+      preparedSpells: 17
+      spellSlots: {1: 4, 2: 3, 3: 3, 4: 3, 5: 3, 6: 1}
+      spellList: [fire-bolt, mage-hand, minor-illusion, ray-of-frost, shocking-grasp, burning-hands, magic-missile, shield, detect-magic, identify, mage-armor, misty-step, invisibility, shatter, fireball, lightning-bolt, counterspell, dispel-magic, polymorph, dimension-door, wall-of-force, teleportation-circle, forcecage, plane-shift, delayed-blast-fireball, reverse-gravity, maze, clone, meteor-swarm, true-polymorph, wish, time-stop]
+    - level: 14
+      cantripsKnown: 5
+      preparedSpells: 17
+      spellSlots: {1: 4, 2: 3, 3: 3, 4: 3, 5: 3, 6: 1}
+      spellList: [fire-bolt, mage-hand, minor-illusion, ray-of-frost, shocking-grasp, burning-hands, magic-missile, shield, detect-magic, identify, mage-armor, misty-step, invisibility, shatter, fireball, lightning-bolt, counterspell, dispel-magic, polymorph, dimension-door, wall-of-force, teleportation-circle, forcecage, plane-shift, delayed-blast-fireball, reverse-gravity, maze, clone, meteor-swarm, true-polymorph, wish, time-stop]
+    - level: 15
+      cantripsKnown: 5
+      preparedSpells: 18
+      spellSlots: {1: 4, 2: 3, 3: 3, 4: 3, 5: 3, 6: 1, 7: 1}
+      spellList: [fire-bolt, mage-hand, minor-illusion, ray-of-frost, shocking-grasp, burning-hands, magic-missile, shield, detect-magic, identify, mage-armor, misty-step, invisibility, shatter, fireball, lightning-bolt, counterspell, dispel-magic, polymorph, dimension-door, wall-of-force, teleportation-circle, forcecage, plane-shift, delayed-blast-fireball, reverse-gravity, maze, clone, meteor-swarm, true-polymorph, wish, time-stop]
+    - level: 16
+      cantripsKnown: 5
+      preparedSpells: 18
+      spellSlots: {1: 4, 2: 3, 3: 3, 4: 3, 5: 3, 6: 1, 7: 1}
+      spellList: [fire-bolt, mage-hand, minor-illusion, ray-of-frost, shocking-grasp, burning-hands, magic-missile, shield, detect-magic, identify, mage-armor, misty-step, invisibility, shatter, fireball, lightning-bolt, counterspell, dispel-magic, polymorph, dimension-door, wall-of-force, teleportation-circle, forcecage, plane-shift, delayed-blast-fireball, reverse-gravity, maze, clone, meteor-swarm, true-polymorph, wish, time-stop]
+    - level: 17
+      cantripsKnown: 5
+      preparedSpells: 19
+      spellSlots: {1: 4, 2: 3, 3: 3, 4: 3, 5: 3, 6: 1, 7: 1, 8: 1}
+      spellList: [fire-bolt, mage-hand, minor-illusion, ray-of-frost, shocking-grasp, burning-hands, magic-missile, shield, detect-magic, identify, mage-armor, misty-step, invisibility, shatter, fireball, lightning-bolt, counterspell, dispel-magic, polymorph, dimension-door, wall-of-force, teleportation-circle, forcecage, plane-shift, delayed-blast-fireball, reverse-gravity, maze, clone, meteor-swarm, true-polymorph, wish, time-stop]
+    - level: 18
+      cantripsKnown: 5
+      preparedSpells: 20
+      spellSlots: {1: 4, 2: 3, 3: 3, 4: 3, 5: 3, 6: 1, 7: 1, 8: 1, 9: 1}
+      spellList: [fire-bolt, mage-hand, minor-illusion, burning-hands, magic-missile, shield, detect-magic, identify, mage-armor, misty-step, invisibility, shatter, fireball, lightning-bolt, counterspell, dispel-magic, polymorph, dimension-door, wall-of-force, teleportation-circle, forcecage, plane-shift, delayed-blast-fireball, reverse-gravity, maze, clone, meteor-swarm, true-polymorph, wish, time-stop]
+    - level: 19
+      cantripsKnown: 5
+      preparedSpells: 20
+      spellSlots: {1: 4, 2: 3, 3: 3, 4: 3, 5: 3, 6: 1, 7: 1, 8: 1, 9: 1}
+      spellList: [fire-bolt, mage-hand, minor-illusion, burning-hands, magic-missile, shield, detect-magic, identify, mage-armor, misty-step, invisibility, shatter, fireball, lightning-bolt, counterspell, dispel-magic, polymorph, dimension-door, wall-of-force, teleportation-circle, forcecage, plane-shift, delayed-blast-fireball, reverse-gravity, maze, clone, meteor-swarm, true-polymorph, wish, time-stop]
+    - level: 20
+      cantripsKnown: 5
+      preparedSpells: 22
+      spellSlots: {1: 4, 2: 3, 3: 3, 4: 3, 5: 3, 6: 1, 7: 1, 8: 1, 9: 1}
+      spellList: [fire-bolt, mage-hand, minor-illusion, burning-hands, magic-missile, shield, detect-magic, identify, mage-armor, misty-step, invisibility, shatter, fireball, lightning-bolt, counterspell, dispel-magic, polymorph, dimension-door, wall-of-force, teleportation-circle, forcecage, plane-shift, delayed-blast-fireball, reverse-gravity, maze, clone, meteor-swarm, true-polymorph, wish, time-stop]
