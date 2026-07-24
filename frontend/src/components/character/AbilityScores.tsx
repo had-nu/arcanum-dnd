@@ -5,10 +5,9 @@ interface AbilityScoresProps {
   onChange: (scores: { STR: number; DEX: number; CON: number; INT: number; WIS: number; CHA: number }) => void;
   method: 'standard' | 'point-buy' | 'roll';
   onMethodChange: (method: 'standard' | 'point-buy' | 'roll') => void;
-  totalLevel: number;
 }
 
-export function AbilityScores({ scores, onChange, method, onMethodChange, totalLevel }: AbilityScoresProps) {
+export function AbilityScores({ scores, onChange, method, onMethodChange }: AbilityScoresProps) {
   const abilities = [
     { key: 'STR', label: 'Strength', abbr: 'STR' },
     { key: 'DEX', label: 'Dexterity', abbr: 'DEX' },
@@ -65,6 +64,10 @@ export function AbilityScores({ scores, onChange, method, onMethodChange, totalL
     onChange({ ...scores.value, [key]: next });
   };
 
+  const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    onMethodChange(e.currentTarget.value as 'standard' | 'point-buy' | 'roll');
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -72,7 +75,7 @@ export function AbilityScores({ scores, onChange, method, onMethodChange, totalL
         <div className="flex items-center gap-2">
           <select
             value={method}
-            onChange={e => onMethodChange(e.target.value as any)}
+            onChange={handleSelectChange}
             className="input w-auto px-3 py-1.5 text-sm"
           >
             <option value="standard">Standard Array</option>
@@ -91,11 +94,10 @@ export function AbilityScores({ scores, onChange, method, onMethodChange, totalL
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-        {abilities.map(({ key, label, abbr }) => {
-          const value = scores.value[key];
-          const modifier = mod(value);
-          
-          return (
+{abilities.map(({ key, label, abbr }) => {
+            const value = scores.value[key];
+            
+            return (
             <div key={key} className="ability-score bg-dnd-stone-50 dark:bg-dnd-stone-800/50 rounded-xl border border-dnd-stone-200 dark:border-dnd-stone-700 p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="ability-label text-xs font-semibold uppercase tracking-wider text-dnd-stone-500 dark:text-dnd-stone-400">
@@ -117,11 +119,11 @@ export function AbilityScores({ scores, onChange, method, onMethodChange, totalL
                   −
                 </button>
                 <div className="text-center min-w-[60px]">
-                  <input
+<input
                     type="number"
                     value={value}
-                    onChange={e => handleInputChange(key, e.target.value)}
-                    onBlur={e => handleInputChange(key, e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange(key, e.currentTarget.value)}
+                    onBlur={(e: React.FocusEvent<HTMLInputElement>) => handleInputChange(key, e.currentTarget.value)}
                     className="ability-value w-full text-center text-3xl font-bold text-dnd-stone-900 dark:text-dnd-stone-100 bg-transparent border-0 focus:outline-none focus:ring-0"
                     min={method === 'point-buy' ? 8 : 3}
                     max={method === 'point-buy' ? 15 : 20}

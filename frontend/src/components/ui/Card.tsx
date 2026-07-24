@@ -1,6 +1,7 @@
 import { clsx } from 'clsx';
+import { HTMLAttributes } from 'preact/compat';
 
-interface CardProps extends JSX.HTMLAttributes<HTMLDivElement> {
+interface CardProps extends HTMLAttributes<HTMLDivElement> {
   variant?: 'default' | 'parchment' | 'stone';
   padding?: 'none' | 'sm' | 'md' | 'lg';
 }
@@ -40,7 +41,7 @@ export function Card({
   );
 }
 
-export function CardHeader({ className, children, ...props }: JSX.HTMLAttributes<HTMLDivElement>) {
+export function CardHeader({ className, children, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div className={clsx('mb-4 border-b border-dnd-stone-200 dark:border-dnd-stone-700 pb-4', className)} {...props}>
       {children}
@@ -48,7 +49,7 @@ export function CardHeader({ className, children, ...props }: JSX.HTMLAttributes
   );
 }
 
-export function CardTitle({ className, children, ...props }: JSX.HTMLAttributes<HTMLHeadingElement>) {
+export function CardTitle({ className, children, ...props }: HTMLAttributes<HTMLHeadingElement>) {
   return (
     <h3 className={clsx('text-xl font-bold text-dnd-stone-900 dark:text-dnd-stone-100', className)} {...props}>
       {children}
@@ -56,7 +57,7 @@ export function CardTitle({ className, children, ...props }: JSX.HTMLAttributes<
   );
 }
 
-export function CardDescription({ className, children, ...props }: JSX.HTMLAttributes<HTMLParagraphElement>) {
+export function CardDescription({ className, children, ...props }: HTMLAttributes<HTMLParagraphElement>) {
   return (
     <p className={clsx('text-dnd-stone-600 dark:text-dnd-stone-400 mt-1', className)} {...props}>
       {children}
@@ -64,7 +65,7 @@ export function CardDescription({ className, children, ...props }: JSX.HTMLAttri
   );
 }
 
-export function CardContent({ className, children, ...props }: JSX.HTMLAttributes<HTMLDivElement>) {
+export function CardContent({ className, children, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div className={clsx('', className)} {...props}>
       {children}
@@ -72,7 +73,7 @@ export function CardContent({ className, children, ...props }: JSX.HTMLAttribute
   );
 }
 
-export function CardFooter({ className, children, ...props }: JSX.HTMLAttributes<HTMLDivElement>) {
+export function CardFooter({ className, children, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div className={clsx('mt-4 border-t border-dnd-stone-200 dark:border-dnd-stone-700 pt-4 flex items-center gap-3', className)} {...props}>
       {children}

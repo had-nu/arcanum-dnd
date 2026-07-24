@@ -1,17 +1,16 @@
 import { useState } from 'preact/hooks';
-import { Link, useNavigate } from 'wouter';
-import { PlusIcon, SearchIcon, Trash2Icon, ChevronDownIcon, ChevronUpIcon } from 'lucide-preact';
+import { Link } from 'wouter';
+import { PlusIcon, Trash2Icon, ChevronDownIcon, ChevronUpIcon } from 'lucide-preact';
 import { clsx } from 'clsx';
 
-import { Button } from '@components/ui/Button';
-import { Card } from '@components/ui/Card';
-import { Input } from '@components/ui/Input';
-import { useCharacters } from '@hooks/useContent';
-import { useDeleteCharacter } from '@hooks/useContent';
-import { useToast } from '@components/ui/Toast';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { Input } from '@/components/ui/Input';
+import { useCharacters } from '@/hooks/useContent';
+import { useDeleteCharacter } from '@/hooks/useContent';
+import { useToast } from '@/components/ui/Toast';
 
 export function CharactersPage() {
-  const navigate = useNavigate();
   const { toast } = useToast();
   const { data: characters, isLoading, refetch } = useCharacters();
   const deleteMutation = useDeleteCharacter();
@@ -86,7 +85,7 @@ export function CharactersPage() {
                 type="search"
                 placeholder="Search characters..."
                 value={search}
-                onChange={e => setSearch(e.target.value)}
+                onChange={e => setSearch(e.currentTarget.value)}
                 className="max-w-xs"
               />
               <div className="flex items-center gap-4 text-sm text-dnd-stone-600 dark:text-dnd-stone-400">

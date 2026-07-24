@@ -1,4 +1,4 @@
-import type { ContentResponse, SpellsResponse, BuildResponse, CharacterSummary, SavedCharacter, SaveCharacterRequest } from '@types/api';
+import type { ContentResponse, SpellsResponse, BuildResponse, CharacterSummary, SavedCharacter, SaveCharacterRequest } from '@/types/api';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '/api';
 

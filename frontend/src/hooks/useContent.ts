@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/preact-query';
-import { api } from '@api/client';
-import type { ContentResponse, SpellsResponse, BuildResponse, CharacterSummary, SavedCharacter, SaveCharacterRequest } from '@types/api';
+import { api } from '@/api/client';
+import type { SaveCharacterRequest } from '@/types/api';
 
 export function useContent() {
   return useQuery({

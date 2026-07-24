@@ -1,5 +1,3 @@
-import { clsx } from 'clsx';
-
 interface SpeciesPickerProps {
   species: any[];
   value: string;
@@ -18,7 +16,7 @@ export function SpeciesPicker({ species, value, onChange, variant, onVariantChan
       <label className="label">Species</label>
       <select
         value={value}
-        onChange={e => onChange(e.target.value)}
+        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => onChange(e.currentTarget.value)}
         className="input"
       >
         <option value="">Select species</option>
@@ -33,11 +31,11 @@ export function SpeciesPicker({ species, value, onChange, variant, onVariantChan
           <label className="label">Variant / Subrace</label>
           <select
             value={variant}
-            onChange={e => onVariantChange(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => onVariantChange(e.currentTarget.value)}
             className="input"
           >
             <option value="">— None —</option>
-            {variants.map(v => (
+            {variants.map((v: { id: string; name: string }) => (
               <option key={v.id} value={v.id}>{v.name}</option>
             ))}
           </select>

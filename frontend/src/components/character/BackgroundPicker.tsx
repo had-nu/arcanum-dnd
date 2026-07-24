@@ -1,5 +1,3 @@
-import { clsx } from 'clsx';
-
 interface BackgroundPickerProps {
   backgrounds: any[];
   value: string;
@@ -15,7 +13,7 @@ export function BackgroundPicker({ backgrounds, value, onChange, errors }: Backg
       <label className="label">Background</label>
       <select
         value={value}
-        onChange={e => onChange(e.target.value)}
+        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => onChange(e.currentTarget.value)}
         className="input"
       >
         <option value="">Select background</option>

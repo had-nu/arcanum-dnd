@@ -221,9 +221,6 @@ func main() {
 		}
 	}
 
-	// Fallback to old web dir for dev
-	mux.HandleFunc("GET /", srv.handleWeb)
-
 	handler := corsMiddleware(cfg)(mux)
 
 	server := &http.Server{

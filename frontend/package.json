@@ -19,7 +19,7 @@
     "@tanstack/preact-query": "^5.101.4",
     "clsx": "^2.1.1",
     "lucide-preact": "^1.26.0",
-    "preact": "^10.29.3",
+    "preact": "^10.29.7",
     "react-hook-form": "^7.82.0",
     "tailwind-merge": "^3.6.0",
     "wouter": "^3.10.0",
@@ -28,6 +28,7 @@
   "devDependencies": {
     "@orval/zod": "^8.22.0",
     "@preact/preset-vite": "^2.10.5",
+    "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^24.13.2",
     "autoprefixer": "^10.5.4",
     "orval": "^8.22.0",

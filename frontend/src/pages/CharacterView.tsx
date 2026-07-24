@@ -1,23 +1,18 @@
-import { useEffect, useState } from 'preact/hooks';
-import { useParams, Link, useNavigate } from 'wouter';
-import { PrintIcon, EditIcon, Trash2Icon, DownloadIcon } from 'lucide-preact';
-import { clsx } from 'clsx';
+import { useParams, Link, useLocation } from 'wouter';
+import { Printer, ClipboardPen, Trash2, Download } from 'lucide-preact';
 
-import { CharacterSheetPreview } from '@components/character/CharacterSheetPreview';
-import { Button } from '@components/ui/Button';
-import { Card } from '@components/ui/Card';
-import { useCharacter } from '@hooks/useContent';
-import { useDeleteCharacter } from '@hooks/useContent';
-import { useToast } from '@components/ui/Toast';
+import { CharacterSheetPreview } from '@/components/character/CharacterSheetPreview';
+import { Button } from '@/components/ui/Button';
+import { useCharacter } from '@/hooks/useContent';
+import { useDeleteCharacter } from '@/hooks/useContent';
+import { useToast } from '@/components/ui/Toast';
 
 export function CharacterView() {
+  const [, navigate] = useLocation();
   const { name } = useParams<{ name: string }>();
-  const navigate = useNavigate();
   const { toast } = useToast();
   const { data: character, isLoading, error } = useCharacter(name || '');
   const deleteMutation = useDeleteCharacter();
-
-  const [showPrint, setShowPrint] = useState(false);
 
   const handleDelete = async () => {
     if (!confirm('Are you sure you want to delete this character?')) return;
@@ -31,9 +26,7 @@ export function CharacterView() {
   };
 
   const handlePrint = () => {
-    setShowPrint(true);
     setTimeout(() => window.print(), 100);
-    setTimeout(() => setShowPrint(false), 500);
   };
 
   const handleDownload = () => {
@@ -83,18 +76,18 @@ export function CharacterView() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={handlePrint}>
-            <PrintIcon className="h-4 w-4 mr-2" /> Print
+            <Printer className="h-4 w-4 mr-2" /> Print
           </Button>
           <Button variant="outline" onClick={handleDownload}>
-            <DownloadIcon className="h-4 w-4 mr-2" /> YAML
+            <Download className="h-4 w-4 mr-2" /> YAML
           </Button>
           <Link href={`/builder?name=${encodeURIComponent(name!)}`}>
             <Button variant="secondary">
-              <EditIcon className="h-4 w-4 mr-2" /> Edit
+              <ClipboardPen className="h-4 w-4 mr-2" /> Edit
             </Button>
           </Link>
           <Button variant="danger" onClick={handleDelete} disabled={deleteMutation.isPending}>
-            <Trash2Icon className="h-4 w-4 mr-2" /> Delete
+            <Trash2 className="h-4 w-4 mr-2" /> Delete
           </Button>
         </div>
       </div>

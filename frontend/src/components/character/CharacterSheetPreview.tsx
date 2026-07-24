@@ -106,15 +106,18 @@ export function CharacterSheetPreview({ character, content }: CharacterSheetPrev
       <div className="card p-4">
         <h3 className="font-semibold text-dnd-stone-900 dark:text-dnd-stone-100 mb-3">Skills</h3>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-          {Object.entries(character.skills || {}).map(([skill, mod]) => (
-            <div key={skill} className={clsx(
-              'p-2 rounded text-center text-sm',
-              mod ? 'bg-dnd-gold-50 dark:bg-dnd-gold-900/30 border border-dnd-gold-300' : ''
-            )}>
-              <div className="text-xs text-dnd-stone-500 dark:text-dnd-stone-400 capitalize">{skill.replace(/_/g, ' ')}</div>
-              <div className="font-bold">{mod >= 0 ? '+' : ''}{mod}</div>
-            </div>
-          ))}
+          {Object.entries(character.skills || {}).map(([skill, mod]) => {
+            const modValue = mod as number;
+            return (
+              <div key={skill} className={clsx(
+                'p-2 rounded text-center text-sm',
+                modValue ? 'bg-dnd-gold-50 dark:bg-dnd-gold-900/30 border border-dnd-gold-300' : ''
+              )}>
+                <div className="text-xs text-dnd-stone-500 dark:text-dnd-stone-400 capitalize">{skill.replace(/_/g, ' ')}</div>
+                <div className="font-bold">{modValue >= 0 ? '+' : ''}{modValue}</div>
+              </div>
+            );
+          })}
         </div>
       </div>
 

@@ -1,25 +1,26 @@
-import { useEffect } from 'preact/hooks';
-import { useNavigate, useParams } from 'wouter';
+import { useEffect, useState } from 'preact/hooks';
+import { useLocation, useParams } from 'wouter';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ChevronLeftIcon, ChevronRightIcon, SaveIcon, LoaderCircleIcon, SparklesIcon } from 'lucide-preact';
+import { ChevronLeftIcon, ChevronRightIcon, SaveIcon, LoaderCircleIcon } from 'lucide-preact';
 
-import { StepsNav } from '@components/layout/StepsNav';
-import { AbilityScores } from '@components/character/AbilityScores';
-import { SpeciesPicker } from '@components/character/SpeciesPicker';
-import { BackgroundPicker } from '@components/character/BackgroundPicker';
-import { ClassPicker } from '@components/character/ClassPicker';
-import { SkillSelector } from '@components/character/SkillSelector';
-import { SpellSelector } from '@components/character/SpellSelector';
-import { FeatSelector } from '@components/character/FeatSelector';
-import { CharacterSheetPreview } from '@components/character/CharacterSheetPreview';
-import { Button } from '@components/ui/Button';
-import { Card } from '@components/ui/Card';
-import { ToastContainer, useToast } from '@components/ui/Toast';
-import { useContent } from '@hooks/useContent';
-import { useBuild } from '@hooks/useContent';
-import { useSaveCharacter } from '@hooks/useContent';
+import { StepsNav } from '@/components/layout/StepsNav';
+import { AbilityScores } from '@/components/character/AbilityScores';
+import { SpeciesPicker } from '@/components/character/SpeciesPicker';
+import { BackgroundPicker } from '@/components/character/BackgroundPicker';
+import { ClassPicker } from '@/components/character/ClassPicker';
+import { SkillSelector } from '@/components/character/SkillSelector';
+import { SpellSelector } from '@/components/character/SpellSelector';
+import { FeatSelector } from '@/components/character/FeatSelector';
+import { CharacterSheetPreview } from '@/components/character/CharacterSheetPreview';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { useToast } from '@/components/ui/Toast';
+import { useContent } from '@/hooks/useContent';
+import { useSpells } from '@/hooks/useContent';
+import { useBuild } from '@/hooks/useContent';
+import { useSaveCharacter } from '@/hooks/useContent';
 import { builderStore } from '@stores/builderStore';
 
 const stepSchema = z.object({
@@ -39,19 +40,10 @@ const skillSchema = z.object({
   skills: z.array(z.string()).min(1, 'At least one skill required'),
 });
 
-const steps = [
-  { key: 'basics', label: 'Basics', icon: SparklesIcon },
-  { key: 'class', label: 'Class', icon: SparklesIcon },
-  { key: 'skills', label: 'Skills', icon: SparklesIcon },
-  { key: 'spells', label: 'Spells/Feats', icon: SparklesIcon },
-  { key: 'review', label: 'Review', icon: SparklesIcon },
-];
-
 const stepOrder = ['basics', 'class', 'skills', 'spells', 'review'] as const;
-type StepKey = typeof stepOrder[number];
 
 export function BuilderPage() {
-  const navigate = useNavigate();
+  const [, navigate] = useLocation();
   const { name } = useParams<{ name?: string }>();
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const { toast } = useToast();
@@ -91,7 +83,7 @@ export function BuilderPage() {
   });
 
   useEffect(() => {
-    if (isEditing && name && content?.characters && content.backgrounds && content.species) {
+    if (isEditing && name && content) {
       // TODO: load character data
     }
   }, [name, isEditing, content]);
@@ -135,7 +127,7 @@ export function BuilderPage() {
     builderStore.submitError.value = null;
     
     try {
-      const response = await buildMutation.mutateAsync(builderStore.toBuildRequest());
+      await buildMutation.mutateAsync(builderStore.toBuildRequest());
       builderStore.submitSuccess.value = true;
       toast.success('Character built!', 'Review your character sheet below.');
       
@@ -164,14 +156,17 @@ export function BuilderPage() {
     }
   };
 
-  const renderStepContent = () => {
-    const classes = content?.classes || [];
-    const species = content?.species || [];
-    const backgrounds = content?.backgrounds || [];
-    const skills = content?.skills || [];
-    const spells = content?.spells || { cantrips: [], leveled: [] };
-    const feats = content?.feats || {};
+  const classes = content?.classes || [];
+  const species = content?.species || [];
+  const backgrounds = content?.backgrounds || [];
+  const skills = content?.skills || [];
+  const feats = content?.feats || {};
 
+  const classId = builderStore.classes.value[0]?.id;
+  const { data: spellsData } = useSpells(classId, undefined, builderStore.totalLevel);
+  const spells = spellsData || { cantrips: [], leveled: [] };
+
+  const renderStepContent = () => {
     switch (currentStep) {
       case 'basics':
         return (
@@ -182,7 +177,6 @@ export function BuilderPage() {
                 onChange={v => builderStore.abilityScores.value = v}
                 method={builderStore.abilityMethod.value}
                 onMethodChange={v => builderStore.abilityMethod.value = v}
-                totalLevel={builderStore.totalLevel}
               />
               <div className="space-y-4">
                 <SpeciesPicker
@@ -208,7 +202,7 @@ export function BuilderPage() {
                 className="input"
                 placeholder="Enter character name"
                 value={builderStore.name.value}
-                onChange={e => builderStore.name.value = e.target.value}
+                onChange={e => builderStore.name.value = e.currentTarget.value}
               />
               {stepForm.formState.errors.name && (
                 <p className="mt-1 text-sm text-red-600">{stepForm.formState.errors.name.message}</p>
@@ -221,22 +215,27 @@ export function BuilderPage() {
         return (
           <ClassPicker
             classes={classes}
-            selectedClasses={builderStore.classes.value}
+            value={builderStore.classes.value}
             onChange={v => builderStore.classes.value = v}
-            subclassId={builderStore.subclassId.value}
-            onSubclassChange={v => builderStore.subclassId.value = v}
             totalLevel={builderStore.totalLevel}
+            onTotalLevelChange={() => {}}
           />
         );
 
       case 'skills':
+        const primaryClass = classes.find(c => c.id === builderStore.classes.value[0]?.id);
+        const classSkillPool = primaryClass?.skillPool || [];
+        const backgroundSkillPool = backgrounds.find(b => b.id === builderStore.backgroundId.value)?.skills || [];
+        const skillPool = [...new Set([...classSkillPool, ...backgroundSkillPool])];
+        const maxSkills = primaryClass?.skillChoices || 2;
+        
         return (
           <SkillSelector
             skills={skills}
-            classSkills={classes.find(c => c.id === builderStore.classes.value[0]?.id)?.skillPool || []}
-            backgroundSkills={backgrounds.find(b => b.id === builderStore.backgroundId.value)?.skills || []}
-            value={builderStore.skills.value}
+            selected={builderStore.skills.value}
             onChange={v => builderStore.skills.value = v}
+            maxSelections={maxSkills}
+            pool={skillPool}
           />
         );
 
@@ -275,7 +274,6 @@ export function BuilderPage() {
   return (
     <div className="w-full max-w-5xl mx-auto">
       <StepsNav
-        steps={steps}
         currentStep={currentStep}
         completedSteps={builderStore.completedSteps.value}
       />
@@ -311,10 +309,6 @@ export function BuilderPage() {
           </div>
         </div>
       </Card>
-
-      <ToastContainer />
     </div>
   );
 }
-
-import { useState } from 'preact/hooks';

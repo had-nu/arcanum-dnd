@@ -1,6 +1,6 @@
 import { Link } from 'wouter';
-import { HomeIcon, SearchIcon } from 'lucide-preact';
-import { Button } from '@components/ui/Button';
+import { Home, Search } from 'lucide-preact';
+import { Button } from '@/components/ui/Button';
 
 export function NotFound() {
   return (
@@ -16,12 +16,12 @@ export function NotFound() {
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link href="/builder">
             <Button>
-              <SearchIcon className="h-4 w-4 mr-2" /> Build a Character
+              <Search className="h-4 w-4 mr-2" /> Build a Character
             </Button>
           </Link>
           <Link href="/characters">
             <Button variant="outline">
-              <HomeIcon className="h-4 w-4 mr-2" /> View Characters
+              <Home className="h-4 w-4 mr-2" /> View Characters
             </Button>
           </Link>
         </div>

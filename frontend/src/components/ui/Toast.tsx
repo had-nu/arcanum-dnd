@@ -1,5 +1,6 @@
-import { useState, useCallback } from 'preact/hooks';
-import { XIcon } from '@heroicons/react/24/solid';
+import { useState, useCallback, useContext } from 'preact/hooks';
+import { createContext } from 'preact';
+import { XIcon } from 'lucide-preact';
 import { clsx } from 'clsx';
 
 interface Toast {
@@ -14,6 +15,12 @@ interface ToastContextValue {
   toasts: Toast[];
   addToast: (toast: Omit<Toast, 'id'>) => string;
   removeToast: (id: string) => void;
+  toast: {
+    success: (title: string, message?: string) => string;
+    error: (title: string, message?: string) => string;
+    warning: (title: string, message?: string) => string;
+    info: (title: string, message?: string) => string;
+  };
 }
 
 const ToastContext = createContext<ToastContextValue | null>(null);
@@ -37,8 +44,15 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
+  const toast = {
+    success: (title: string, message?: string) => addToast({ type: 'success', title, message }),
+    error: (title: string, message?: string) => addToast({ type: 'error', title, message }),
+    warning: (title: string, message?: string) => addToast({ type: 'warning', title, message }),
+    info: (title: string, message?: string) => addToast({ type: 'info', title, message }),
+  };
+
   return (
-    <ToastContext.Provider value={{ toasts, addToast, removeToast }}>
+    <ToastContext.Provider value={{ toasts, addToast, removeToast, toast }}>
       {children}
       <ToastList toasts={toasts} onRemove={removeToast} />
     </ToastContext.Provider>
@@ -74,7 +88,7 @@ function ToastList({ toasts, onRemove }: { toasts: Toast[]; onRemove: (id: strin
         <div
           key={toast.id}
           className={clsx(
-            'pointer-events-auto flex items-start gap-3 p-4 rounded-lg rounded-lg border shadow-lg animate-slide-in',
+            'pointer-events-auto flex items-start gap-3 p-4 rounded-lg border shadow-lg animate-slide-in',
             typeStyles[toast.type]
           )}
           role="alert"
@@ -130,3 +144,5 @@ function InformationCircleIcon({ className }: { className?: string }) {
     </svg>
   );
 }
+
+export { ToastProvider as ToastContainer };

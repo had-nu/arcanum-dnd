@@ -1,6 +1,7 @@
-import { createContext, useContext, useState } from 'preact/hooks';
+import { createContext } from 'preact';
+import { useState, useContext } from 'preact/hooks';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { XIcon } from '@heroicons/react/24/solid';
+import { XIcon } from 'lucide-preact';
 import { clsx } from 'clsx';
 
 interface DialogContextValue {

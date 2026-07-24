@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
-import { clsx } from 'clsx';
-import { SunIcon, MoonIcon, DiceD20Icon } from 'lucide-preact';
+import { SunIcon, MoonIcon, Dices } from 'lucide-preact';
 
 interface HeaderProps {
   onThemeToggle: () => void;
@@ -39,7 +38,7 @@ export function Header({ onThemeToggle }: HeaderProps) {
             </button>
             <a href="/" className="flex items-center gap-2" aria-label="Arcanum Home">
               <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-dnd-blood-600 text-white shadow-lg">
-                <DiceD20Icon className="h-6 w-6" />
+                <Dices className="h-6 w-6" />
               </div>
               <div className="hidden sm:block">
                 <span className="font-display font-bold text-xl text-dnd-stone-900 dark:text-dnd-stone-100">Arcanum</span>

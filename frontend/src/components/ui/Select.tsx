@@ -1,7 +1,6 @@
 import * as SelectPrimitive from '@radix-ui/react-select';
 import { clsx } from 'clsx';
 import { ChevronDownIcon } from 'lucide-preact';
-import { Slot } from '@radix-ui/react-slot';
 
 interface SelectProps extends React.ComponentPropsWithoutRef<typeof SelectPrimitive.Root> {
   className?: string;

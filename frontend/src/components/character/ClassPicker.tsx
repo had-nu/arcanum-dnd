@@ -1,5 +1,3 @@
-import { clsx } from 'clsx';
-
 interface ClassPickerProps {
   classes: any[];
   value: Array<{ id: string; level: number; subclassId?: string }>;
@@ -58,7 +56,7 @@ export function ClassPicker({ classes, value, onChange, totalLevel, onTotalLevel
                 <div className="flex-1 space-y-3">
                   <select
                     value={cls.id}
-                    onChange={e => updateClass(index, 'id', e.target.value)}
+                    onChange={e => updateClass(index, 'id', e.currentTarget.value)}
                     className="input"
                   >
                     <option value="">Select class</option>
@@ -76,7 +74,7 @@ export function ClassPicker({ classes, value, onChange, totalLevel, onTotalLevel
                           min="1"
                           max={20 - (totalLevel - cls.level)}
                           value={cls.level}
-                          onChange={e => updateLevel(index, parseInt(e.target.value) || 1)}
+                          onChange={e => updateLevel(index, parseInt(e.currentTarget.value) || 1)}
                           className="w-16 input text-center"
                         />
                       </div>
@@ -86,11 +84,11 @@ export function ClassPicker({ classes, value, onChange, totalLevel, onTotalLevel
                           <label className="text-sm text-dnd-stone-600 dark:text-dnd-stone-400">Subclass</label>
                           <select
                             value={cls.subclassId || ''}
-                            onChange={e => updateClass(index, 'subclassId', e.target.value)}
+                            onChange={e => updateClass(index, 'subclassId', e.currentTarget.value)}
                             className="input w-48"
                           >
                             <option value="">Select subclass</option>
-                            {classData.subClasses.map(sc => (
+                            {classData.subClasses.map((sc: { id: string; name: string }) => (
                               <option key={sc.id} value={sc.id}>{sc.name}</option>
                             ))}
                           </select>

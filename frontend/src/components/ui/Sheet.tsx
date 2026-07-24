@@ -1,6 +1,7 @@
-import { createContext, useContext, useState } from 'preact/hooks';
+import { createContext } from 'preact';
+import { useState, useContext } from 'preact/hooks';
 import * as SheetPrimitive from '@radix-ui/react-dialog';
-import { XIcon } from '@heroicons/react/24/solid';
+import { XIcon } from 'lucide-preact';
 import { clsx } from 'clsx';
 
 interface SheetContextValue {
@@ -39,7 +40,7 @@ interface SheetTriggerProps extends React.ButtonHTMLAttributes<HTMLButtonElement
 }
 
 export function SheetTrigger({ children, onClick, ...props }: SheetTriggerProps) {
-  const { onOpen, isOpen } = useSheetContext();
+  const { onOpen } = useSheetContext();
   return (
     <button onClick={(e) => { onClick?.(e); onOpen(); }} {...props}>
       {children}

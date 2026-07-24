@@ -1,5 +1,5 @@
 import { clsx } from 'clsx';
-import { Link, useLocation } from 'wouter';
+import { useLocation } from 'wouter';
 
 const steps = [
   { id: 'basics', label: 'Basics', href: '/builder?step=basics', icon: '👤' },

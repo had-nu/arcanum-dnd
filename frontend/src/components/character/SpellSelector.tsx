@@ -1,4 +1,5 @@
 import { clsx } from 'clsx';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
 
 interface SpellSelectorProps {
   classId: string;
@@ -10,7 +11,7 @@ interface SpellSelectorProps {
 
 export function SpellSelector({ classId, spells, value, onChange, level }: SpellSelectorProps) {
   const classSpells = classId ? spells.leveled.flat() : [];
-  const available = classSpells.filter(s => s.level <= Math.max(1, Math.floor((level + 1) / 2)));
+  const available = classSpells.filter((s: any) => s.level <= Math.max(1, Math.floor((level + 1) / 2)));
 
   const maxSpells = Math.max(1, level); // simplified
 
@@ -42,7 +43,7 @@ export function SpellSelector({ classId, spells, value, onChange, level }: Spell
         )}
 
         <div className="max-h-96 overflow-y-auto scrollbar-thin">
-          {available.map(spell => (
+          {available.map((spell: any) => (
             <label
               key={spell.id}
               className={clsx(

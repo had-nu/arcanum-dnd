@@ -1,5 +1,5 @@
-import { signal, computed } from '@preact/signals';
-import type { BuildRequest, AbilityScores, ClassReq } from '@types/api';
+import { signal } from '@preact/signals';
+import type { BuildRequest, AbilityScores, ClassReq, SavedCharacter } from '@/types/api';
 
 const defaultAbilities: AbilityScores = { STR: 10, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10 };
 
@@ -92,7 +92,7 @@ export const builderStore = {
       speciesHybrid: undefined,
       level: this.totalLevel,
       abilityMethod: this.abilityMethod.value,
-      abilities: this.abilityScores.value,
+      abilities: this.abilityScores.value as unknown as Record<string, number>,
       skills: this.skills.value,
       spells: this.spells.value,
       feats: this.feats.value,
@@ -117,8 +117,9 @@ export const builderStore = {
   },
   
   setField(field: string, value: any) {
-    if (this[field as keyof typeof this]?.value !== undefined) {
-      (this[field as keyof typeof this] as any).value = value;
+    const prop = this[field as keyof typeof this];
+    if (prop && typeof prop === 'object' && prop !== null && 'value' in prop) {
+      (prop as { value: any }).value = value;
     }
   },
   
@@ -202,7 +203,14 @@ export const builderStore = {
     this.backgroundId.value = character.backgroundId;
     this.classes.value = character.classes.map(c => ({ id: c.id, level: c.level }));
     this.subclassId.value = character.subclassId || '';
-    this.abilityScores.value = character.abilities as AbilityScores;
+    this.abilityScores.value = {
+      STR: character.abilities.STR ?? 10,
+      DEX: character.abilities.DEX ?? 10,
+      CON: character.abilities.CON ?? 10,
+      INT: character.abilities.INT ?? 10,
+      WIS: character.abilities.WIS ?? 10,
+      CHA: character.abilities.CHA ?? 10,
+    } as { STR: number; DEX: number; CON: number; INT: number; WIS: number; CHA: number };
     this.abilityMethod.value = character.abilityMethod as any;
     this.skills.value = character.skills;
     this.spells.value = character.spells || [];
@@ -222,7 +230,6 @@ export const builderStore = {
     this.bgNotes.value = character.bgNotes || '';
     this.xp.value = character.xp;
     this.progressionType.value = character.progressionType;
-    this.level.value = character.level;
     
     this.completedSteps.value = ['basics', 'class', 'skills', 'spells'];
   },
