@@ -47,7 +47,7 @@ func main() {
 		log.Fatal("Character not found in state after commit!")
 	}
 
-	sheet := derive.BuildCharacterSheet(*char)
+	sheet := derive.BuildCharacterSheet(*char, content)
 	log.Printf("Derived: %s — AC:%d HP:%d/%d Prof:+%d",
 		sheet.Name, sheet.AC, sheet.HP.Current, sheet.HP.Max, sheet.ProficiencyBonus)
 

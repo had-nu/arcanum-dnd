@@ -14,4 +14,4 @@ COPY cmd/server/web/ ./web/
 RUN mkdir -p ./data/characters
 EXPOSE 8080
 VOLUME /app/data/characters
-CMD ["./server"]
+CMD ["./server", "--web-dir", "./web"]

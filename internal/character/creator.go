@@ -13,6 +13,19 @@ import (
 	"github.com/hadnu/arcanum/internal/types"
 )
 
+func prompt(scanner *bufio.Scanner, text string) string {
+	for {
+		fmt.Print(text)
+		if !scanner.Scan() {
+			log.Fatal("input error")
+		}
+		val := strings.TrimSpace(scanner.Text())
+		if val != "" {
+			return val
+		}
+	}
+}
+
 type Creator struct {
 	Content scontent.ResolvedContent
 	Result  CreationResult
@@ -58,21 +71,22 @@ func (c *Creator) RunInteractive() {
 	classes := []scontent.Class{}
 	classes = append(classes, c.chooseClass(scanner))
 
-	// Optional multiclass
-	if promptYesNo(scanner, "\nAdd a second class? (y/N): ") {
-		secondClass := c.chooseClass(scanner)
-		if c.validateMulticlassPrereqs(classes[0], secondClass, nil) {
-			classes = append(classes, secondClass)
-		} else {
-			fmt.Println("Prerequisites not met. Continuing with single class.")
-		}
-	}
-
+	// Optional multiclass - but we need scores first
 	bg := c.chooseBackground(scanner)
 	species := c.chooseSpecies(scanner)
 
 	// Combine ability score bonuses from background
 	scores := c.chooseAbilityScores(scanner, classes)
+
+	// Optional multiclass - now we have scores
+	if promptYesNo(scanner, "\nAdd a second class? (y/N): ") {
+		secondClass := c.chooseClass(scanner)
+		if c.validateMulticlassPrereqs(classes[0], secondClass, scores) {
+			classes = append(classes, secondClass)
+		} else {
+			fmt.Println("Prerequisites not met. Continuing with single class.")
+		}
+	}
 
 	skills := c.chooseSkills(scanner, classes, bg)
 
@@ -162,12 +176,12 @@ func getPrimaryAbility(class scontent.Class) types.AbilityScore {
 	return types.STR
 }
 
-func (c *Creator) validateMulticlassPrereqs(currentClass, newClass scontent.Class, scores *types.AbilityScores) bool {
+func (c *Creator) validateMulticlassPrereqs(currentClass, newClass scontent.Class, scores types.AbilityScores) bool {
 	currentPrimary := getPrimaryAbility(currentClass)
 	newPrimary := getPrimaryAbility(newClass)
 
-	currentScore := scoreOf(nil, currentPrimary)
-	newScore := scoreOf(nil, newPrimary)
+	currentScore := scoreOf(scores, currentPrimary)
+	newScore := scoreOf(scores, newPrimary)
 
 	if currentScore >= 13 && newScore >= 13 {
 		return true
@@ -175,17 +189,6 @@ func (c *Creator) validateMulticlassPrereqs(currentClass, newClass scontent.Clas
 	fmt.Printf("Prerequisites not met: %s requires %s >= 13 (have %d), %s requires %s >= 13 (have %d)\n",
 		currentClass.Name, currentPrimary, currentScore, newClass.Name, newPrimary, newScore)
 	return false
-}
-	for {
-		fmt.Print(text)
-		if !scanner.Scan() {
-			log.Fatal("input error")
-		}
-		val := strings.TrimSpace(scanner.Text())
-		if val != "" {
-			return val
-		}
-	}
 }
 
 func promptSelect(scanner *bufio.Scanner, text string, max int) int {
@@ -355,28 +358,31 @@ func (c *Creator) chooseSkills(scanner *bufio.Scanner, classes []scontent.Class,
 		skills[s] = true
 	}
 
-	chosen := len(skills)
-
 	fmt.Println("\n── Skills ──")
 	fmt.Printf("  Auto from background: %v\n", bg.Skills)
 
 	// Combine skill choices from all classes
-	var allChoices []struct {
+	type skillChoice struct {
 		Skill  types.Skill
 		Choose int
 		From   []types.Skill
 	}
+	var allChoices []skillChoice
 	for _, cls := range classes {
 		for _, si := range cls.Proficiencies.Skills {
-			allChoices = append(allChoices, si)
+			allChoices = append(allChoices, skillChoice{
+				Skill:  si.Skill,
+				Choose: si.Choose,
+				From:   si.From,
+			})
 		}
 	}
 
 	for _, choice := range allChoices {
 		need := choice.Choose
 		for need > 0 {
-			fmt.Printf("\n  Choose %d more skill(s) from %s:\n", need, cls.Name)
-			available := listClassSkills(cls)
+			fmt.Printf("\n  Choose %d more skill(s):\n", need)
+			available := choice.From
 			for i, sk := range available {
 				taken := ""
 				if skills[sk] {
@@ -543,16 +549,11 @@ func scoreOf(s types.AbilityScores, ab types.AbilityScore) int {
 func (c *Creator) chooseSpells(scanner *bufio.Scanner, cls scontent.Class) []*scontent.Spell {
 	// Check if class is a spellcaster by looking at spellcasting in levels
 	isSpellcaster := false
-	var spellcastingProfile *scontent.SpellcastingProfile
 	for _, level := range cls.Levels {
 		if level.SpellSlots != nil && len(level.SpellSlots) > 0 {
 			isSpellcaster = true
 			break
 		}
-	}
-	// Get spellcasting profile from class or subclass
-	if cls.Spellcasting != nil {
-		spellcastingProfile = cls.Spellcasting
 	}
 
 	if !isSpellcaster {
@@ -602,7 +603,9 @@ func (c *Creator) chooseSpells(scanner *bufio.Scanner, cls scontent.Class) []*sc
 			cantrips = 2
 		}
 
-		return browser.SelectSpellsForCharacter(scanner, cls.ID, maxSpells, cantrips)
+		// Use max spell level 9 as default for full casters
+		maxSpellLevel := 9
+		return browser.SelectSpellsForCharacter(scanner, cls.ID, maxSpellLevel, maxSpells, cantrips)
 	}
 
 	return nil

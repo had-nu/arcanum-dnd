@@ -1,9 +1,8 @@
 package main
 
 import (
-	"embed"
 	"encoding/json"
-	"io/fs"
+	"flag"
 	"log"
 	"net/http"
 	"os"
@@ -26,13 +25,11 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-//go:embed web/*
-var webFiles embed.FS
-
 type Server struct {
 	content  scontent.ResolvedContent
 	engine   *engine.Engine
 	campaign engine.Campaign
+	webDir   string
 }
 
 type BuildRequest struct {
@@ -112,6 +109,7 @@ type SpellcastingEntry struct {
 	SpellsKnown     []int                `json:"spellsKnown,omitempty"`
 	SpellSlots      map[string]int       `json:"spellSlots,omitempty"`
 	RitualCasting   bool                 `json:"ritualCasting,omitempty"`
+	SpellLists      map[int][]string     `json:"spellLists,omitempty"`
 }
 
 type subClassEntry struct {
@@ -171,7 +169,12 @@ type spellEntry struct {
 }
 
 func main() {
+	webDir := flag.String("web-dir", "web", "path to web static files directory")
+	addr := flag.String("addr", ":8080", "server listen address")
+	flag.Parse()
+
 	log.Println("Arcanum Server starting...")
+	log.Printf("Web directory: %s", *webDir)
 
 	content, err := contentpack.LoadAllFromDataDir("data")
 	if err != nil {
@@ -185,7 +188,7 @@ func main() {
 	e := engine.NewEngine(content, randSource)
 	campaign := e.CreateCampaign("Arcanum Web")
 
-	srv := &Server{content: content, engine: e, campaign: campaign}
+	srv := &Server{content: content, engine: e, campaign: campaign, webDir: *webDir}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/content", srv.handleContent)
@@ -197,14 +200,10 @@ func main() {
 	mux.HandleFunc("DELETE /api/characters/{name}", srv.handleDeleteCharacter)
 	mux.HandleFunc("GET /", srv.handleWeb)
 
-	webSub, err := fs.Sub(webFiles, "web")
-	if err != nil {
-		log.Fatalf("Failed to get web subfs: %v", err)
-	}
-	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.FS(webSub))))
+	mux.Handle("GET /static/", http.StripPrefix("/static/", noCache(http.FileServer(http.Dir(*webDir)))))
 
 	server := &http.Server{
-		Addr:         ":8080",
+		Addr:         *addr,
 		Handler:      corsMiddleware(mux),
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 30 * time.Second,
@@ -236,14 +235,17 @@ func corsMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+func noCache(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+		w.Header().Set("Pragma", "no-cache")
+		w.Header().Set("Expires", "0")
+		next.ServeHTTP(w, r)
+	})
+}
+
 func (s *Server) handleWeb(w http.ResponseWriter, r *http.Request) {
-	html, err := webFiles.ReadFile("web/index.html")
-	if err != nil {
-		http.Error(w, "Not found", http.StatusNotFound)
-		return
-	}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write(html)
+	http.ServeFile(w, r, filepath.Join(s.webDir, "index.html"))
 }
 
 func (s *Server) handleContent(w http.ResponseWriter, r *http.Request) {
@@ -312,7 +314,7 @@ func (s *Server) handleContent(w http.ResponseWriter, r *http.Request) {
 			SubClasses:     subClasses,
 			SubclassLevel:  subclassLevel,
 			Features:       features,
-			Spellcasting:   buildSpellcastingEntry(c),
+			Spellcasting:   buildSpellcastingEntry(c, s.content),
 		})
 	}
 
@@ -397,56 +399,104 @@ func (s *Server) handleContent(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleSpells(w http.ResponseWriter, r *http.Request) {
 	classID := r.URL.Query().Get("class")
 	maxLevel := r.URL.Query().Get("level")
+	levelStr := r.URL.Query().Get("lvl")
 
 	resp := SpellsResponse{
 		Leveled: make([][]spellEntry, 9),
 	}
 
-	// check if any spells have class tagging
-	anyTagged := false
-	for _, sp := range s.content.Spells {
-		if len(sp.Classes) > 0 {
-			anyTagged = true
-			break
-		}
-	}
+	// If class is specified, use class-level spell lists; otherwise return all spells
+	if classID != "" {
+		cls, ok := s.content.Classes[types.ClassID(classID)]
+		if ok {
+			// Get the level entry for the requested level (default to level 1)
+			requestedLevel := 1
+			if levelStr != "" {
+				requestedLevel = atoi(levelStr)
+				if requestedLevel < 1 || requestedLevel > 20 {
+					requestedLevel = 1
+				}
+			}
 
-	for _, sp := range s.content.Spells {
-		if classID != "" && anyTagged {
-			hasClass := false
-			for _, c := range sp.Classes {
-				if string(c) == classID {
-					hasClass = true
+			// Find the level entry for the requested level
+			var levelEntry *scontent.LevelEntry
+			for _, lvl := range cls.Levels {
+				if lvl.Level == requestedLevel {
+					levelEntry = &lvl
 					break
 				}
 			}
-			if !hasClass {
-				continue
+
+			// If not found, use the highest level <= requested level
+			if levelEntry == nil {
+				for _, lvl := range cls.Levels {
+					if lvl.Level <= requestedLevel {
+						if levelEntry == nil || lvl.Level > levelEntry.Level {
+							levelEntry = &lvl
+						}
+					}
+				}
+			}
+
+			if levelEntry != nil && len(levelEntry.Spells) > 0 {
+				for _, spellID := range levelEntry.Spells {
+					if sp, ok := s.content.Spells[spellID]; ok {
+						entry := spellEntry{
+							ID:            string(sp.ID),
+							Name:          sp.Name,
+							Level:         sp.Level,
+							School:        string(sp.School),
+							Time:          sp.CastingTime,
+							Range:         sp.Range,
+							Duration:      sp.Duration,
+							Concentration: sp.Concentration,
+							Ritual:        sp.Ritual,
+							Attack:        sp.Attack,
+						}
+						if sp.Damage != nil {
+							entry.Damage = sp.Damage.Dice
+						}
+						if sp.Save != nil {
+							entry.Save = string(*sp.Save)
+						}
+						if sp.Level == 0 {
+							resp.Cantrips = append(resp.Cantrips, entry)
+						} else if sp.Level <= 9 && sp.Level >= 1 {
+							if maxLevel == "" || sp.Level <= atoi(maxLevel) {
+								resp.Leveled[sp.Level-1] = append(resp.Leveled[sp.Level-1], entry)
+							}
+						}
+					}
+				}
 			}
 		}
-		entry := spellEntry{
-			ID:   string(sp.ID),
-			Name: sp.Name,
-			Level: sp.Level,
-			School: string(sp.School),
-			Time:  sp.CastingTime,
-			Range: sp.Range,
-			Duration: sp.Duration,
-			Concentration: sp.Concentration,
-			Ritual: sp.Ritual,
-			Attack: sp.Attack,
-		}
-		if sp.Damage != nil {
-			entry.Damage = sp.Damage.Dice
-		}
-		if sp.Save != nil {
-			entry.Save = string(*sp.Save)
-		}
-		if sp.Level == 0 {
-			resp.Cantrips = append(resp.Cantrips, entry)
-		} else if sp.Level <= 9 && sp.Level >= 1 {
-			if maxLevel == "" || sp.Level <= atoi(maxLevel) {
-				resp.Leveled[sp.Level-1] = append(resp.Leveled[sp.Level-1], entry)
+	} else {
+		// Return all spells (backward compatibility)
+		for _, sp := range s.content.Spells {
+			entry := spellEntry{
+				ID:            string(sp.ID),
+				Name:          sp.Name,
+				Level:         sp.Level,
+				School:        string(sp.School),
+				Time:          sp.CastingTime,
+				Range:         sp.Range,
+				Duration:      sp.Duration,
+				Concentration: sp.Concentration,
+				Ritual:        sp.Ritual,
+				Attack:        sp.Attack,
+			}
+			if sp.Damage != nil {
+				entry.Damage = sp.Damage.Dice
+			}
+			if sp.Save != nil {
+				entry.Save = string(*sp.Save)
+			}
+			if sp.Level == 0 {
+				resp.Cantrips = append(resp.Cantrips, entry)
+			} else if sp.Level <= 9 && sp.Level >= 1 {
+				if maxLevel == "" || sp.Level <= atoi(maxLevel) {
+					resp.Leveled[sp.Level-1] = append(resp.Leveled[sp.Level-1], entry)
+				}
 			}
 		}
 	}
@@ -608,7 +658,7 @@ func (s *Server) handleBuild(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, resp)
 }
 
-func buildSpellcastingEntry(cls *scontent.Class) *SpellcastingEntry {
+func buildSpellcastingEntry(cls *scontent.Class, content scontent.ResolvedContent) *SpellcastingEntry {
 	if cls.Spellcasting == nil {
 		return nil
 	}
@@ -635,6 +685,20 @@ func buildSpellcastingEntry(cls *scontent.Class) *SpellcastingEntry {
 			for k, v := range lvl.SpellSlots {
 				entry.SpellSlots[strconv.Itoa(k)] = v
 			}
+		}
+		if len(lvl.Spells) > 0 {
+			if entry.SpellLists == nil {
+				entry.SpellLists = make(map[int][]string)
+			}
+			spellNames := make([]string, len(lvl.Spells))
+			for i, spellID := range lvl.Spells {
+				if sp, ok := content.Spells[spellID]; ok {
+					spellNames[i] = sp.Name
+				} else {
+					spellNames[i] = string(spellID)
+				}
+			}
+			entry.SpellLists[lvl.Level] = spellNames
 		}
 	}
 

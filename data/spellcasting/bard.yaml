@@ -1,0 +1,106 @@
+class: bard
+spellcasting:
+  type: full
+  ability: CHA
+  knownCaster: true
+  progression:
+    - level: 1
+      cantripsKnown: 2
+      spellsKnown: 4
+      spellSlots: {1: 2}
+      spellList: [vicious-mockery, minor-illusion, healing-word, dissonant-whispers, heroism, charm-person]
+    - level: 2
+      cantripsKnown: 2
+      spellsKnown: 5
+      spellSlots: {1: 3}
+      spellList: [crown-of-madness, detect-thoughts, shatter]
+    - level: 3
+      cantripsKnown: 2
+      spellsKnown: 6
+      spellSlots: {1: 4, 2: 2}
+      spellList: [fear, hypnotic-pattern, major-image]
+    - level: 4
+      cantripsKnown: 3
+      spellsKnown: 7
+      spellSlots: {1: 4, 2: 3}
+      spellList: [compulsion, confusion, dimension-door]
+    - level: 5
+      cantripsKnown: 3
+      spellsKnown: 9
+      spellSlots: {1: 4, 2: 3, 3: 2}
+      spellList: [modify-memory, dominate-person, mislead]
+    - level: 6
+      cantripsKnown: 3
+      spellsKnown: 10
+      spellSlots: {1: 4, 2: 3, 3: 3}
+      spellList: [eyebite, find-the-path, mass-suggestion]
+    - level: 7
+      cantripsKnown: 3
+      spellsKnown: 11
+      spellSlots: {1: 4, 2: 3, 3: 3, 4: 1}
+      spellList: [forcecage, plane-shift, symbol]
+    - level: 8
+      cantripsKnown: 3
+      spellsKnown: 12
+      spellSlots: {1: 4, 2: 3, 3: 3, 4: 2}
+      spellList: [dominate-monster, glibness, power-word-stun]
+    - level: 9
+      cantripsKnown: 3
+      spellsKnown: 14
+      spellSlots: {1: 4, 2: 3, 3: 3, 4: 3, 5: 1}
+      spellList: [foresight, power-word-heal, true-resurrection]
+    - level: 10
+      cantripsKnown: 4
+      spellsKnown: 15
+      spellSlots: {1: 4, 2: 3, 3: 3, 4: 3, 5: 2}
+      spellList: []
+    - level: 11
+      cantripsKnown: 4
+      spellsKnown: 16
+      spellSlots: {1: 4, 2: 3, 3: 3, 4: 3, 5: 3}
+      spellList: []
+    - level: 12
+      cantripsKnown: 4
+      spellsKnown: 16
+      spellSlots: {1: 4, 2: 3, 3: 3, 4: 3, 5: 3}
+      spellList: []
+    - level: 13
+      cantripsKnown: 4
+      spellsKnown: 17
+      spellSlots: {1: 4, 2: 3, 3: 3, 4: 3, 5: 3, 6: 1}
+      spellList: []
+    - level: 14
+      cantripsKnown: 4
+      spellsKnown: 17
+      spellSlots: {1: 4, 2: 3, 3: 3, 4: 3, 5: 3, 6: 1}
+      spellList: []
+    - level: 15
+      cantripsKnown: 4
+      spellsKnown: 18
+      spellSlots: {1: 4, 2: 3, 3: 3, 4: 3, 5: 3, 6: 1, 7: 1}
+      spellList: []
+    - level: 16
+      cantripsKnown: 4
+      spellsKnown: 18
+      spellSlots: {1: 4, 2: 3, 3: 3, 4: 3, 5: 3, 6: 1, 7: 1}
+      spellList: []
+    - level: 17
+      cantripsKnown: 4
+      spellsKnown: 19
+      spellSlots: {1: 4, 2: 3, 3: 3, 4: 3, 5: 3, 6: 1, 7: 1, 8: 1}
+      spellList: []
+    - level: 18
+      cantripsKnown: 4
+      spellsKnown: 20
+      spellSlots: {1: 4, 2: 3, 3: 3, 4: 3, 5: 3, 6: 1, 7: 1, 8: 1, 9: 1}
+      spellList: []
+    - level: 19
+      cantripsKnown: 4
+      spellsKnown: 20
+      spellSlots: {1: 4, 2: 3, 3: 3, 4: 3, 5: 3, 6: 1, 7: 1, 8: 1, 9: 1}
+      spellList: []
+    - level: 20
+      cantripsKnown: 4
+      spellsKnown: 22
+      spellSlots: {1: 4, 2: 3, 3: 3, 4: 3, 5: 3, 6: 1, 7: 1, 8: 1, 9: 1}
+      spellList: []

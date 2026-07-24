@@ -1,3 +1,4 @@
+console.log('Arcanum v5');
 let content = null;
 let state = {
   step: 1, name: '',
@@ -19,7 +20,7 @@ let state = {
   result: null,
 };
 const STD_ARRAY = [15, 14, 13, 12, 10, 8];
-const STEPS = ['Name','Class','Background','Species','Abilities','Equipment','Spells','Sheet'];
+const STEPS = ['Name','Class','Background','Species','Abilities','Equipment','Sheet'];
 
 function abName(id) { return {STR:'Strength',DEX:'Dexterity',CON:'Constitution',INT:'Intelligence',WIS:'Wisdom',CHA:'Charisma'}[id]||id; }
 function abMod(v) { return Math.floor((v-10)/2); }
@@ -41,17 +42,44 @@ async function loadContent() {
   var sr = await fetch('/api/spells');
   var spellData = await sr.json();
   content.spells = {};
+  content.spellsByName = {}; // name -> spell object
   if (spellData.cantrips) {
-    spellData.cantrips.forEach(function(s){ content.spells[s.id] = {id:s.id, name:s.name, level:0, school:s.school, castingTime:s.time, range:s.range, duration:s.duration, concentration:s.concentration, damage:s.damage, save:s.save, attack:s.attack, ritual:s.ritual}; });
+    spellData.cantrips.forEach(function(s){ content.spells[s.id] = {id:s.id, name:s.name, level:0, school:s.school, castingTime:s.time, range:s.range, duration:s.duration, concentration:s.concentration, damage:s.damage, save:s.save, attack:s.attack, ritual:s.ritual}; content.spellsByName[s.name] = content.spells[s.id]; });
   }
   if (spellData.leveled) {
     spellData.leveled.forEach(function(arr, idx){
-      arr.forEach(function(s){ content.spells[s.id] = {id:s.id, name:s.name, level:idx+1, school:s.school, castingTime:s.time, range:s.range, duration:s.duration, concentration:s.concentration, damage:s.damage, save:s.save, attack:s.attack, ritual:s.ritual}; });
+      arr.forEach(function(s){ content.spells[s.id] = {id:s.id, name:s.name, level:idx+1, school:s.school, castingTime:s.time, range:s.range, duration:s.duration, concentration:s.concentration, damage:s.damage, save:s.save, attack:s.attack, ritual:s.ritual}; content.spellsByName[s.name] = content.spells[s.id]; });
+    });
+  }
+
+  window.CLASS_SPELL_LISTS = {};
+  if (content.classes) {
+    content.classes.forEach(function(cls) {
+      if (cls.spellcasting && cls.spellcasting.spellLists) {
+        var perLevel = {};
+        var spellLists = cls.spellcasting.spellLists;
+        Object.keys(spellLists).forEach(function(lvl) {
+          perLevel[lvl] = { cantrips: [], spells: [] };
+          spellLists[lvl].forEach(function(spellName) {
+            var sp = content.spellsByName[spellName];
+            if (sp && sp.level === 0) perLevel[lvl].cantrips.push(sp.id);
+            else if (sp) perLevel[lvl].spells.push(sp.id);
+          });
+        });
+        window.CLASS_SPELL_LISTS[cls.id] = perLevel;
+      }
     });
   }
 }
 
-function init() { loadContent().then(function(){ renderSteps(); showStep(1); }); }
+function init() { 
+  loadContent()
+    .then(function(){ renderSteps(); showStep(1); })
+    .catch(function(err){ 
+      console.error('Init failed:', err); 
+      document.body.innerHTML = '<pre style="color:red;padding:20px;">Init error: ' + err.message + '</pre>'; 
+    }); 
+}
 
 function renderSteps() {
   document.querySelector('.steps-inner').innerHTML = STEPS.map(function(s,i){
@@ -74,7 +102,6 @@ function canNavigateTo(n) {
   if (n === 5 && state.speciesId) return true;
   if (n === 6 && Object.keys(state.abilities).length === 6) return true;
   if (n === 7) return true;
-  if (n === 8) return true;
   return false;
 }
 function updateSteps() {
@@ -92,8 +119,7 @@ function showStep(n) {
   else if (n===4) renderSpecies(main);
   else if (n===5) renderAbilities(main);
   else if (n===6) renderEquipment(main);
-  else if (n===7) renderSpells(main);
-  else if (n===8) renderSheet(main);
+  else if (n===7) renderSheet(main);
   window.scrollTo(0,0);
 }
 function goTo(n) { showStep(Math.max(1,Math.min(n,STEPS.length))); }
@@ -119,7 +145,7 @@ function renderName(main) {
 async function loadSavedCharacters() {
   var chars = await listCharacters();
   var box = document.getElementById('saved-chars-section');
-  if (!box || chars.length === 0) return;
+  if (!box || !chars || chars.length === 0) return;
   var h = '<div class="saved-chars-divider"><span>or load a saved character</span></div>';
   h += '<div class="saved-chars-list">';
   chars.forEach(function(ch){
@@ -327,7 +353,7 @@ var CLASS_FEATURES = {
 
 function calcHP(classId, level, conMod, hitDie) {
   if (!hitDie) hitDie = CLASS_FEATURES[classId] ? CLASS_FEATURES[classId].hitDie : 8;
-  var hd = parseInt(hitDie);
+  var hd = parseInt(String(hitDie).replace('d',''));
   var avg = Math.floor(hd/2) + 1;
   if (level === 1) return hd + conMod;
   return hd + conMod + (level-1) * (avg + conMod);
@@ -355,7 +381,7 @@ function renderClass(main) {
     h += '<div class="picker-list" id="picker-list">';
     sortAlpha.forEach(function(c){
       h += '<div class="picker-row" onclick="openClassPopup(\''+c.id+'\')">';
-      h += '<div class="picker-row-icon">&#9876;</div>';
+      h += '<div class="picker-row-icon"><img src="/static/img/classes/'+c.id+'.svg" alt="'+esc(c.name)+'" onerror="this.style.display=\'none\'"></div>';
       h += '<div class="picker-row-info">';
       h += '<div class="picker-row-name">'+esc(c.name)+'</div>';
       h += '<div class="picker-row-meta">Player\'s Handbook &middot; HD d'+CLASS_FEATURES[c.id].hitDie+' &middot; '+(c.spellcaster?'Spellcaster':'Martial')+'</div>';
@@ -374,53 +400,73 @@ function renderClass(main) {
       var hp = calcHP(c.id, c.level, conMod, cd.hitDie);
       h += '<div class="selected-class-row">';
       h += '<div class="selected-class-hdr">';
-      h += '<div class="selected-class-name">'+esc(cd.name)+'</div>';
+      h += '<div class="selected-class-name"><img class="class-icon" src="/static/img/classes/'+c.id+'.svg" alt="" onerror="this.style.display=\'none\'"> '+esc(cd.name)+'</div>';
       h += '<div class="selected-class-sub">Level <select class="class-level-select" onchange="setClassLevel('+idx+',this.value)">';
       for (var l=1;l<=20;l++){ h += '<option value="'+l+'"'+(c.level===l?' selected':'')+'>'+l+'</option>'; }
       h += '</select></div>';
-      h += '<div class="selected-class-hp">HP <strong>'+hp+'</strong> <span class="hp-detail">(d'+cd.hitDie.replace('d','')+' + CON)</span></div>';
+      h += '<div class="selected-class-hp">HP <strong>'+hp+'</strong> <span class="hp-detail">(d'+String(cd.hitDie).replace('d','')+' + CON)</span></div>';
       h += '<button class="btn btn-sm btn-danger" onclick="removeClass('+idx+')">&#10005;</button>';
       h += '</div>';
 
       h += '<div class="selected-class-body">';
 
-      h += '<div class="selected-class-features">';
-      if (cf) {
-        cf.features.forEach(function(f){
-          var unlocked = f.level <= c.level;
-          var isSub = f.subclass;
-          h += '<div class="class-feature-row'+(unlocked?'':' locked')+(isSub?' subclass-feature':'')+'">';
-          h += '<span class="feat-level-badge">Lv.'+f.level+'</span>';
-          h += '<span class="feat-name">'+esc(f.name)+'</span>';
-          if (isSub) {
-            if (c.subclassId) {
-              var scData = cd.subClasses?cd.subClasses.find(function(s){return s.id===c.subclassId;}):null;
-              h += '<span class="subclass-badge">'+esc(scData?scData.name:c.subclassId)+'</span>';
-            } else if (c.level >= subLvl) {
-              h += '<span class="subclass-badge pending">Choose Subclass</span>';
+      var classSpells = window.CLASS_SPELL_LISTS ? window.CLASS_SPELL_LISTS[c.id] : null;
+
+      h += '<div class="class-body-tabs">';
+      h += '<button class="class-tab'+(c.classTab==='features'?' active':'')+'" onclick="setClassTab('+idx+',\'features\')">Features</button>';
+      if (cd.spellcaster && classSpells) {
+        h += '<button class="class-tab'+(c.classTab==='spells'?' active':'')+'" onclick="setClassTab('+idx+',\'spells\')">Spells</button>';
+      }
+      h += '</div>';
+
+      if (c.classTab === 'spells' && classSpells) {
+        h += '<div class="class-body-spells">';
+        h += renderClassSelectedSpells(idx, c);
+        h += '<details class="class-spell-details" id="class-spell-details-'+idx+'">';
+        h += '<summary class="class-spell-summary">Available Spells</summary>';
+        h += renderClassSpellPicker(idx, c);
+        h += '</details>';
+        h += '</div>';
+      } else {
+        h += '<div class="selected-class-features">';
+        if (cf) {
+          cf.features.forEach(function(f){
+            var unlocked = f.level <= c.level;
+            var isSub = f.subclass;
+            h += '<div class="class-feature-row'+(unlocked?'':' locked')+(isSub?' subclass-feature':'')+'">';
+            h += '<span class="feat-level-badge">Lv.'+f.level+'</span>';
+            h += '<span class="feat-name">'+esc(f.name)+'</span>';
+            if (isSub) {
+              if (c.subclassId) {
+                var scData = cd.subClasses?cd.subClasses.find(function(s){return s.id===c.subclassId;}):null;
+                h += '<span class="subclass-badge">'+esc(scData?scData.name:c.subclassId)+'</span>';
+              } else if (c.level >= subLvl) {
+                h += '<span class="subclass-badge pending">Choose Subclass</span>';
+              }
+            }
+            h += unlocked?'<span class="feat-unlocked">&#10003;</span>':'<span class="feat-locked">&#128274;</span>';
+            h += '</div>';
+          });
+        }
+
+        if (c.level >= subLvl && cd.subClasses && cd.subClasses.length) {
+          h += '<div class="subclass-select-row">';
+          h += '<label class="form-label">Subclass</label>';
+          h += '<select class="form-input subclass-select" onchange="setSubclass('+idx+',this.value)">';
+          h += '<option value="">-- Choose --</option>';
+          cd.subClasses.forEach(function(sc){
+            h += '<option value="'+sc.id+'"'+(c.subclassId===sc.id?' selected':'')+'>'+esc(sc.name)+'</option>';
+          });
+          h += '</select></div>';
+          if (c.subclassId) {
+            var scDesc = cd.subClasses.find(function(s){return s.id===c.subclassId;});
+            if (scDesc) {
+              h += '<div class="subclass-desc-box"><div class="subclass-desc-title">'+esc(scDesc.name)+'</div>';
+              h += '<div class="subclass-desc-text">'+esc(scDesc.description)+'</div></div>';
             }
           }
-          h += unlocked?'<span class="feat-unlocked">&#10003;</span>':'<span class="feat-locked">&#128274;</span>';
-          h += '</div>';
-        });
-      }
-
-      if (c.level >= subLvl && cd.subClasses && cd.subClasses.length) {
-        h += '<div class="subclass-select-row">';
-        h += '<label class="form-label">Subclass</label>';
-        h += '<select class="form-input subclass-select" onchange="setSubclass('+idx+',this.value)">';
-        h += '<option value="">-- Choose --</option>';
-        cd.subClasses.forEach(function(sc){
-          h += '<option value="'+sc.id+'"'+(c.subclassId===sc.id?' selected':'')+'>'+esc(sc.name)+'</option>';
-        });
-        h += '</select></div>';
-        if (c.subclassId) {
-          var scDesc = cd.subClasses.find(function(s){return s.id===c.subclassId;});
-          if (scDesc) {
-            h += '<div class="subclass-desc-box"><div class="subclass-desc-title">'+esc(scDesc.name)+'</div>';
-            h += '<div class="subclass-desc-text">'+esc(scDesc.description)+'</div></div>';
-          }
         }
+        h += '</div>';
       }
 
       h += '</div></div></div>';
@@ -440,7 +486,7 @@ function renderClass(main) {
         h += '<div class="picker-list" id="picker-list">';
         remaining.forEach(function(c){
           h += '<div class="picker-row" onclick="openClassPopup(\''+c.id+'\')">';
-          h += '<div class="picker-row-icon">&#9876;</div>';
+          h += '<div class="picker-row-icon"><img src="/static/img/classes/'+c.id+'.svg" alt="'+esc(c.name)+'" onerror="this.style.display=\'none\'"></div>';
           h += '<div class="picker-row-info">';
           h += '<div class="picker-row-name">'+esc(c.name)+'</div>';
           h += '<div class="picker-row-meta">Player\'s Handbook &middot; HD d'+CLASS_FEATURES[c.id].hitDie+' &middot; '+(c.spellcaster?'Spellcaster':'Martial')+'</div>';
@@ -502,7 +548,7 @@ function openClassPopup(classId) {
   h += '<button class="popup-close" onclick="closeClassPopup(event)">&#10005;</button>';
   h += '</div>';
 
-  h += '<div class="popup-body">';
+  h += '<div class="popup-body" id="popup-body">';
 
   h += '<div class="popup-section">';
   h += '<h3 class="popup-section-title">Primary Abilities</h3>';
@@ -530,20 +576,10 @@ function openClassPopup(classId) {
     h += '</div></div>';
   }
 
-  h += '<div class="popup-section">';
+  h += '<div class="popup-section" id="popup-features-section">';
   h += '<h3 class="popup-section-title">Class Features by Level</h3>';
-  h += '<div class="popup-levels">';
-  if (cf) {
-    cf.features.forEach(function(f){
-      var unlocked = f.level <= lvl;
-      var isSub = f.subclass;
-      h += '<div class="popup-level-group'+(unlocked?' unlocked':' locked')+(isSub?' subclass-feature':'')+'">';
-      h += '<div class="popup-level-hdr">Level '+f.level+'</div>';
-      h += '<div class="popup-feature"><span class="popup-feat-name">'+esc(f.name)+'</span></div>';
-      h += '<div class="popup-feature-desc">'+esc(f.desc)+'</div>';
-      h += '</div>';
-    });
-  }
+  h += '<div class="popup-levels" id="popup-features-list">';
+  h += buildPopupFeaturesList(cf, lvl);
   h += '</div></div>';
 
   h += '</div>';
@@ -578,8 +614,25 @@ function openClassPopup(classId) {
       var hp = calcHP(classId, v, conMod, cf.hitDie);
       var hpEl = document.getElementById('popup-hp-val');
       if (hpEl) hpEl.textContent = hp;
+      var featList = document.getElementById('popup-features-list');
+      if (featList) featList.innerHTML = buildPopupFeaturesList(cf, v);
     });
   }, 10);
+}
+
+function buildPopupFeaturesList(cf, lvl) {
+  if (!cf) return '';
+  var h = '';
+  cf.features.forEach(function(f){
+    var unlocked = f.level <= lvl;
+    var isSub = f.subclass;
+    h += '<div class="popup-level-group'+(unlocked?' unlocked':' locked')+(isSub?' subclass-feature':'')+'">';
+    h += '<div class="popup-level-hdr">Level '+f.level+'</div>';
+    h += '<div class="popup-feature"><span class="popup-feat-name">'+esc(f.name)+'</span></div>';
+    h += '<div class="popup-feature-desc">'+esc(f.desc)+'</div>';
+    h += '</div>';
+  });
+  return h;
 }
 
 function closeClassPopup(e) {
@@ -599,7 +652,7 @@ function confirmClassPopup(classId) {
     state.classes[existingIdx].level = lvl;
   } else {
     if (state.classes.length >= 2) { alert('Max 2 classes.'); return; }
-    state.classes.push({id:classId, level:lvl, subclassId:null, data:c});
+    state.classes.push({id:classId, level:lvl, subclassId:null, data:c, classTab:'features'});
   }
   closeClassPopup({target:document.querySelector('.class-popup-overlay')});
   renderClass(getMain());
@@ -612,6 +665,11 @@ function setClassLevel(idx, val) {
 
 function removeClass(idx) {
   state.classes.splice(idx, 1);
+  renderClass(getMain());
+}
+
+function setClassTab(idx, tab) {
+  state.classes[idx].classTab = tab;
   renderClass(getMain());
 }
 
@@ -1061,7 +1119,7 @@ function renderSpecies(main) {
     sortAlpha.forEach(function(s){
       if (s.id === sel) return;
       h += '<div class="picker-row" onclick="selectHybrid(\''+s.id+'\')">';
-      h += '<div class="picker-row-icon">&#9876;</div>';
+      h += '<div class="picker-row-icon"><img src="/static/img/species/'+s.id+'.webp" alt="'+esc(s.name)+'" onerror="this.style.display=\'none\'"></div>';
       h += '<div class="picker-row-info">';
       h += '<div class="picker-row-name">'+esc(s.name)+'</div>';
       h += '<div class="picker-row-meta">'+esc(s.size)+' &middot; '+s.speed+' ft</div>';
@@ -1082,7 +1140,7 @@ function renderSpecies(main) {
     sortAlpha.forEach(function(sp){
       var traits = SPECIES_TRAITS[sp.id]||{};
       h += '<div class="picker-row" onclick="openSpeciesPopup(\''+sp.id+'\')">';
-      h += '<div class="picker-row-icon">&#9876;</div>';
+      h += '<div class="picker-row-icon"><img src="/static/img/species/'+sp.id+'.webp" alt="'+esc(sp.name)+'" onerror="this.style.display=\'none\'"></div>';
       h += '<div class="picker-row-info">';
       h += '<div class="picker-row-name">'+esc(sp.name)+'</div>';
       h += '<div class="picker-row-meta">'+esc(sp.size)+' &middot; '+sp.speed+' ft &middot; '+(sp.variants&&sp.variants.length?sp.variants.length+' variants':'No variants')+'</div>';
@@ -1542,66 +1600,63 @@ var SPELL_SCHOOLS = {abjuration:'Abjuration',conjuration:'Conjuration',divinatio
   enchantment:'Enchantment',evocation:'Evocation',illusion:'Illusion',
   necromancy:'Necromancy',transmutation:'Transmutation'};
 
-// D&D 5e 2024 class spell lists
-var CLASS_SPELL_LISTS = {
-  wizard: {
-    cantrips: ['dancing-lights','fire-bolt','light','mage-hand','mending','message','minor-illusion','poison-spray','prestidigitation','ray-of-frost','shocking-grasp','true-strike'],
-    spells: ['alarm','burning-hands','charm-person','chromatic-orb','color-spray','comprehend-languages','detect-magic','disguise-self','expeditious-retreat','false-life','feather-fall','find-familiar','fog-cloud','grease','ice-knife','identify','illusory-script','jump','longstrider','mage-armor','magic-missile','protection-from-evil-and-good','shield','silent-image','sleep','tensers-floating-disk','thunderwave','unseen-servant','witch-bolt'],
-    prepared: true
-  },
-  sorcerer: {
-    cantrips: ['acid-splash','blade-ward','chill-touch','dancing-lights','elementalism','fire-bolt','friends','light','mage-hand','mending','message','mind-sliver','minor-illusion','poison-spray','prestidigitation','ray-of-frost','shocking-grasp','sorcerous-burst','true-strike'],
-    spells: ['burning-hands','charm-person','chromatic-orb','color-spray','comprehend-languages','detect-magic','disguise-self','expeditious-retreat','false-life','feather-fall','fog-cloud','grease','ice-knife','jump','longstrider','mage-armor','magic-missile','protection-from-evil-and-good','shield','silent-image','sleep','thunderwave','witch-bolt'],
-    known: true
-  },
-  bard: {
-    cantrips: ['friends','mage-hand','mending','message','minor-illusion','prestidigitation','vicious-mockery'],
-    spells: ['animal-friendship','bane','charm-person','color-spray','comprehend-languages','cure-wounds','detect-magic','disguise-self','dissonant-whispers','faerie-fire','false-life','feather-fall','heroism','identify','illusory-script','jump','longstrider','mage-armor','magic-missile','silent-image','sleep','speak-with-animals','tashas-hideous-laughter','unseen-servant'],
-    known: true
-  },
-  cleric: {
-    cantrips: ['guidance','light','mending','message','resistance','sacred-flame','spare-the-dying','thaumaturgy','toll-the-dead','word-of-radiance'],
-    spells: ['armor-of-agathys','bane','bless','burning-hands','command','comprehend-languages','create-or-destroy-water','cure-wounds','detect-evil-and-good','detect-magic','detect-poison-and-disease','divine-favor','guiding-bolt','healing-word','inflict-wounds','protection-from-evil-and-good','sanctuary','shield-of-faith','silent-image','thunderwave','warding-bond','zone-of-truth'],
-    prepared: true
-  },
-  druid: {
-    cantrips: ['druidcraft','guidance','produce-flame','resistance','shillelagh','starry-wisp','thorn-whip'],
-    spells: ['animal-friendship','charm-person','comprehend-languages','create-or-destroy-water','cure-wounds','detect-magic','detect-poison-and-disease','entangle','faerie-fire','fog-cloud','goodberry','healing-word','ice-knife','jump','longstrider','protection-from-evil-and-good','speak-with-animals','thunderwave'],
-    prepared: true
-  },
-  warlock: {
-    cantrips: ['blade-ward','chill-touch','eldritch-blast','friends','mage-hand','mind-sliver','minor-illusion','poison-spray','prestidigitation','toll-the-dead','true-strike'],
-    spells: ['armor-of-agathys','arms-of-hadar','charm-person','comprehend-languages','hellish-rebuke','hex','illusory-script','protection-from-evil-and-good','witch-bolt'],
-    known: true
-  },
-  paladin: {
-    cantrips: [],
-    spells: ['bless','compel-duel','cure-wounds','detect-evil-and-good','detect-magic','divine-favor','heroism','protection-from-evil-and-good','sanctuary','searing-smite','shield','shield-of-faith','thunderous-smite','wrathful-smite','zone-of-truth'],
-    prepared: true
-  },
-  ranger: {
-    cantrips: [],
-    spells: ['alarm','animal-friendship','cure-wounds','detect-magic','detect-poison-and-disease','ensnaring-strike','entangle','goodberry','hail-of-thorns','hex','hunters-mark','jump','longstrider','speak-with-animals'],
-    prepared: true
-  }
+var SUBCLASS_AFFINITIES = {
+  // Sorcerer
+  'aberrant-sorcery':      { schools:['illusion','enchantment','divination'], damageTypes:['psychic'], desc:'Illusion, enchantment, and psychic magic' },
+  'clockwork-sorcery':     { schools:['abjuration','divination'],            damageTypes:['force'],  desc:'Order, protection, and force magic' },
+  'draconic-sorcery':      { schools:['evocation'],                          damageTypes:['fire','cold','lightning','acid','poison','thunder'], desc:'Elemental and draconic damage spells' },
+  'wild-magic-sorcery':    { schools:['evocation','conjuration'],            damageTypes:[],         desc:'Raw, unpredictable evocation and conjuration' },
+  // Cleric
+  'life-domain':           { schools:['abjuration','necromancy'],            damageTypes:['radiant'],desc:'Healing, protection, and radiant magic' },
+  'light-domain':          { schools:['evocation','abjuration'],             damageTypes:['fire','radiant'], desc:'Radiant fire, light, and protective magic' },
+  'trickery-domain':       { schools:['illusion','enchantment'],             damageTypes:[],         desc:'Deception, illusion, and charm magic' },
+  'war-domain':            { schools:['evocation','transmutation'],          damageTypes:[],         desc:'Battle magic, buffs, and martial support' },
+  // Paladin
+  'oath-of-devotion':      { schools:['abjuration','enchantment'],           damageTypes:['radiant'],desc:'Protection, holy radiance, and consecration' },
+  'oath-of-glory':         { schools:['abjuration','evocation'],             damageTypes:[],         desc:'Heroic buffs, speed, and inspirational magic' },
+  'oath-of-the-ancients':  { schools:['abjuration','conjuration'],           damageTypes:[],         desc:'Nature ward, fey protection, and ancient power' },
+  'oath-of-vengeance':     { schools:['necromancy','evocation'],             damageTypes:[],         desc:'Hunting, debuffs, and relentlessness damage' },
+  // Warlock
+  'archfey-patron':        { schools:['enchantment','illusion','conjuration'], damageTypes:[],       desc:'Fey trickery, charm, illusion, and teleportation' },
+  'the-fiend':             { schools:['evocation','necromancy'],             damageTypes:['fire'],   desc:'Fire, destruction, and fiendish power' },
+  'the-great-old-one':     { schools:['enchantment','divination'],           damageTypes:['psychic'],desc:'Mind control, psychic damage, and forbidden knowledge' },
+  // Druid
+  'circle-of-the-land':    { schools:['conjuration','divination','abjuration'], damageTypes:[],      desc:'Nature attunement, terrain-based, and primal magic' },
+  'circle-of-the-moon':    { schools:['conjuration','transmutation'],        damageTypes:[],         desc:"Shapeshifting, primal beasts, and nature's fury" },
+  'circle-of-the-sea':     { schools:['conjuration','evocation'],            damageTypes:['cold','lightning','thunder'], desc:'Water, storms, waves, and ocean magic' },
+  // Wizard
+  'abjurer':               { schools:['abjuration'],                         damageTypes:[],         desc:'Protective wards, barriers, and counterspells' },
+  'diviner':               { schools:['divination'],                         damageTypes:[],         desc:'Foresight, detection, and knowledge magic' },
+  'evoker':                { schools:['evocation'],                          damageTypes:[],         desc:'Raw destructive elemental and force magic' },
+  'illusionist':           { schools:['illusion'],                           damageTypes:[],         desc:'Deceptive illusions, phantasms, and misdirection' },
+  // Bard
+  'college-of-dance':      { schools:['transmutation','enchantment','illusion'], damageTypes:[],     desc:'Graceful movement, charm, and dazzling performances' },
+  'college-of-glamour':    { schools:['enchantment','illusion'],             damageTypes:[],         desc:'Fey-touched charm, beauty, and beguiling magic' },
+  'college-of-valor':      { schools:['evocation','transmutation','abjuration'], damageTypes:[],     desc:'Battle inspiration, combat buffs, and war magic' },
+  // Ranger
+  'beast-master':          { schools:['conjuration','enchantment'],          damageTypes:[],         desc:'Beast-bonding, animal friendship, and nature magic' },
+  'fey-wanderer':          { schools:['enchantment','illusion','conjuration'], damageTypes:[],       desc:'Fey charm, misdirection, and otherworldly magic' },
+  'gloom-stalker':         { schools:['illusion','necromancy'],              damageTypes:[],         desc:'Shadow, darkness, ambush, and fear magic' },
+  'hunter':                { schools:['divination','evocation','necromancy'],damageTypes:[],         desc:'Tracking, quarry-hunting, and offensive nature magic' }
 };
 
 // Granted spells from subclass/feat/species
 var SUBCLASS_SPELLS = {
-  'eldritch-knight': { cantrips: 2, spells: 3, source: 'wizard' },
-  'arcane-trickster': { cantrips: 2, spells: 3, source: 'wizard' },
-  'college-of-lore': { cantrips: 0, spells: 2, source: 'bard' },
-  'college-of-dance': { cantrips: 0, spells: 0, source: null }
+  'eldritch-knight': { cantrips: 2, spells: 3, source: 'wizard', bonus: false },
+  'arcane-trickster': { cantrips: 2, spells: 3, source: 'wizard', bonus: false },
+  'college-of-lore': { cantrips: 0, spells: 2, source: 'bard', bonus: true },
+  'college-of-dance': { cantrips: 0, spells: 0, source: null, bonus: true }
 };
 
 // ─── BACKGROUND GRANTED SPELLS (Origin Feats) ───
 var BG_GRANTED_SPELLS = {
-  'acolyte': { cantrips: 2, spells: 1, source: 'cleric' },
-  'guide': { cantrips: 2, spells: 1, source: 'druid' },
-  'sage': { cantrips: 2, spells: 1, source: 'wizard' }
+  'acolyte': { cantrips: 2, spells: 1, source: 'cleric', bonus: true },
+  'guide': { cantrips: 2, spells: 1, source: 'druid', bonus: true },
+  'sage': { cantrips: 2, spells: 1, source: 'wizard', bonus: true }
 };
 
 // ─── MULTICLASS SPELL SLOT TABLE (2024 PHB) ───
+// Source: data/spellcasting/multiclass-slots.yaml
 // Index = combined caster level, values = [slot1, slot2, slot3, slot4, slot5]
 var MULTICLASS_SLOTS = [
   [],           // 0
@@ -1640,20 +1695,6 @@ function getMaxSpellsKnownPerLevel() {
   return maxPerLevel;
 }
 
-function getTotalSpellsKnown() {
-  // Total spells known for known casters (Sorcerer, Warlock, Bard)
-  var total = 0;
-  var cantrips = 0;
-  state.classes.forEach(function(cls) {
-    var list = CLASS_SPELL_LISTS[cls.id];
-    if (list && list.known) {
-      total += getSpellsKnown(cls.id, cls.level);
-      cantrips += getCantripsKnown(cls.id, cls.level);
-    }
-  });
-  return { total: total, cantrips: cantrips };
-}
-
 function getMaxSpellLevel(classId, classLevel) {
   if (classId === 'warlock') {
     if (classLevel >= 9) return 5;
@@ -1671,6 +1712,16 @@ function getMaxSpellLevel(classId, classLevel) {
   if (classLevel >= 5) return 3;
   if (classLevel >= 3) return 2;
   return 1;
+}
+
+function getCantripsKnown(classId, classLevel) {
+  if (classId === 'wizard') return classLevel >= 10 ? 5 : classLevel >= 4 ? 4 : 3;
+  if (classId === 'sorcerer') return classLevel >= 10 ? 6 : classLevel >= 4 ? 5 : 4;
+  if (classId === 'bard') return classLevel >= 10 ? 4 : classLevel >= 4 ? 3 : 2;
+  if (classId === 'warlock') return classLevel >= 10 ? 4 : classLevel >= 4 ? 3 : 2;
+  if (classId === 'cleric') return classLevel >= 10 ? 5 : classLevel >= 4 ? 4 : 3;
+  if (classId === 'druid') return classLevel >= 10 ? 4 : classLevel >= 4 ? 3 : 2;
+  return 0;
 }
 
 function getSpellsKnown(classId, classLevel) {
@@ -1712,6 +1763,46 @@ function getSpellsKnown(classId, classLevel) {
   return 0; // Prepared casters don't have "known" limit
 }
 
+function getSpellListsForClass(classId, classLevel) {
+  var cls = content && content.classes && content.classes.find(function(c){return c.id===classId;});
+  if (!cls) {
+    return aggregateClassSpells(classId, classLevel); // fallback
+  }
+  if (!cls.spellcasting || !cls.spellcasting.spellLists) {
+    return aggregateClassSpells(classId, classLevel); // fallback
+  }
+
+  var spellLists = cls.spellcasting.spellLists;
+  var cantrips = [];
+  var spells = [];
+
+  // Collect all spells up to the given level
+  for (var lvl = 1; lvl <= classLevel; lvl++) {
+    if (spellLists[lvl]) {
+      spellLists[lvl].forEach(function(spellName) {
+        // Find spell ID by name
+        var spellId = Object.keys(content.spells).find(function(id) {
+          return content.spells[id].name === spellName;
+        });
+        if (spellId) {
+          var sp = content.spells[spellId];
+          if (sp.level === 0) {
+            if (cantrips.indexOf(spellId) === -1) cantrips.push(spellId);
+          } else {
+            if (spells.indexOf(spellId) === -1) spells.push(spellId);
+          }
+        }
+      });
+    }
+  }
+
+  return {
+    cantrips: cantrips,
+    spells: spells,
+    prepared: true
+  };
+}
+
 function getCantripsKnown(classId, classLevel) {
   if (classId === 'wizard') return classLevel >= 10 ? 5 : classLevel >= 4 ? 4 : 3;
   if (classId === 'sorcerer') return classLevel >= 10 ? 6 : classLevel >= 4 ? 5 : 4;
@@ -1720,6 +1811,21 @@ function getCantripsKnown(classId, classLevel) {
   if (classId === 'cleric') return classLevel >= 10 ? 5 : classLevel >= 4 ? 4 : 3;
   if (classId === 'druid') return classLevel >= 10 ? 4 : classLevel >= 4 ? 3 : 2;
   return 0;
+}
+
+function getCasterLevel() {
+  var total = 0;
+  state.classes.forEach(function(c) {
+    if (c.id === 'warlock') return;
+    if (c.data && c.data.spellcasting) {
+      var type = c.data.spellcasting.type || 'full';
+      if (type === 'full') total += c.level;
+      else if (type === 'half' || type === 'half-rounded-up') total += Math.floor(c.level / 2);
+      else if (type === 'third') total += Math.floor(c.level / 3);
+      else total += c.level;
+    }
+  });
+  return total;
 }
 
 function getSpellSlots() {
@@ -1757,14 +1863,14 @@ function getGrantedSpells() {
   state.classes.forEach(function(cls) {
     var classId = cls.id;
     var classLevel = cls.level;
-    var list = CLASS_SPELL_LISTS[classId];
+    var list = getSpellListsForClass(classId, classLevel);
     if (!list) return;
 
-    // Cantrips known
+    // Cantrips known (auto-pick first N)
     var numCantrips = getCantripsKnown(classId, classLevel);
     list.cantrips.slice(0, numCantrips).forEach(function(id){
       var sp = content.spells[id];
-      if (sp) granted.push({ id: id, name: sp.name, school: sp.school, level: 0, source: cls.data.name || classId });
+      if (sp) granted.push({ id: id, name: sp.name, school: sp.school, level: 0, source: cls.data.name || classId, bonus: false });
     });
 
     // Spells known (for known casters like Sorcerer, Warlock, Bard)
@@ -1773,39 +1879,41 @@ function getGrantedSpells() {
       var maxLevel = getMaxSpellLevel(classId, classLevel);
       list.spells.filter(function(id){ var sp=content.spells[id]; return sp && sp.level <= maxLevel; }).slice(0, numSpells).forEach(function(id){
         var sp = content.spells[id];
-        if (sp) granted.push({ id: id, name: sp.name, school: sp.school, level: sp.level, source: cls.data.name || classId });
+        if (sp) granted.push({ id: id, name: sp.name, school: sp.school, level: sp.level, source: cls.data.name || classId, bonus: false });
       });
     }
 
     // Subclass granted spells
     if (cls.subclassId && SUBCLASS_SPELLS[cls.subclassId]) {
       var sub = SUBCLASS_SPELLS[cls.subclassId];
-      var subList = CLASS_SPELL_LISTS[sub.source];
-      if (subList) {
-        subList.cantrips.slice(0, sub.cantrips).forEach(function(id){
-          var sp = content.spells[id];
-          if (sp) granted.push({ id: id, name: sp.name, school: sp.school, level: 0, source: 'Subclass' });
-        });
-        subList.spells.slice(0, sub.spells).forEach(function(id){
-          var sp = content.spells[id];
-          if (sp) granted.push({ id: id, name: sp.name, school: sp.school, level: sp.level, source: 'Subclass' });
-        });
+      if (sub.bonus) {
+        var subList = sub.source ? aggregateClassSpells(sub.source, 20) : null;
+        if (subList) {
+          subList.cantrips.slice(0, sub.cantrips).forEach(function(id){
+            var sp = content.spells[id];
+            if (sp) granted.push({ id: id, name: sp.name, school: sp.school, level: 0, source: 'Subclass', bonus: true });
+          });
+          subList.spells.slice(0, sub.spells).forEach(function(id){
+            var sp = content.spells[id];
+            if (sp) granted.push({ id: id, name: sp.name, school: sp.school, level: sp.level, source: 'Subclass', bonus: true });
+          });
+        }
       }
     }
   });
 
-  // Background granted spells (Magic Initiate feat)
+  // Background granted spells (Origin Feats) — always bonus
   if (state.backgroundId && BG_GRANTED_SPELLS[state.backgroundId]) {
     var bgFeat = BG_GRANTED_SPELLS[state.backgroundId];
-    var bgList = CLASS_SPELL_LISTS[bgFeat.source];
+    var bgList = bgFeat.source ? aggregateClassSpells(bgFeat.source, 20) : null;
     if (bgList) {
       bgList.cantrips.slice(0, bgFeat.cantrips).forEach(function(id){
         var sp = content.spells[id];
-        if (sp) granted.push({ id: id, name: sp.name, school: sp.school, level: 0, source: 'Background' });
+        if (sp) granted.push({ id: id, name: sp.name, school: sp.school, level: 0, source: 'Background', bonus: true });
       });
       bgList.spells.slice(0, bgFeat.spells).forEach(function(id){
         var sp = content.spells[id];
-        if (sp) granted.push({ id: id, name: sp.name, school: sp.school, level: sp.level, source: 'Background' });
+        if (sp) granted.push({ id: id, name: sp.name, school: sp.school, level: sp.level, source: 'Background', bonus: true });
       });
     }
   }
@@ -1823,7 +1931,7 @@ function getSelectableSpells() {
   state.classes.forEach(function(cls) {
     var classId = cls.id;
     var classLevel = cls.level;
-    var list = CLASS_SPELL_LISTS[classId];
+    var list = getClassSpellList(classId, classLevel);
     if (!list) return;
 
     var maxLevel = getMaxSpellLevel(classId, classLevel);
@@ -1842,10 +1950,81 @@ function getSelectableSpells() {
   return result;
 }
 
+function isSpellRecommended(spell) {
+  for (var i = 0; i < state.classes.length; i++) {
+    var cls = state.classes[i];
+    var scId = cls.subclassId;
+    if (!scId) continue;
+    var aff = SUBCLASS_AFFINITIES[scId];
+    if (!aff) continue;
+    if (aff.schools && aff.schools.indexOf(spell.school) !== -1) return aff.desc;
+    if (aff.damageTypes && spell.damage) {
+      var dmg = spell.damage.toLowerCase();
+      for (var d = 0; d < aff.damageTypes.length; d++) {
+        if (dmg.indexOf(aff.damageTypes[d]) !== -1) return aff.desc;
+      }
+    }
+  }
+  return null;
+}
+
+function getClassSpellList(classId, classLevel) {
+  var classData = content.classes && content.classes.find(function(c){return c.id===classId;});
+  if (classData && classData.spellcasting && classData.spellcasting.spellLists) {
+    // Combine all spell lists up to classLevel
+    var cantrips = [];
+    var spells = [];
+    for (var lvl = 1; lvl <= classLevel; lvl++) {
+      var levelSpells = classData.spellcasting.spellLists[lvl];
+      if (levelSpells) {
+        levelSpells.forEach(function(spellName) {
+          // Find spell ID by name
+          var spell = Object.values(content.spells).find(function(s) { return s.name === spellName; });
+          if (spell) {
+            if (spell.level === 0) cantrips.push(spell.id);
+            else spells.push(spell.id);
+          }
+        });
+      }
+    }
+    // Remove duplicates
+    cantrips = [...new Set(cantrips)];
+    spells = [...new Set(spells)];
+    return { cantrips: cantrips, spells: spells, known: false }; // default to prepared
+  }
+  return aggregateClassSpells(classId, classLevel);
+}
+
+function aggregateClassSpells(classId, classLevel) {
+  var perLevel = CLASS_SPELL_LISTS[classId];
+  if (!perLevel) return null;
+  var cantrips = [], spells = [];
+  Object.keys(perLevel).forEach(function(lvl){
+    if (parseInt(lvl,10) > classLevel) return;
+    perLevel[lvl].cantrips.forEach(function(sid){
+      if (cantrips.indexOf(sid)===-1) cantrips.push(sid);
+    });
+    perLevel[lvl].spells.forEach(function(sid){
+      if (spells.indexOf(sid)===-1) spells.push(sid);
+    });
+  });
+  return { cantrips: cantrips, spells: spells, prepared: true, known: false };
+}
+
+function getClassSpellsForPicker(c) {
+  var perLevel = CLASS_SPELL_LISTS ? CLASS_SPELL_LISTS[c.id] : null;
+  if (perLevel) return perLevel;
+  // Fallback for subclasses that draw from another class's list (EK, AT)
+  if (c.subclassId && SUBCLASS_SPELLS[c.subclassId] && !SUBCLASS_SPELLS[c.subclassId].bonus) {
+    var sub = SUBCLASS_SPELLS[c.subclassId];
+    if (sub.source && CLASS_SPELL_LISTS[sub.source]) return CLASS_SPELL_LISTS[sub.source];
+  }
+  return null;
+}
+
 function renderSpells(main) {
   var firstClass = state.classes[0]?state.classes[0]:null;
   var isCaster = firstClass && firstClass.data && firstClass.data.spellcaster;
-  // Also check if any class in multiclass is a caster
   if (!isCaster) {
     state.classes.forEach(function(c) {
       if (c.data && c.data.spellcaster) isCaster = true;
@@ -1863,15 +2042,11 @@ function renderSpells(main) {
   var granted = getGrantedSpells();
   var grantedCantrips = granted.filter(function(g){return g.level===0;});
   var grantedLevel = granted.filter(function(g){return g.level>=1;});
-  var selectedUserCantrips = state.spells.filter(function(s){var sp=content.spells[s];return sp&&sp.level===0;}).length;
-  var selectedUserSpells = state.spells.filter(function(s){var sp=content.spells[s];return sp&&sp.level>=1;}).length;
-  var totalCantrips = grantedCantrips.length + selectedUserCantrips;
-  var totalSpells = grantedLevel.length + selectedUserSpells;
+  var totalCantrips = grantedCantrips.length + state.spells.filter(function(s){var sp=content.spells[s];return sp&&sp.level===0;}).length;
+  var totalSpells = grantedLevel.length + state.spells.filter(function(s){var sp=content.spells[s];return sp&&sp.level>=1;}).length;
 
   var h = '<div class="spell-section">';
   h += '<h2 class="sec-title">Spellbook</h2>';
-
-  // Summary bar
   h += '<div class="spell-summary">';
   h += '<div class="spell-summary-item"><span class="spell-summary-count">'+totalCantrips+'</span><span class="spell-summary-label"> Cantrips</span></div>';
   h += '<div class="spell-summary-item"><span class="spell-summary-count">'+totalSpells+'</span><span class="spell-summary-label"> Spells</span></div>';
@@ -1880,154 +2055,310 @@ function renderSpells(main) {
   }
   h += '</div>';
 
-  // Granted spells section
-  if (granted.length > 0) {
-    h += '<div class="spell-granted-section">';
-    h += '<h3 class="spell-section-title">Granted Spells</h3>';
-    h += '<p class="spell-section-sub">These spells are automatically known from your class, subclass, and background.</p>';
-
-    if (grantedCantrips.length > 0) {
-      h += '<div class="spell-granted-group">';
-      h += '<div class="spell-granted-label">Cantrips</div>';
-      h += '<div class="picker-list">';
-      grantedCantrips.forEach(function(g){
-        var schoolImg = (g.school||'evocation').toLowerCase();
-        h += '<div class="picker-row spell-picker-row granted">';
-        h += '<div class="picker-row-icon"><img src="/static/img/spell-schools/'+schoolImg+'.png" alt="'+esc(g.school)+'" width="28" height="28" onerror="this.style.display=\'none\'"></div>';
-        h += '<div class="picker-row-info">';
-        h += '<div class="picker-row-name">'+esc(g.name)+'</div>';
-        h += '<div class="picker-row-meta">'+(SPELL_SCHOOLS[g.school]||g.school)+' &middot; Cantrip</div>';
-        h += '</div>';
-        h += '<div class="picker-row-arrow spell-granted-badge">'+esc(g.source)+'</div>';
-        h += '</div>';
+  // Selected spells per class
+  h += '<div class="spell-class-summaries">';
+  state.classes.forEach(function(c, idx){
+    if (!c.data || !c.data.spellcaster) return;
+    var classSpells = window.CLASS_SPELL_LISTS ? window.CLASS_SPELL_LISTS[c.id] : null;
+    if (!classSpells) return;
+    var cName = c.data.name || c.id;
+    var cLevel = c.level;
+    h += '<div class="spell-class-summary">';
+    h += '<div class="spell-class-summary-name">'+esc(cName)+' '+cLevel+'</div>';
+    // Class spell IDs
+    var classSpellIds = [];
+    Object.keys(classSpells).forEach(function(lvl){
+      if (parseInt(lvl,10) > cLevel) return;
+      classSpells[lvl].cantrips.forEach(function(sid){if (classSpellIds.indexOf(sid)===-1) classSpellIds.push(sid);});
+      classSpells[lvl].spells.forEach(function(sid){if (classSpellIds.indexOf(sid)===-1) classSpellIds.push(sid);});
+    });
+    var sel = state.spells.filter(function(sid){return classSpellIds.indexOf(sid)!==-1;});
+    var gr = granted.filter(function(g){return classSpellIds.indexOf(g.id)!==-1;});
+    if (sel.length) {
+      h += '<div class="spell-class-summary-list">';
+      sel.forEach(function(sid){
+        var sp = content.spells[sid];
+        if (!sp) return;
+        var si = (sp.school||'evocation').toLowerCase();
+        h += '<div class="spell-class-summary-spell"><img src="/static/img/spell-schools/'+si+'.png" alt="" width="14" height="14" onerror="this.style.display=\'none\'"> '+esc(sp.name)+'</div>';
       });
-      h += '</div></div>';
+      h += '</div>';
     }
-
-    if (grantedLevel.length > 0) {
-      h += '<div class="spell-granted-group">';
-      h += '<div class="spell-granted-label">Prepared Spells</div>';
-      h += '<div class="picker-list">';
-      grantedLevel.forEach(function(g){
-        var schoolImg = (g.school||'evocation').toLowerCase();
-        h += '<div class="picker-row spell-picker-row granted">';
-        h += '<div class="picker-row-icon"><img src="/static/img/spell-schools/'+schoolImg+'.png" alt="'+esc(g.school)+'" width="28" height="28" onerror="this.style.display=\'none\'"></div>';
-        h += '<div class="picker-row-info">';
-        h += '<div class="picker-row-name">'+esc(g.name)+'</div>';
-        h += '<div class="picker-row-meta">'+(SPELL_SCHOOLS[g.school]||g.school)+' &middot; Level '+g.level+'</div>';
-        h += '</div>';
-        h += '<div class="picker-row-arrow spell-granted-badge">'+esc(g.source)+'</div>';
-        h += '</div>';
+    if (gr.length) {
+      h += '<div class="spell-class-summary-granted">Granted:</div>';
+      gr.forEach(function(g){
+        var si = (g.school||'evocation').toLowerCase();
+        h += '<div class="spell-class-summary-spell granted"><img src="/static/img/spell-schools/'+si+'.png" alt="" width="14" height="14" onerror="this.style.display=\'none\'"> '+esc(g.name)+'</div>';
       });
-      h += '</div></div>';
     }
     h += '</div>';
-  }
-
-  // Selectable spells
-  h += '<div class="spell-select-section">';
-  h += '<h3 class="spell-section-title">Choose Spells</h3>';
-
-  // Tabs for each available spell level
-  var maxLevel = 0;
-  spellSlots.slots.forEach(function(s, i) { if (s > 0) maxLevel = i + 1; });
-
-  h += '<div class="spell-tabs" id="spell-tabs">';
-  h += '<div class="spell-tab active" onclick="showSpellTab(0)">Cantrips</div>';
-  for (var lvl = 1; lvl <= maxLevel; lvl++) {
-    h += '<div class="spell-tab" onclick="showSpellTab('+lvl+')">'+lvl+(lvl===1?'st':lvl===2?'nd':lvl===3?'rd':'th')+' Level</div>';
-  }
-  h += '</div>';
-
-  h += '<div class="picker-header">';
-  h += '<div class="picker-search"><input class="form-input picker-search-input" type="text" placeholder="Search spells..." oninput="filterSpells(this.value)"></div>';
-  h += '</div>';
-
-  h += '<div id="spell-content"></div>';
-  h += '</div>';
-
+  });
   h += '</div>';
 
   h += '<div class="actions"><button class="btn" onclick="goTo(6)">Back</button>';
   h += '<button class="btn btn-primary" onclick="confirmSpells()">View Sheet</button></div>';
 
   main.innerHTML = h;
-  showSpellTab(0);
 }
 
-function showSpellTab(level) {
-  var tabs = document.querySelectorAll('.spell-tab');
+function renderAllSpells() {
   var spellSlots = getSpellSlots();
   var maxKnown = getMaxSpellsKnownPerLevel();
-
-  // Count user-selected spells per level
   var counts = {};
   state.spells.forEach(function(s){
     var sp = content.spells[s];
-    if (sp) {
-      var lv = sp.level;
-      counts[lv] = (counts[lv]||0) + 1;
-    }
+    if (sp) counts[sp.level] = (counts[sp.level]||0) + 1;
   });
-
-  // Count granted spells per level
   var granted = getGrantedSpells();
-  granted.forEach(function(g){
-    var lv = g.level;
-    counts[lv] = (counts[lv]||0) + 1;
+  granted.forEach(function(g){ if (!g.bonus) counts[g.level] = (counts[g.level]||0) + 1; });
+  var allSelectable = getSelectableSpells();
+  var byLevel = {};
+  allSelectable.forEach(function(sp){
+    var lv = sp.level; if (!byLevel[lv]) byLevel[lv] = []; byLevel[lv].push(sp);
   });
-
-  // Update tab labels with counts
-  tabs.forEach(function(t,i){
-    if (i===0) {
-      var cantripMax = maxKnown[0] || spellSlots.cantrips;
-      var cantripTotal = counts[0]||0;
-      t.textContent = 'Cantrips ('+cantripTotal+'/'+cantripMax+')';
-    } else {
-      var lv = i;
-      var max = maxKnown[lv] || spellSlots.slots[lv-1] || 0;
-      var total = counts[lv]||0;
-      var suffix = lv===1?'st':lv===2?'nd':lv===3?'rd':'th';
-      t.textContent = lv+suffix+' Level ('+total+'/'+max+')';
-    }
-    t.className = 'spell-tab' + (i===level?' active':'');
-  });
-
-  var selectable = getSelectableSpells().filter(function(s){return s.level===level;});
-
   var box = document.getElementById('spell-content');
   if (!box) return;
-
-  var h = '<div class="picker-list" id="spell-picker-list">';
-  selectable.forEach(function(sp){
-    var isSelected = state.spells.indexOf(sp.id) !== -1;
-    var schoolImg = (sp.school||'evocation').toLowerCase();
-    var tags = '';
-    if (sp.concentration) tags += ' &middot; Concentration';
-    if (sp.ritual) tags += ' &middot; Ritual';
-    if (sp.damage) tags += ' &middot; '+esc(sp.damage);
-    if (sp.save) tags += ' &middot; Save '+esc(sp.save);
-    if (sp.attack) tags += ' &middot; Attack';
-
-    h += '<div class="picker-row spell-picker-row'+(isSelected?' selected':'')+'" data-name="'+esc((sp.name||'').toLowerCase())+'" onclick="toggleSpell(\''+esc(sp.id)+'\','+level+')">';
-    h += '<div class="picker-row-icon"><img src="/static/img/spell-schools/'+schoolImg+'.png" alt="'+esc(sp.school)+'" width="28" height="28" onerror="this.style.display=\'none\'"></div>';
-    h += '<div class="picker-row-info">';
-    h += '<div class="picker-row-name">'+esc(sp.name)+(isSelected?' &#10003;':'')+'</div>';
-    h += '<div class="picker-row-meta">'+(SPELL_SCHOOLS[sp.school]||sp.level===0?'Cantrips':'Level '+sp.level)+' &middot; '+esc(sp.castingTime||'1 action')+' &middot; '+esc(sp.range||'Self')+tags+'</div>';
-    h += '</div>';
-    h += '<div class="picker-row-arrow">'+(isSelected?'&#10003;':'+')+'</div>';
-    h += '</div>';
-  });
-  h += '</div>';
-
-  if (selectable.length === 0) {
-    h = '<p class="spell-section-sub">No spells available for this level.</p>';
+  var h = '';
+  if (byLevel[0]) {
+    var cantripMax = maxKnown[0] || spellSlots.cantrips;
+    var cantripTotal = counts[0]||0;
+    h += '<div class="spell-level-group"><div class="spell-level-header">Cantrips ('+cantripTotal+'/'+cantripMax+')</div><div class="picker-list">';
+    byLevel[0].forEach(function(sp){ h += renderSpellRow(sp); });
+    h += '</div></div>';
   }
-
+  Object.keys(byLevel).forEach(function(lvlStr){
+    var lvl = parseInt(lvlStr,10); if (lvl === 0) return;
+    var max = maxKnown[lvl] || spellSlots.slots[lvl-1] || 0;
+    var total = counts[lvl]||0;
+    var suffix = lvl===1?'st':lvl===2?'nd':lvl===3?'rd':'th';
+    h += '<div class="spell-level-group"><div class="spell-level-header">'+lvl+suffix+' Level ('+total+'/'+max+')</div><div class="picker-list">';
+    byLevel[lvl].forEach(function(sp){ h += renderSpellRow(sp); });
+    h += '</div></div>';
+  });
+  if (!h) h = '<p class="spell-section-sub">No spells available.</p>';
   box.innerHTML = h;
 }
 
-function toggleSpell(spellId, level) {
+function renderSpellRow(sp) {
+  var isSelected = state.spells.indexOf(sp.id) !== -1;
+  var schoolImg = (sp.school||'evocation').toLowerCase();
+  var tags = '';
+  if (sp.concentration) tags += ' &middot; Concentration';
+  if (sp.ritual) tags += ' &middot; Ritual';
+  if (sp.damage) tags += ' &middot; '+esc(sp.damage);
+  if (sp.save) tags += ' &middot; Save '+esc(sp.save);
+  if (sp.attack) tags += ' &middot; Attack';
+  var rec = isSpellRecommended(sp);
+  var h = '<div class="picker-row spell-picker-row'+(isSelected?' selected':'')+(rec?' recommended':'')+'" data-name="'+esc((sp.name||'').toLowerCase())+'" onclick="toggleSpell(\''+esc(sp.id)+'\','+sp.level+')">';
+  h += '<div class="picker-row-icon"><img src="/static/img/spell-schools/'+schoolImg+'.png" alt="'+esc(sp.school)+'" width="28" height="28" onerror="this.style.display=\'none\'"></div>';
+  h += '<div class="picker-row-info">';
+  h += '<div class="picker-row-name">'+esc(sp.name)+(isSelected?' &#10003;':'')+'</div>';
+  h += '<div class="picker-row-meta">'+(SPELL_SCHOOLS[sp.school]||sp.level===0?'Cantrips':'Level '+sp.level)+' &middot; '+esc(sp.castingTime||'1 action')+' &middot; '+esc(sp.range||'Self')+tags+'</div>';
+  h += '</div>';
+  h += (rec?'<div class="picker-row-badge" title="'+esc(rec)+'">Recommended</div>':'');
+  h += '<div class="picker-row-arrow">'+(isSelected?'&#10003;':'+')+'</div>';
+  h += '</div>';
+  return h;
+}
+
+function renderClassSelectedSpells(idx, c) {
+  var classSpells = getClassSpellsForPicker(c);
+  var spellSlots = getSpellSlots();
+  var maxKnown = getMaxSpellsKnownPerLevel();
+  var granted = getGrantedSpells();
+
+  // Collect all spell IDs this class has access to (for filtering)
+  var classSpellIds = [];
+  if (classSpells) {
+    Object.keys(classSpells).forEach(function(lvl){
+      if (parseInt(lvl,10) > c.level) return;
+      classSpells[lvl].cantrips.forEach(function(sid){ if (classSpellIds.indexOf(sid)===-1) classSpellIds.push(sid); });
+      classSpells[lvl].spells.forEach(function(sid){ if (classSpellIds.indexOf(sid)===-1) classSpellIds.push(sid); });
+    });
+  }
+  // Also add spell IDs from the subclass's source list if applicable (EK/AT)
+  if (c.subclassId && SUBCLASS_SPELLS[c.subclassId]) {
+    var sub = SUBCLASS_SPELLS[c.subclassId];
+    if (sub.source && CLASS_SPELL_LISTS && CLASS_SPELL_LISTS[sub.source]) {
+      Object.keys(CLASS_SPELL_LISTS[sub.source]).forEach(function(lvl){
+        if (parseInt(lvl,10) > c.level) return;
+        CLASS_SPELL_LISTS[sub.source][lvl].cantrips.forEach(function(sid){ if (classSpellIds.indexOf(sid)===-1) classSpellIds.push(sid); });
+        CLASS_SPELL_LISTS[sub.source][lvl].spells.forEach(function(sid){ if (classSpellIds.indexOf(sid)===-1) classSpellIds.push(sid); });
+      });
+    }
+  }
+
+  // Selected spells that belong to this class
+  var selected = state.spells.filter(function(sid){ return classSpellIds.indexOf(sid) !== -1; });
+  var grantedHere = granted.filter(function(g){ return classSpellIds.indexOf(g.id) !== -1; });
+  var bonusHere = grantedHere.filter(function(g){ return g.bonus; });
+  var nonBonusGranted = grantedHere.filter(function(g){ return !g.bonus; });
+
+  // Count per level (excluding bonus spells — they don't count toward limits)
+  var counts = {};
+  selected.forEach(function(sid){ var sp = content.spells[sid]; if(sp) counts[sp.level] = (counts[sp.level]||0) + 1; });
+  nonBonusGranted.forEach(function(g){ counts[g.level] = (counts[g.level]||0) + 1; });
+
+  var totalSelected = selected.length + nonBonusGranted.length;
+  var h = '<div class="class-spells-selected">';
+  h += '<div class="class-spells-selected-summary">Selected: <strong>'+totalSelected+'</strong> spells'+(bonusHere.length?' <span class="spells-selected-bonus-count">+'+bonusHere.length+' bonus</span>':'')+'</div>';
+
+  // Show spells grouped by level
+  var spellSlotsCount = getSpellSlots();
+  var levelsToShow = [0];
+  for (var l=1; l<=20; l++) if (spellSlotsCount.slots[l-1] || maxKnown[l]) levelsToShow.push(l);
+
+  levelsToShow.forEach(function(lvl){
+    var sps = [];
+    selected.forEach(function(sid){ var sp = content.spells[sid]; if(sp && sp.level===lvl) sps.push({type:'picked', spell:sp}); });
+    nonBonusGranted.forEach(function(g){ if(g.level===lvl) sps.push({type:'granted', spell:g, source:g.source, bonus:false}); });
+    bonusHere.forEach(function(g){ if(g.level===lvl) sps.push({type:'granted', spell:g, source:g.source, bonus:true}); });
+    if (!sps.length) return;
+    var max = lvl===0 ? (maxKnown[0]||spellSlots.cantrips) : (maxKnown[lvl]||spellSlots.slots[lvl-1]||0);
+    var total = counts[lvl]||0;
+    var bonusCount = bonusHere.filter(function(g){ return g.level===lvl; }).length;
+    var label = lvl===0 ? 'Cantrips' : lvl+(lvl===1?'st':lvl===2?'nd':lvl===3?'rd':'th')+' Level';
+    h += '<div class="class-spells-selected-group"><div class="class-spells-selected-label">'+label+' ('+total+'/'+max+(bonusCount?' +'+bonusCount+' bonus':'')+')</div>';
+    sps.forEach(function(item){
+      var sp = item.spell;
+      var isGranted = item.type === 'granted';
+      var isBonus = item.bonus;
+      var si = (sp.school||'evocation').toLowerCase();
+      h += '<div class="class-spells-selected-row '+(isGranted?'granted':'')+(isBonus?' bonus':'')+'">';
+      h += '<img src="/static/img/spell-schools/'+si+'.png" alt="" width="16" height="16" onerror="this.style.display=\'none\'">';
+      h += '<span class="class-spells-selected-name">'+esc(sp.name||sp.spellName)+'</span>';
+      if (isGranted) h += '<span class="class-spells-selected-source">'+esc(item.source||'Granted')+'</span>';
+      if (!isGranted) h += '<span class="class-spells-selected-remove" onclick="toggleSpell(\''+esc(sp.id)+'\','+sp.level+','+idx+')">&#10005;</span>';
+      h += '</div>';
+    });
+    h += '</div>';
+  });
+
+  h += '</div>';
+  return h;
+}
+
+function renderClassSpellPicker(idx, c) {
+  var classSpells = getClassSpellsForPicker(c);
+  if (!classSpells) return '';
+
+  var knownCantrips = [], knownSpells = [];
+  Object.keys(classSpells).forEach(function(lvl){
+    var ilvl = parseInt(lvl,10);
+    if (ilvl > c.level) return;
+    classSpells[lvl].cantrips.forEach(function(sid){ if (knownCantrips.indexOf(sid)===-1) knownCantrips.push(sid); });
+    classSpells[lvl].spells.forEach(function(sid){ if (knownSpells.indexOf(sid)===-1) knownSpells.push(sid); });
+  });
+
+  var maxKnown = getMaxSpellsKnownPerLevel();
+  var spellSlots = getSpellSlots();
+  var granted = getGrantedSpells();
+  var bonusGranted = granted.filter(function(g){ return g.bonus; });
+  var bonusById = {};
+  bonusGranted.forEach(function(g){ bonusById[g.id] = g; });
+
+  // Count user-picked + non-bonus granted spells for N/M limit
+  var counts = {};
+  state.spells.forEach(function(s){ var sp = content.spells[s]; if(sp) counts[sp.level] = (counts[sp.level]||0) + 1; });
+  granted.forEach(function(g){ if (!g.bonus) counts[g.level] = (counts[g.level]||0) + 1; });
+
+  // Collect bonus spells by level
+  var bonusByLevel = {};
+  bonusGranted.forEach(function(g){
+    if (!bonusByLevel[g.level]) bonusByLevel[g.level] = [];
+    bonusByLevel[g.level].push(g);
+  });
+
+  var h = '<div class="class-spell-picker" data-class="'+idx+'">';
+  h += '<div class="picker-search" style="margin-bottom:8px">';
+  h += '<input class="form-input picker-search-input" type="text" placeholder="Search spells..." oninput="filterClassSpells(this.value,'+idx+')">';
+  h += '</div>';
+
+  function renderLevelGroup(lvl, pickable, bonus) {
+    var max = lvl===0 ? (maxKnown[0]||spellSlots.cantrips) : (maxKnown[lvl]||spellSlots.slots[lvl-1]||0);
+    var total = counts[lvl]||0;
+    var bonusCount = bonus ? bonus.length : 0;
+    var suffix = lvl===0 ? '' : (lvl===1?'st':lvl===2?'nd':lvl===3?'rd':'th');
+    var label = lvl===0 ? 'Cantrips' : lvl+suffix+' Level';
+    h += '<div class="spell-level-group"><div class="spell-level-header">'+label+' ('+total+'/'+max+(bonusCount?' +'+bonusCount+' bonus':'')+')</div>';
+    if (pickable) pickable.forEach(function(sp){ h += renderClassSpellRow(sp, idx); });
+    if (bonus) bonus.forEach(function(g){ h += renderClassGrantedRow(g, idx); });
+    h += '</div>';
+  }
+
+  // Cantrip level
+  var bonusCantrips = bonusByLevel[0] || [];
+  if (knownCantrips.length || bonusCantrips.length) {
+    renderLevelGroup(0, knownCantrips.map(function(sid){ return content.spells[sid]; }).filter(Boolean), bonusCantrips);
+  }
+
+  // Sort levels from class spells
+  var byLevel = {};
+  knownSpells.forEach(function(sid){
+    var sp = content.spells[sid];
+    if (!sp) return;
+    var lv = sp.level||1;
+    if (!byLevel[lv]) byLevel[lv] = [];
+    byLevel[lv].push(sp);
+  });
+  // Add any extra levels from bonus spells
+  Object.keys(bonusByLevel).forEach(function(lvlStr){
+    var lvl = parseInt(lvlStr,10);
+    if (lvl === 0) return;
+    if (!byLevel[lvl]) byLevel[lvl] = [];
+  });
+
+  Object.keys(byLevel).sort(function(a,b){return a-b;}).forEach(function(lvlStr){
+    var lvl = parseInt(lvlStr,10);
+    renderLevelGroup(lvl, byLevel[lvl], bonusByLevel[lvl] || []);
+  });
+
+  h += '</div>';
+  return h;
+}
+
+function renderClassSpellRow(sp, idx) {
+  var isSelected = state.spells.indexOf(sp.id) !== -1;
+  var schoolImg = (sp.school||'evocation').toLowerCase();
+  var tags = '';
+  if (sp.concentration) tags += ' &middot; Concentration';
+  if (sp.ritual) tags += ' &middot; Ritual';
+  if (sp.damage) tags += ' &middot; '+esc(sp.damage);
+  if (sp.save) tags += ' &middot; Save '+esc(sp.save);
+  if (sp.attack) tags += ' &middot; Attack';
+  var rec = isSpellRecommended(sp);
+  var h = '<div class="picker-row spell-picker-row class-spell-picker-row'+(isSelected?' selected':'')+(rec?' recommended':'')+'" data-name="'+esc((sp.name||'').toLowerCase())+'" onclick="toggleSpell(\''+esc(sp.id)+'\','+sp.level+','+idx+')">';
+  h += '<div class="picker-row-icon"><img src="/static/img/spell-schools/'+schoolImg+'.png" alt="'+esc(sp.school)+'" width="28" height="28" onerror="this.style.display=\'none\'"></div>';
+  h += '<div class="picker-row-info">';
+  h += '<div class="picker-row-name">'+esc(sp.name)+(isSelected?' &#10003;':'')+'</div>';
+  h += '<div class="picker-row-meta">'+(SPELL_SCHOOLS[sp.school]||sp.level===0?'Cantrips':'Level '+sp.level)+' &middot; '+esc(sp.castingTime||'1 action')+' &middot; '+esc(sp.range||'Self')+tags+'</div>';
+  h += '</div>';
+  h += (rec?'<div class="picker-row-badge" title="'+esc(rec)+'">Recommended</div>':'');
+  h += '<div class="picker-row-arrow">'+(isSelected?'&#10003;':'+')+'</div>';
+  h += '</div>';
+  return h;
+}
+
+function renderClassGrantedRow(g, idx) {
+  var sp = content.spells[g.id] || g;
+  var schoolImg = (sp.school||'evocation').toLowerCase();
+  var tags = '';
+  if (sp.concentration) tags += ' &middot; Concentration';
+  if (sp.ritual) tags += ' &middot; Ritual';
+  if (sp.damage) tags += ' &middot; '+esc(sp.damage);
+  var rec = isSpellRecommended(sp);
+  var h = '<div class="picker-row spell-picker-row class-spell-picker-row granted'+(rec?' recommended':'')+'" data-name="'+esc((sp.name||'').toLowerCase())+'">';
+  h += '<div class="picker-row-icon"><img src="/static/img/spell-schools/'+schoolImg+'.png" alt="'+esc(sp.school)+'" width="28" height="28" onerror="this.style.display=\'none\'"></div>';
+  h += '<div class="picker-row-info">';
+  h += '<div class="picker-row-name">'+esc(sp.name)+' &#10003;</div>';
+  h += '<div class="picker-row-meta">'+(SPELL_SCHOOLS[sp.school]||sp.level===0?'Cantrips':'Level '+sp.level)+' &middot; '+esc(sp.castingTime||'1 action')+' &middot; '+esc(sp.range||'Self')+tags+'</div>';
+  h += '</div>';
+  h += '<div class="picker-row-source">'+esc(g.source||'Granted')+'</div>';
+  h += (rec?'<div class="picker-row-badge" title="'+esc(rec)+'">Recommended</div>':'');
+  h += '</div>';
+  return h;
+}
+function toggleSpell(spellId, level, classIdx) {
   var idx = state.spells.indexOf(spellId);
   if (idx !== -1) {
     state.spells.splice(idx, 1);
@@ -2039,16 +2370,32 @@ function toggleSpell(spellId, level) {
     var currentCount = 0;
     state.spells.forEach(function(s){var sp=content.spells[s];if(sp&&sp.level===level) currentCount++;});
     var granted = getGrantedSpells();
-    granted.forEach(function(g){if(g.level===level) currentCount++;});
+    granted.forEach(function(g){if(!g.bonus && g.level===level) currentCount++;});
     if (currentCount >= max) { alert('Maximum '+max+' spells at level '+level+'.'); return; }
     state.spells.push(spellId);
   }
-  showSpellTab(level);
+  if (classIdx !== undefined && state.classes[classIdx]) {
+    renderCharacter();
+  } else {
+    renderAllSpells();
+  }
 }
 
 function filterSpells(query) {
   query = (query||'').toLowerCase();
   var rows = document.querySelectorAll('.spell-picker-row:not(.granted)');
+  rows.forEach(function(r){
+    var name = r.getAttribute('data-name')||'';
+    r.style.display = name.indexOf(query)!==-1 ? '' : 'none';
+  });
+}
+
+function filterClassSpells(query, classIdx) {
+  query = (query||'').toLowerCase();
+  var details = document.getElementById('class-spell-details-'+classIdx);
+  if (!details) return;
+  if (query) details.open = true;
+  var rows = details.querySelectorAll('.class-spell-picker-row');
   rows.forEach(function(r){
     var name = r.getAttribute('data-name')||'';
     r.style.display = name.indexOf(query)!==-1 ? '' : 'none';

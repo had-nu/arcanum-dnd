@@ -132,6 +132,7 @@ type LevelEntry struct {
 	PreparedSpells int            `yaml:"preparedSpells,omitempty"`
 	SpellsKnown    int            `yaml:"spellsKnown,omitempty"`
 	SpellSlots     map[int]int    `yaml:"spellSlots,omitempty"`
+	Spells         []types.SpellID `yaml:"spellList,omitempty"`
 	Feat           *types.FeatID  `yaml:"feat,omitempty"`
 }
 
