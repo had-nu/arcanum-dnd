@@ -3,7 +3,7 @@ interface ClassPickerProps {
   value: Array<{ id: string; level: number; subclassId?: string }>;
   onChange: (value: Array<{ id: string; level: number; subclassId?: string }>) => void;
   totalLevel: number;
-  onTotalLevelChange: (level: number) => void;
+  onTotalLevelChange?: (level: number) => void;
   errors?: string;
 }
 
@@ -19,7 +19,7 @@ export function ClassPicker({ classes, value, onChange, totalLevel, onTotalLevel
     const diff = level - oldLevel;
     if (totalLevel + diff > 20 || level < 1) return;
     updateClass(index, 'level', level);
-    onTotalLevelChange(totalLevel + diff);
+    onTotalLevelChange?.(totalLevel + diff);
   };
 
   const addClass = () => {

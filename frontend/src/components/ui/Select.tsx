@@ -1,14 +1,14 @@
 import * as SelectPrimitive from '@radix-ui/react-select';
 import { clsx } from 'clsx';
-import { ChevronDownIcon } from 'lucide-preact';
+import { ChevronDownIcon } from 'lucide-react';
 
 interface SelectProps extends React.ComponentPropsWithoutRef<typeof SelectPrimitive.Root> {
   className?: string;
 }
 
-export function Select({ className, children, ...props }: SelectProps) {
+export function Select({ children, ...props }: SelectProps) {
   return (
-    <SelectPrimitive.Root className={clsx('w-full', className)} {...props}>
+    <SelectPrimitive.Root {...props}>
       {children}
     </SelectPrimitive.Root>
   );

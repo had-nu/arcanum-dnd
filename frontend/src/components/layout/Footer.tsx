@@ -1,4 +1,4 @@
-import { Dices, ExternalLink, BookOpen } from 'lucide-preact';
+import { Dices, ExternalLink, BookOpen } from 'lucide-react';
 
 export function Footer() {
   return (
@@ -21,7 +21,7 @@ export function Footer() {
           </div>
         </div>
         <p className="mt-4 text-center text-xs text-dnd-stone-500 dark:text-dnd-stone-500">
-          Built with Go, Preact, TypeScript, and Tailwind CSS. Not affiliated with Wizards of the Coast.
+          Built with Go, React, TypeScript, and Tailwind CSS. Not affiliated with Wizards of the Coast.
         </p>
       </div>
     </footer>

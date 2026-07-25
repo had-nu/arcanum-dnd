@@ -31,6 +31,9 @@ func LoadAllFromDataDir(dataDir string) (scontent.ResolvedContent, error) {
 				log.Printf("WARN: skipping %s: %v", f, err)
 				continue
 			}
+			if pack.ID == "" {
+				continue
+			}
 			merged, err := ResolveContent([]scontent.ContentPack{pack})
 			if err != nil {
 				log.Printf("WARN: merging %s: %v", f, err)

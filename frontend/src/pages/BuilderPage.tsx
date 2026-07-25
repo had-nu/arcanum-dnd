@@ -1,9 +1,6 @@
-import { useEffect, useState } from 'preact/hooks';
-import { useLocation, useParams } from 'wouter';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { ChevronLeftIcon, ChevronRightIcon, SaveIcon, LoaderCircleIcon } from 'lucide-preact';
+import { useCallback } from 'react';
+import { useLocation } from 'wouter';
+import { ChevronLeftIcon, ChevronRightIcon, SaveIcon, LoaderCircleIcon } from 'lucide-react';
 
 import { StepsNav } from '@/components/layout/StepsNav';
 import { AbilityScores } from '@/components/character/AbilityScores';
@@ -14,6 +11,7 @@ import { SkillSelector } from '@/components/character/SkillSelector';
 import { SpellSelector } from '@/components/character/SpellSelector';
 import { FeatSelector } from '@/components/character/FeatSelector';
 import { CharacterSheetPreview } from '@/components/character/CharacterSheetPreview';
+import { EquipmentPicker } from '@/components/character/EquipmentPicker';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { useToast } from '@/components/ui/Toast';
@@ -21,134 +19,153 @@ import { useContent } from '@/hooks/useContent';
 import { useSpells } from '@/hooks/useContent';
 import { useBuild } from '@/hooks/useContent';
 import { useSaveCharacter } from '@/hooks/useContent';
-import { builderStore } from '@stores/builderStore';
+import { builderStore, getTotalLevel } from '@stores/builderStore';
 
-const stepSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  speciesId: z.string().min(1, 'Species is required'),
-  backgroundId: z.string().min(1, 'Background is required'),
-});
-
-const classSchema = z.object({
-  classes: z.array(z.object({
-    id: z.string().min(1, 'Class is required'),
-    level: z.number().min(1).max(20),
-  })).min(1, 'At least one class required'),
-});
-
-const skillSchema = z.object({
-  skills: z.array(z.string()).min(1, 'At least one skill required'),
-});
-
-const stepOrder = ['basics', 'class', 'skills', 'spells', 'review'] as const;
+const STEPS = ['name', 'class', 'background', 'species', 'abilities', 'equipment', 'sheet'] as const;
 
 export function BuilderPage() {
   const [, navigate] = useLocation();
-  const { name } = useParams<{ name?: string }>();
-  const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const { toast } = useToast();
-  
+
   const { data: content } = useContent();
   const buildMutation = useBuild();
   const saveMutation = useSaveCharacter();
-  
-  const isEditing = !!name;
-  
-  const currentStep = stepOrder[currentStepIndex];
-  
-  const stepForm = useForm({
-    resolver: zodResolver(stepSchema),
-    defaultValues: {
-      name: builderStore.name.value,
-      speciesId: builderStore.speciesId.value,
-      backgroundId: builderStore.backgroundId.value,
-    },
-    mode: 'onChange',
-  });
-  
-  const classForm = useForm({
-    resolver: zodResolver(classSchema),
-    defaultValues: {
-      classes: builderStore.classes.value,
-    },
-    mode: 'onChange',
-  });
-  
-  const skillForm = useForm({
-    resolver: zodResolver(skillSchema),
-    defaultValues: {
-      skills: builderStore.skills.value,
-    },
-    mode: 'onChange',
-  });
 
-  useEffect(() => {
-    if (isEditing && name && content) {
-      // TODO: load character data
-    }
-  }, [name, isEditing, content]);
+  const step = builderStore((s) => s.step);
+  const name = builderStore((s) => s.name);
+  const classes = builderStore((s) => s.classes);
+  const backgroundId = builderStore((s) => s.backgroundId);
+  const speciesId = builderStore((s) => s.speciesId);
+  const abilityScores = builderStore((s) => s.abilityScores);
+  const abilityMethod = builderStore((s) => s.abilityMethod);
+  const skills = builderStore((s) => s.skills);
+  const spells = builderStore((s) => s.spells);
+  const feats = builderStore((s) => s.feats);
+  const equipment = builderStore((s) => s.equipment);
+  const isSubmitting = builderStore((s) => s.isSubmitting);
+  const completedSteps = builderStore((s) => s.completedSteps);
 
-  const handleNext = async () => {
-    const step = stepOrder[currentStepIndex];
-    
-    let isValid = false;
-    switch (step) {
-      case 'basics':
-        isValid = await stepForm.trigger();
-        break;
-      case 'class':
-        isValid = await classForm.trigger();
-        break;
-      case 'skills':
-        isValid = await skillForm.trigger();
-        break;
-      case 'spells':
-        isValid = true;
-        break;
-      case 'review':
-        await handleBuild();
-        return;
+  const currentStepIndex = STEPS.indexOf(step);
+  const totalLevel = getTotalLevel();
+
+  const classId = classes[0]?.id;
+  const { data: spellsData } = useSpells(classId, undefined, totalLevel);
+  const spellsFetched = spellsData || { cantrips: [], leveled: [] };
+
+  const classesData = content?.classes || [];
+  const speciesData = content?.species || [];
+  const backgroundsData = content?.backgrounds || [];
+  const skillsData = content?.skills || [];
+  const featsData = content?.feats || {};
+
+  const setStep = useCallback((s: typeof STEPS[number]) => {
+    builderStore.getState().setStep(s);
+  }, []);
+
+  const handleNext = () => {
+    const step = STEPS[currentStepIndex];
+
+    if (step === 'name' && !name.trim()) {
+      toast.error('Name required', 'Enter a character name.');
+      return;
     }
-    
-    if (isValid && currentStepIndex < stepOrder.length - 1) {
-      builderStore.markStepComplete(step);
-      setCurrentStepIndex(currentStepIndex + 1);
+    if (step === 'class' && !classes[0]?.id) {
+      toast.error('Class required', 'Select a class.');
+      return;
+    }
+    if (step === 'background' && !backgroundId) {
+      toast.error('Background required', 'Select a background.');
+      return;
+    }
+    if (step === 'species' && !speciesId) {
+      toast.error('Species required', 'Select a species.');
+      return;
+    }
+    if (step === 'sheet') {
+      handleBuild();
+      return;
+    }
+
+    builderStore.getState().markStepComplete(step);
+    if (currentStepIndex < STEPS.length - 1) {
+      setStep(STEPS[currentStepIndex + 1]);
     }
   };
 
   const handleBack = () => {
     if (currentStepIndex > 0) {
-      setCurrentStepIndex(currentStepIndex - 1);
+      setStep(STEPS[currentStepIndex - 1]);
     }
   };
 
   const handleBuild = async () => {
-    builderStore.isSubmitting.value = true;
-    builderStore.submitError.value = null;
-    
+    builderStore.getState().setIsSubmitting(true);
+    builderStore.getState().setSubmitError(null);
+
     try {
-      await buildMutation.mutateAsync(builderStore.toBuildRequest());
-      builderStore.submitSuccess.value = true;
+      const request = {
+        name,
+        classes,
+        backgroundId,
+        speciesId,
+        speciesVariant: builderStore.getState().speciesVariant || undefined,
+        level: totalLevel,
+        abilityScores,
+        abilityMethod,
+        skills,
+        spells,
+        feats,
+      };
+      await buildMutation.mutateAsync(request);
+      builderStore.getState().setSubmitSuccess(true);
       toast.success('Character built!', 'Review your character sheet below.');
-      
-      if (isEditing && name) {
-        await saveMutation.mutateAsync({
-          ...builderStore.toSaveRequest(),
-          name,
-        });
-        toast.success('Character updated!', 'Your changes have been saved.');
-      }
     } catch (error) {
-      builderStore.submitError.value = error instanceof Error ? error.message : 'Build failed';
-      toast.error('Build failed', builderStore.submitError.value);
+      const msg = error instanceof Error ? error.message : 'Build failed';
+      builderStore.getState().setSubmitError(msg);
+      toast.error('Build failed', msg);
     } finally {
-      builderStore.isSubmitting.value = false;
+      builderStore.getState().setIsSubmitting(false);
     }
   };
 
   const handleSave = async () => {
     try {
-      await saveMutation.mutateAsync(builderStore.toSaveRequest());
+      const state = builderStore.getState();
+      await saveMutation.mutateAsync({
+        name: state.name,
+        classes: state.classes.map(c => ({
+          id: c.id,
+          name: '',
+          level: c.level,
+          subclassId: state.subclassId || undefined,
+        })),
+        backgroundId: state.backgroundId,
+        speciesId: state.speciesId,
+        speciesVariant: state.speciesVariant || undefined,
+        level: getTotalLevel(),
+        abilityMethod: state.abilityMethod,
+        abilities: state.abilityScores as unknown as Record<string, number>,
+        skills: state.skills,
+        spells: state.spells,
+        feats: state.feats,
+        equipment: state.equipment,
+        subclassId: state.subclassId || undefined,
+        bgAlignment: state.bgAlignment || undefined,
+        bgFaith: state.bgFaith || undefined,
+        bgTrait: state.bgTrait || undefined,
+        bgIdeal: state.bgIdeal || undefined,
+        bgBond: state.bgBond || undefined,
+        bgFlaw: state.bgFlaw || undefined,
+        bgAge: state.bgAge || undefined,
+        bgHeight: state.bgHeight || undefined,
+        bgWeight: state.bgWeight || undefined,
+        bgEyes: state.bgEyes || undefined,
+        bgSkin: state.bgSkin || undefined,
+        bgHair: state.bgHair || undefined,
+        bgNotes: state.bgNotes || undefined,
+        xp: state.xp,
+        progressionType: state.progressionType,
+      });
       toast.success('Character saved!', 'You can find it in your vault.');
       navigate('/characters');
     } catch (error) {
@@ -156,112 +173,163 @@ export function BuilderPage() {
     }
   };
 
-  const classes = content?.classes || [];
-  const species = content?.species || [];
-  const backgrounds = content?.backgrounds || [];
-  const skills = content?.skills || [];
-  const feats = content?.feats || {};
-
-  const classId = builderStore.classes.value[0]?.id;
-  const { data: spellsData } = useSpells(classId, undefined, builderStore.totalLevel);
-  const spells = spellsData || { cantrips: [], leveled: [] };
-
   const renderStepContent = () => {
-    switch (currentStep) {
-      case 'basics':
+    switch (step) {
+      case 'name':
         return (
           <div className="space-y-6">
-            <div className="grid gap-6 md:grid-cols-2">
-              <AbilityScores
-                scores={builderStore.abilityScores}
-                onChange={v => builderStore.abilityScores.value = v}
-                method={builderStore.abilityMethod.value}
-                onMethodChange={v => builderStore.abilityMethod.value = v}
-              />
-              <div className="space-y-4">
-                <SpeciesPicker
-                  species={species}
-                  value={builderStore.speciesId.value}
-                  onChange={v => builderStore.speciesId.value = v}
-                  variant={builderStore.speciesVariant.value}
-                  onVariantChange={v => builderStore.speciesVariant.value = v}
-                  errors={stepForm.formState.errors.speciesId?.message}
-                />
-                <BackgroundPicker
-                  backgrounds={backgrounds}
-                  value={builderStore.backgroundId.value}
-                  onChange={v => builderStore.backgroundId.value = v}
-                  errors={stepForm.formState.errors.backgroundId?.message}
-                />
-              </div>
-            </div>
             <div>
               <label className="label">Character Name</label>
               <input
-                {...stepForm.register('name')}
                 className="input"
+                type="text"
                 placeholder="Enter character name"
-                value={builderStore.name.value}
-                onChange={e => builderStore.name.value = e.currentTarget.value}
+                value={name}
+                onChange={(e) => builderStore.getState().setName(e.currentTarget.value)}
+                autoFocus
               />
-              {stepForm.formState.errors.name && (
-                <p className="mt-1 text-sm text-red-600">{stepForm.formState.errors.name.message}</p>
-              )}
             </div>
           </div>
         );
 
       case 'class':
         return (
-          <ClassPicker
-            classes={classes}
-            value={builderStore.classes.value}
-            onChange={v => builderStore.classes.value = v}
-            totalLevel={builderStore.totalLevel}
-            onTotalLevelChange={() => {}}
-          />
-        );
-
-      case 'skills':
-        const primaryClass = classes.find(c => c.id === builderStore.classes.value[0]?.id);
-        const classSkillPool = primaryClass?.skillPool || [];
-        const backgroundSkillPool = backgrounds.find(b => b.id === builderStore.backgroundId.value)?.skills || [];
-        const skillPool = [...new Set([...classSkillPool, ...backgroundSkillPool])];
-        const maxSkills = primaryClass?.skillChoices || 2;
-        
-        return (
-          <SkillSelector
-            skills={skills}
-            selected={builderStore.skills.value}
-            onChange={v => builderStore.skills.value = v}
-            maxSelections={maxSkills}
-            pool={skillPool}
-          />
-        );
-
-      case 'spells':
-        const classId = builderStore.classes.value[0]?.id;
-        return (
-          <div className="grid gap-6 md:grid-cols-2">
-            <SpellSelector
-              classId={classId}
-              spells={spells}
-              value={builderStore.spells.value}
-              onChange={v => builderStore.spells.value = v}
-              level={builderStore.totalLevel}
+          <div className="space-y-6">
+            <ClassPicker
+              classes={classesData}
+              value={classes}
+              onChange={(v) => builderStore.getState().setClasses(v)}
+              totalLevel={totalLevel}
+              errors={undefined}
             />
-            <FeatSelector
-              feats={feats}
-              value={builderStore.feats.value}
-              onChange={v => builderStore.feats.value = v}
+            {classId && (
+              <SpellSelector
+                classId={classId}
+                spells={spellsFetched}
+                value={spells}
+                onChange={(v) => builderStore.getState().setSpells(v)}
+                level={totalLevel}
+              />
+            )}
+          </div>
+        );
+
+      case 'background':
+        return (
+          <div className="space-y-6">
+            <BackgroundPicker
+              backgrounds={backgroundsData}
+              value={backgroundId}
+              onChange={(id) => builderStore.getState().setBackgroundId(id)}
+              personalityState={{
+                alignment: builderStore.getState().bgAlignment,
+                faith: builderStore.getState().bgFaith,
+                trait: builderStore.getState().bgTrait,
+                ideal: builderStore.getState().bgIdeal,
+                bond: builderStore.getState().bgBond,
+                flaw: builderStore.getState().bgFlaw,
+                age: builderStore.getState().bgAge,
+                height: builderStore.getState().bgHeight,
+                weight: builderStore.getState().bgWeight,
+                eyes: builderStore.getState().bgEyes,
+                skin: builderStore.getState().bgSkin,
+                hair: builderStore.getState().bgHair,
+                notes: builderStore.getState().bgNotes,
+              }}
+              onPersonalityChange={(field, value) => {
+                const s = builderStore.getState();
+                switch (field) {
+                  case 'alignment': s.setBgAlignment(value); break;
+                  case 'faith': s.setBgFaith(value); break;
+                  case 'trait': s.setBgTrait(value); break;
+                  case 'ideal': s.setBgIdeal(value); break;
+                  case 'bond': s.setBgBond(value); break;
+                  case 'flaw': s.setBgFlaw(value); break;
+                  case 'age': s.setBgAge(value); break;
+                  case 'height': s.setBgHeight(value); break;
+                  case 'weight': s.setBgWeight(value); break;
+                  case 'eyes': s.setBgEyes(value); break;
+                  case 'skin': s.setBgSkin(value); break;
+                  case 'hair': s.setBgHair(value); break;
+                  case 'notes': s.setBgNotes(value); break;
+                }
+              }}
             />
           </div>
         );
 
-      case 'review':
+      case 'species':
+        return (
+          <div className="space-y-6">
+            <SpeciesPicker
+              species={speciesData}
+              value={speciesId}
+              onChange={(id) => builderStore.getState().setSpeciesId(id)}
+              variant={builderStore.getState().speciesVariant}
+              onVariantChange={(v) => builderStore.getState().setSpeciesVariant(v)}
+            />
+          </div>
+        );
+
+      case 'abilities': {
+        const primaryClass = classesData.find((c) => c.id === classes[0]?.id);
+        const classSkillPool = primaryClass?.skillPool || [];
+        const backgroundSkillPool = backgroundsData.find((b) => b.id === backgroundId)?.skills || [];
+        const skillPool = [...new Set([...classSkillPool, ...backgroundSkillPool])];
+        const maxSkills = primaryClass?.skillChoices || 2;
+
+        return (
+          <div className="space-y-6">
+            <AbilityScores
+              scores={abilityScores}
+              onChange={(v) => builderStore.getState().setAbilityScores(v)}
+              method={abilityMethod}
+              onMethodChange={(v) => builderStore.getState().setAbilityMethod(v)}
+            />
+            <SkillSelector
+              skills={skillsData}
+              selected={skills}
+              onChange={(v) => builderStore.getState().setSkills(v)}
+              maxSelections={maxSkills}
+              pool={skillPool}
+            />
+          </div>
+        );
+      }
+
+      case 'equipment':
+        return (
+          <div className="space-y-6">
+            <EquipmentPicker
+              classId={classes[0]?.id}
+              value={equipment}
+              onChange={(v) => builderStore.getState().setEquipment(v)}
+            />
+            <FeatSelector
+              feats={featsData}
+              value={feats}
+              onChange={(v) => builderStore.getState().setFeats(v)}
+            />
+          </div>
+        );
+
+      case 'sheet':
         return (
           <CharacterSheetPreview
-            character={builderStore.toBuildRequest()}
+            character={{
+              name,
+              classes,
+              backgroundId,
+              speciesId,
+              abilityScores,
+              hp: { current: 0, max: 0, temp: 0 },
+              ac: 10,
+              savingThrows: {},
+              skills: {},
+              attacks: [],
+              spells,
+              features: [],
+            }}
             content={content}
           />
         );
@@ -274,37 +342,43 @@ export function BuilderPage() {
   return (
     <div className="w-full max-w-5xl mx-auto">
       <StepsNav
-        currentStep={currentStep}
-        completedSteps={builderStore.completedSteps.value}
+        currentStep={step}
+        completedSteps={completedSteps}
+        onStepClick={(id) => {
+          const targetIdx = STEPS.indexOf(id as typeof STEPS[number]);
+          if (targetIdx !== -1 && (targetIdx <= currentStepIndex || completedSteps.includes(id))) {
+            setStep(id as typeof STEPS[number]);
+          }
+        }}
       />
-      
+
       <Card className="mt-6 animate-fade-in">
         <div className="p-6">
           {renderStepContent()}
         </div>
-        
+
         <div className="flex items-center justify-between px-6 py-4 border-t border-dnd-stone-200 dark:border-dnd-stone-700">
           <Button variant="ghost" onClick={handleBack} disabled={currentStepIndex === 0}>
             <ChevronLeftIcon className="h-4 w-4 mr-2" /> Back
           </Button>
-          
+
           <div className="flex gap-3">
-            {currentStepIndex < stepOrder.length - 1 ? (
-              <Button onClick={handleNext} disabled={builderStore.isSubmitting.value}>
-                {builderStore.isSubmitting.value && <LoaderCircleIcon className="h-4 w-4 animate-spin mr-2" />}
-                Next <ChevronRightIcon className="h-4 w-4 ml-2" />
-              </Button>
-            ) : (
+            {step === 'sheet' ? (
               <>
                 <Button variant="secondary" onClick={handleSave} disabled={saveMutation.isPending}>
                   <SaveIcon className="h-4 w-4 mr-2" />
                   Save Character
                 </Button>
-                <Button onClick={handleBuild} disabled={buildMutation.isPending}>
-                  {buildMutation.isPending && <LoaderCircleIcon className="h-4 w-4 animate-spin mr-2" />}
+                <Button onClick={handleBuild} disabled={buildMutation.isPending || isSubmitting}>
+                  {(buildMutation.isPending || isSubmitting) && <LoaderCircleIcon className="h-4 w-4 animate-spin mr-2" />}
                   Build Sheet
                 </Button>
               </>
+            ) : (
+              <Button onClick={handleNext} disabled={isSubmitting}>
+                {isSubmitting && <LoaderCircleIcon className="h-4 w-4 animate-spin mr-2" />}
+                Next <ChevronRightIcon className="h-4 w-4 ml-2" />
+              </Button>
             )}
           </div>
         </div>

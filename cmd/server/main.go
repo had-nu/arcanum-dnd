@@ -212,14 +212,17 @@ func main() {
 	mux.HandleFunc("PUT /api/characters/{name}", srv.handleSaveCharacter)
 	mux.HandleFunc("DELETE /api/characters/{name}", srv.handleDeleteCharacter)
 
-	// Static files (frontend build)
-	if cfg.Server.Addr != "" {
-		staticDir := "./frontend/dist"
-		if _, err := os.Stat(staticDir); err == nil {
-			mux.Handle("GET /assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir(staticDir+"/assets"))))
-			mux.HandleFunc("GET /", srv.handleSPA(staticDir))
-		}
-	}
+	// Built frontend (Vite/React SPA)
+	frontendDir := "./frontend/dist"
+	fs := http.FileServer(http.Dir(frontendDir))
+	mux.Handle("GET /assets/", fs)
+	mux.Handle("GET /fonts/", fs)
+	mux.Handle("GET /img/", fs)
+	mux.Handle("GET /favicon.svg", fs)
+	mux.Handle("GET /icons.svg", fs)
+
+	// SPA fallback — serve index.html for all other routes
+	mux.HandleFunc("GET /{path...}", srv.handleSPA(frontendDir))
 
 	handler := corsMiddleware(cfg)(mux)
 
@@ -287,25 +290,12 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleSPA(staticDir string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Don't intercept API routes or static assets
-		if strings.HasPrefix(r.URL.Path, "/api/") || strings.HasPrefix(r.URL.Path, "/assets/") {
+		if strings.HasPrefix(r.URL.Path, "/api/") {
 			http.NotFound(w, r)
 			return
 		}
 		http.ServeFile(w, r, filepath.Join(staticDir, "index.html"))
 	}
-}
-
-func (s *Server) handleWeb(w http.ResponseWriter, r *http.Request) {
-	webDir := "./cmd/server/web"
-	if _, err := os.Stat(webDir); err == nil {
-		http.ServeFile(w, r, filepath.Join(webDir, "index.html"))
-		return
-	}
-	// Fallback: serve a simple message
-	w.Header().Set("Content-Type", "text/html")
-	w.Write([]byte(`<!DOCTYPE html><html><body style="font-family:sans-serif;padding:2rem;max-width:600px;margin:0 auto">
-<h1>Arcanum</h1><p>Frontend not built. Run <code>cd frontend && npm run build</code> first.</p></body></html>`))
 }
 
 func (s *Server) handleContent(w http.ResponseWriter, r *http.Request) {

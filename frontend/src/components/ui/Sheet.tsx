@@ -1,7 +1,7 @@
-import { createContext } from 'preact';
-import { useState, useContext } from 'preact/hooks';
+import { createContext } from 'react';
+import { useState, useContext } from 'react';
 import * as SheetPrimitive from '@radix-ui/react-dialog';
-import { XIcon } from 'lucide-preact';
+import { XIcon } from 'lucide-react';
 import { clsx } from 'clsx';
 
 interface SheetContextValue {

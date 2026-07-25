@@ -1,5 +1,5 @@
 import { useParams, Link, useLocation } from 'wouter';
-import { Printer, ClipboardPen, Trash2, Download } from 'lucide-preact';
+import { Printer, ClipboardPen, Trash2, Download } from 'lucide-react';
 
 import { CharacterSheetPreview } from '@/components/character/CharacterSheetPreview';
 import { Button } from '@/components/ui/Button';

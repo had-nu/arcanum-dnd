@@ -24,9 +24,7 @@ export function TooltipTrigger({ children, ...props }: TooltipTriggerProps) {
 
   return (
     <TooltipPrimitive.Trigger asChild {...props}>
-      {React.cloneElement(children as React.ReactElement, {
-        ...children.props,
-      })}
+      {children}
     </TooltipPrimitive.Trigger>
   );
 }
@@ -59,7 +57,7 @@ export function TooltipContent({ className, children, side = 'top', align = 'cen
   );
 }
 
-import React from 'preact/compat';
+import React from 'react';
 
 Tooltip.displayName = 'Tooltip';
 TooltipTrigger.displayName = 'TooltipTrigger';

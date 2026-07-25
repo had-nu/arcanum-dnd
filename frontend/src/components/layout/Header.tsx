@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'preact/hooks';
-import { SunIcon, MoonIcon, Dices } from 'lucide-preact';
+import { useEffect, useState } from 'react';
+import { SunIcon, MoonIcon, Dices } from 'lucide-react';
 
 interface HeaderProps {
   onThemeToggle: () => void;

@@ -1,6 +1,6 @@
-import { useState } from 'preact/hooks';
+import { useState } from 'react';
 import { Link } from 'wouter';
-import { PlusIcon, Trash2Icon, ChevronDownIcon, ChevronUpIcon } from 'lucide-preact';
+import { PlusIcon, Trash2Icon, ChevronDownIcon, ChevronUpIcon } from 'lucide-react';
 import { clsx } from 'clsx';
 
 import { Button } from '@/components/ui/Button';

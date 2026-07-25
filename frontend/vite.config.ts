@@ -1,9 +1,9 @@
 import { defineConfig } from 'vite';
-import preact from '@preact/preset-vite';
+import react from '@vitejs/plugin-react';
 import path from 'path';
 
 export default defineConfig({
-  plugins: [preact()],
+  plugins: [react()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -13,6 +13,7 @@ export default defineConfig({
       '@stores': path.resolve(__dirname, './src/stores'),
       '@pages': path.resolve(__dirname, './src/pages'),
       '@utils': path.resolve(__dirname, './src/utils'),
+      '@data': path.resolve(__dirname, './src/data'),
     },
   },
   server: {

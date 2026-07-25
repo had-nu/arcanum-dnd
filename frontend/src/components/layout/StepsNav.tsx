@@ -1,15 +1,14 @@
 import { clsx } from 'clsx';
-import { useLocation } from 'wouter';
 
 const steps = [
-  { id: 'basics', label: 'Basics', href: '/builder?step=basics', icon: '👤' },
-  { id: 'class', label: 'Class', href: '/builder?step=class', icon: '⚔️' },
-  { id: 'skills', label: 'Skills', href: '/builder?step=skills', icon: '🎯' },
-  { id: 'spells', label: 'Spells', href: '/builder?step=spells', icon: '✨' },
-  { id: 'review', label: 'Review', href: '/builder?step=review', icon: '📋' },
+  { id: 'name', label: 'Name' },
+  { id: 'class', label: 'Class' },
+  { id: 'background', label: 'Background' },
+  { id: 'species', label: 'Species' },
+  { id: 'abilities', label: 'Abilities' },
+  { id: 'equipment', label: 'Equipment' },
+  { id: 'sheet', label: 'Sheet' },
 ];
-
-const stepOrder = ['basics', 'class', 'skills', 'spells', 'review'];
 
 interface StepsNavProps {
   currentStep: string;
@@ -18,19 +17,10 @@ interface StepsNavProps {
 }
 
 export function StepsNav({ currentStep, completedSteps, onStepClick }: StepsNavProps) {
-  const [, navigate] = useLocation();
-  const currentIndex = stepOrder.indexOf(currentStep);
-
-  const handleClick = (stepId: string) => {
-    if (onStepClick) {
-      onStepClick(stepId);
-    } else {
-      navigate(`/builder?step=${stepId}`);
-    }
-  };
+  const currentIndex = steps.findIndex(s => s.id === currentStep);
 
   const canAccess = (stepId: string) => {
-    const stepIndex = stepOrder.indexOf(stepId);
+    const stepIndex = steps.findIndex(s => s.id === stepId);
     return stepIndex <= currentIndex + 1 || completedSteps.includes(stepId);
   };
 
@@ -42,12 +32,11 @@ export function StepsNav({ currentStep, completedSteps, onStepClick }: StepsNavP
           const isCompleted = completedSteps.includes(step.id);
           const isActive = step.id === currentStep;
           const isAccessible = canAccess(step.id);
-          const isFuture = stepOrder.indexOf(step.id) > currentIndex && !isCompleted;
 
           return (
             <li key={step.id} className="relative flex flex-col items-center gap-2">
               <button
-                onClick={() => isAccessible && handleClick(step.id)}
+                onClick={() => isAccessible && onStepClick?.(step.id)}
                 disabled={!isAccessible}
                 className={clsx(
                   'relative flex flex-col items-center gap-1.5 transition-all duration-200',
@@ -61,11 +50,11 @@ export function StepsNav({ currentStep, completedSteps, onStepClick }: StepsNavP
                     : 'text-dnd-stone-300 dark:text-dnd-stone-600 cursor-not-allowed'
                 )}
                 aria-current={isActive ? 'step' : undefined}
-                aria-label={`Step ${index + 1}: ${step.label} ${isCompleted ? '(completed)' : isActive ? '(current)' : isFuture ? '(locked)' : ''}`}
+                aria-label={`Step ${index + 1}: ${step.label} ${isCompleted ? '(completed)' : isActive ? '(current)' : ''}`}
               >
                 <div
                   className={clsx(
-                    'relative flex items-center justify-center w-12 h-12 rounded-full border-4',
+                    'relative flex items-center justify-center w-10 h-10 rounded-full border-2 text-xs font-bold',
                     'transition-all duration-200',
                     isActive
                       ? 'bg-dnd-blood-600 border-dnd-blood-600 text-white shadow-lg shadow-dnd-blood-600/30'
@@ -78,15 +67,15 @@ export function StepsNav({ currentStep, completedSteps, onStepClick }: StepsNavP
                   aria-hidden="true"
                 >
                   {isCompleted ? (
-                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
                   ) : (
-                    <span className="text-2xl" aria-hidden="true">{step.icon}</span>
+                    <span>{index + 1}</span>
                   )}
                 </div>
                 <span className={clsx(
-                  'text-xs font-medium font-condensed uppercase tracking-wider text-center w-24',
+                  'text-[10px] font-medium font-condensed uppercase tracking-wider text-center w-16 hidden sm:block',
                   isActive && 'text-dnd-blood-600 dark:text-dnd-blood-400',
                   isCompleted && 'text-dnd-gold-600 dark:text-dnd-gold-400',
                   !isActive && !isCompleted && isAccessible && 'text-dnd-stone-600 dark:text-dnd-stone-400',
@@ -95,17 +84,6 @@ export function StepsNav({ currentStep, completedSteps, onStepClick }: StepsNavP
                   {step.label}
                 </span>
               </button>
-              {index < steps.length - 1 && (
-                <div
-                  className={clsx(
-                    'absolute top-[22px] left-1/2 right-1/2 h-1 transform -translate-x-1/2',
-                    isCompleted || (isActive && index < currentIndex)
-                      ? 'bg-dnd-gold-500'
-                      : 'bg-dnd-stone-200 dark:bg-dnd-stone-700'
-                  )}
-                  aria-hidden="true"
-                />
-              )}
             </li>
           );
         })}

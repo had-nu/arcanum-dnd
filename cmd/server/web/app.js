@@ -2180,7 +2180,7 @@ function renderSpellRow(sp) {
   h += '<div class="picker-row-icon"><img src="/static/img/spell-schools/'+schoolImg+'.png" alt="'+esc(sp.school)+'" width="28" height="28" onerror="this.style.display=\'none\'"></div>';
   h += '<div class="picker-row-info">';
   h += '<div class="picker-row-name">'+esc(sp.name)+(isSelected?' &#10003;':'')+'</div>';
-  h += '<div class="picker-row-meta">'+(SPELL_SCHOOLS[sp.school]||sp.level===0?'Cantrips':'Level '+sp.level)+' &middot; '+esc(sp.castingTime||'1 action')+' &middot; '+esc(sp.range||'Self')+tags+'</div>';
+  h += '<div class="picker-row-meta">'+(SPELL_SCHOOLS[sp.school]||(sp.level===0?'Cantrips':'Level '+sp.level))+' &middot; '+esc(sp.castingTime||'1 action')+' &middot; '+esc(sp.range||'Self')+tags+'</div>';
   h += '</div>';
   h += (rec?'<div class="picker-row-badge" title="'+esc(rec)+'">Recommended</div>':'');
   h += '<div class="picker-row-arrow">'+(isSelected?'&#10003;':'+')+'</div>';
@@ -2352,32 +2352,38 @@ function renderClassSpellPicker(idx, c) {
   var isWarlock = c.id === 'warlock';
   var warlockMaxSpellLevel = isWarlock ? getMaxSpellLevel('warlock', c.level) : 9;
   var warlockSpellsKnown = isWarlock ? getSpellsKnown('warlock', c.level) : null;
-  var warlockCurrentKnown = isWarlock ? state.spells.filter(function(s){var sp=content.spells[s];return sp&&sp.level>=1;}).length : 0;
+  var warlockCantripsKnown = isWarlock ? getCantripsKnown('warlock', c.level) : 0;
 
-  // Collect all spells up to max level for this class
+  // Collect all warlock-available spells up to max spell level
   var allCantrips = [], allSpells = [];
   Object.keys(classSpells).forEach(function(lvl){
     var ilvl = parseInt(lvl,10);
-    if (ilvl > c.level) return;
+    if (isWarlock && ilvl > c.level) return;
     if (isWarlock && ilvl > warlockMaxSpellLevel) return;
     classSpells[lvl].cantrips.forEach(function(sid){ if (allCantrips.indexOf(sid)===-1) allCantrips.push(sid); });
     classSpells[lvl].spells.forEach(function(sid){ if (allSpells.indexOf(sid)===-1) allSpells.push(sid); });
   });
+
+  // Filter spells - only those up to max spell level
+  allCantrips = allCantrips.filter(function(sid){ var sp=content.spells[sid]; return sp && (sp.level||0) <= warlockMaxSpellLevel; });
+  allSpells = allSpells.filter(function(sid){ var sp=content.spells[sid]; return sp && sp.level <= warlockMaxSpellLevel; });
 
   // Get granted spells for this class
   var granted = getGrantedSpells();
   var classSpellIds = allCantrips.concat(allSpells);
   var grantedHere = granted.filter(function(g){ return classSpellIds.indexOf(g.id) !== -1; });
   var bonusGranted = grantedHere.filter(function(g){ return g.bonus; });
-  var nonBonusGranted = grantedHere.filter(function(g){ return !g.bonus; });
 
-  // Count user-picked spells
+  // User-picked spells that belong to this class
   var pickedIds = state.spells.filter(function(sid){ return classSpellIds.indexOf(sid) !== -1; });
   var pickedByLevel = {};
   pickedIds.forEach(function(sid){ var sp=content.spells[sid]; if(sp) pickedByLevel[sp.level] = (pickedByLevel[sp.level]||0)+1; });
-  nonBonusGranted.forEach(function(g){ pickedByLevel[g.level] = (pickedByLevel[g.level]||0)+1; });
 
-  // Collect Mystic Arcanum spells for this Warlock
+  // Count warlock-specific: leveled known and cantrips
+  var warlockCurrentKnown = pickedIds.filter(function(sid){var sp=content.spells[sid];return sp&&sp.level>=1;}).length;
+  var pickedCantrips = pickedIds.filter(function(sid){var sp=content.spells[sid];return sp&&sp.level===0;}).length;
+
+  // Collect Mystic Arcanum spells (level 11+)
   var mysticArcanum = [];
   if (isWarlock && c.level >= 11) {
     var warlockClass = content.classes.find(function(cl){return cl.id==='warlock';});
@@ -2395,7 +2401,7 @@ function renderClassSpellPicker(idx, c) {
             Object.keys(levelData.mysticArcanum).forEach(function(spellLevel){
               levelData.mysticArcanum[spellLevel].forEach(function(spellName){
                 var sp = content.spellsByName[spellName];
-                if (sp) mysticArcanum.push(sp);
+                if (sp && mysticArcanum.indexOf(sp)===-1) mysticArcanum.push(sp);
               });
             });
           }
@@ -2404,198 +2410,7 @@ function renderClassSpellPicker(idx, c) {
     }
   }
 
-  // Count user-picked spells by level for display
-  var pickedCountTotal = pickedIds.filter(function(sid){var sp=content.spells[sid];return sp&&sp.level>=1;}).length;
-  var pickedCantrips = pickedIds.filter(function(sid){var sp=content.spells[sid];return sp&&sp.level===0;}).length;
-
-  var h = '<div class="class-body-spells">';
-  
-  // Known Spells section (top)
-  if (isWarlock) {
-    h += '<div class="class-spells-selected">';
-    h += '<div class="spell-known-section">';
-    h += '<div class="spell-section-header">Known Spells <span class="section-sub">'+warlockCurrentKnown+' of '+warlockSpellsKnown+' (cantrips: '+pickedCantrips+')</span></div>';
-    if (pickedIds.length) {
-      var pickedByLevelDisplay = {};
-      pickedIds.forEach(function(sid){
-        var sp = content.spells[sid];
-        if (sp) {
-          var lv = sp.level||0;
-          if (!pickedByLevelDisplay[lv]) pickedByLevelDisplay[lv] = [];
-          pickedByLevelDisplay[lv].push(sp);
-        }
-      });
-      Object.keys(pickedByLevelDisplay).sort(function(a,b){return a-b;}).forEach(function(lvlStr){
-        var lvl = parseInt(lvlStr,10);
-        var suffix = lvl===0?'':(lvl===1?'st':lvl===2?'nd':lvl===3?'rd':'th');
-        var label = lvl===0?'Cantrips':lvl+suffix+' Level';
-        h += '<div class="spell-level-group"><div class="spell-level-header">'+label+'</div>';
-        pickedByLevelDisplay[lvl].forEach(function(sp){ h += renderClassPickedRow(sp, idx); });
-        h += '</div>';
-      });
-    } else {
-      h += '<div class="empty-state">No spells selected. Choose from Available Spells below.</div>';
-    }
-    h += '</div>';
-    h += '</div>';
-  }
-
-  // Available Spells in details/summary
-  h += '<details class="class-spell-details" id="class-spell-details-'+idx+'" open="">';
-  h += '<summary class="class-spell-summary">Available Spells</summary>';
-  h += '<div class="class-spell-picker" data-class="'+idx+'">';
-  
-  // Search
-  h += '<div class="picker-search" style="margin-bottom:8px">';
-  h += '<input class="form-input picker-search-input" type="text" placeholder="Search spells..." oninput="filterClassSpells(this.value,'+idx+')">';
-  h += '</div>';
-  
-  var spellSlots = getSpellSlots();
-  var maxKnown = getMaxSpellsKnownPerLevel();
-
-  // ========== POOL BASE (Available Spells) ==========
-  h += '<div class="spell-pool-base">';
-  h += '<div class="spell-section-header">Pool Base <span class="section-sub">Available spells for selection (up to level '+warlockMaxSpellLevel+')</span></div>';
-  
-  // Collect Mystic Arcanum spells for this Warlock
-  var mysticArcanum = [];
-  if (isWarlock && c.level >= 11) {
-    var warlockClass = content.classes.find(function(cl){return cl.id==='warlock';});
-    if (warlockClass && warlockClass.levels) {
-      var arcanumLevels = [
-        {classLevel: 11, spellLevel: 6},
-        {classLevel: 13, spellLevel: 7},
-        {classLevel: 15, spellLevel: 8},
-        {classLevel: 17, spellLevel: 9}
-      ];
-      arcanumLevels.forEach(function(a){
-        if (c.level >= a.classLevel) {
-          var levelData = warlockClass.levels.find(function(l){return l.level===a.classLevel;});
-          if (levelData && levelData.mysticArcanum) {
-            Object.keys(levelData.mysticArcanum).forEach(function(spellLevel){
-              levelData.mysticArcanum[spellLevel].forEach(function(spellName){
-                var sp = content.spellsByName[spellName];
-                if (sp) mysticArcanum.push(sp);
-              });
-            });
-          }
-        }
-      });
-    }
-  }
-
-  // Count user-picked spells by level for display
-  var pickedCountTotal = pickedIds.filter(function(sid){var sp=content.spells[sid];return sp&&sp.level>=1;}).length;
-  var pickedCantrips = pickedIds.filter(function(sid){var sp=content.spells[sid];return sp&&sp.level===0;}).length;
-
-  var allCantrips = [], allSpells = [];
-  Object.keys(classSpells).forEach(function(lvl){
-    var ilvl = parseInt(lvl,10);
-    if (ilvl > c.level) return;
-    if (isWarlock && ilvl > warlockMaxSpellLevel) return;
-    classSpells[lvl].cantrips.forEach(function(sid){ if (allCantrips.indexOf(sid)===-1) allCantrips.push(sid); });
-    classSpells[lvl].spells.forEach(function(sid){ if (allSpells.indexOf(sid)===-1) allSpells.push(sid); });
-  });
-
-  // Count user-picked spells
-  var pickedIds = state.spells.filter(function(sid){ return classSpellIds.indexOf(sid) !== -1; });
-  var pickedByLevel = {};
-  pickedIds.forEach(function(sid){ var sp=content.spells[sid]; if(sp) pickedByLevel[sp.level] = (pickedByLevel[sp.level]||0)+1; });
-  nonBonusGranted.forEach(function(g){ pickedByLevel[g.level] = (pickedByLevel[g.level]||0)+1; });
-
-  // Collect Mystic Arcanum spells for this Warlock
-  var mysticArcanum = [];
-  if (isWarlock && c.level >= 11) {
-    var warlockClass = content.classes.find(function(cl){return cl.id==='warlock';});
-    if (warlockClass && warlockClass.levels) {
-      var arcanumLevels = [
-        {classLevel: 11, spellLevel: 6},
-        {classLevel: 13, spellLevel: 7},
-        {classLevel: 15, spellLevel: 8},
-        {classLevel: 17, spellLevel: 9}
-      ];
-      arcanumLevels.forEach(function(a){
-        if (c.level >= a.classLevel) {
-          var levelData = warlockClass.levels.find(function(l){return l.level===a.classLevel;});
-          if (levelData && levelData.mysticArcanum) {
-            Object.keys(levelData.mysticArcanum).forEach(function(spellLevel){
-              levelData.mysticArcanum[spellLevel].forEach(function(spellName){
-                var sp = content.spellsByName[spellName];
-                if (sp) mysticArcanum.push(sp);
-              });
-            });
-          }
-        }
-      });
-    }
-  }
-
-  // Count user-picked spells by level for display
-  var pickedCountTotal = pickedIds.filter(function(sid){var sp=content.spells[sid];return sp&&sp.level>=1;}).length;
-  var pickedCantrips = pickedIds.filter(function(sid){var sp=content.spells[sid];return sp&&sp.level===0;}).length;
-
-  var h = '<div class="class-body-spells">';
-  
-  // Known Spells section (top)
-  if (isWarlock) {
-    h += '<div class="class-spells-selected">';
-    h += '<div class="spell-known-section">';
-    h += '<div class="spell-section-header">Known Spells <span class="section-sub">'+warlockCurrentKnown+' of '+warlockSpellsKnown+' (cantrips: '+pickedCantrips+')</span></div>';
-    if (pickedIds.length) {
-      var pickedByLevelDisplay = {};
-      pickedIds.forEach(function(sid){
-        var sp = content.spells[sid];
-        if (sp) {
-          var lv = sp.level||0;
-          if (!pickedByLevelDisplay[lv]) pickedByLevelDisplay[lv] = [];
-          pickedByLevelDisplay[lv].push(sp);
-        }
-      });
-      Object.keys(pickedByLevelDisplay).sort(function(a,b){return a-b;}).forEach(function(lvlStr){
-        var lvl = parseInt(lvlStr,10);
-        var suffix = lvl===0?'':(lvl===1?'st':lvl===2?'nd':lvl===3?'rd':'th');
-        var label = lvl===0?'Cantrips':lvl+suffix+' Level';
-        h += '<div class="spell-level-group"><div class="spell-level-header">'+label+'</div>';
-        pickedByLevelDisplay[lvl].forEach(function(sp){ h += renderClassPickedRow(sp, idx); });
-        h += '</div>';
-      });
-    } else {
-      h += '<div class="empty-state">No spells selected. Choose from Available Spells below.</div>';
-    }
-    h += '</div>';
-    h += '</div>';
-  }
-
-  // Available Spells in details/summary
-  h += '<details class="class-spell-details" id="class-spell-details-'+idx+'" open="">';
-  h += '<summary class="class-spell-summary">Available Spells</summary>';
-  h += '<div class="class-spell-picker" data-class="'+idx+'">';
-  
-  // Search
-  h += '<div class="picker-search" style="margin-bottom:8px">';
-  h += '<input class="form-input picker-search-input" type="text" placeholder="Search spells..." oninput="filterClassSpells(this.value,'+idx+')">';
-  h += '</div>';
-  
-  var spellSlots = getSpellSlots();
-  var maxKnown = getMaxSpellsKnownPerLevel();
-
-  // ========== POOL BASE (Available Spells) ==========
-  h += '<div class="spell-pool-base">';
-  h += '<div class="spell-section-header">Pool Base <span class="section-sub">Available spells for selection (up to level '+warlockMaxSpellLevel+')</span></div>';
-  
-  var spellSlots = getSpellSlots();
-  var maxKnown = getMaxSpellsKnownPerLevel();
-
-  // Cantrips in Pool Base
-  if (allCantrips.length) {
-    var cantripMax = maxKnown[0] || spellSlots.cantrips;
-    var cantripPicked = pickedByLevel[0]||0;
-    h += '<div class="spell-level-group"><div class="spell-level-header">Cantrips ('+cantripPicked+'/'+cantripMax+')</div>';
-    allCantrips.forEach(function(sid){ var sp=content.spells[sid]; if(sp) h+=renderClassSpellRow(sp, idx); });
-    h += '</div>';
-  }
-
-  // Leveled spells in Pool Base - grouped by level
+  // Group leveled spells by level for Pool Base
   var byLevel = {};
   allSpells.forEach(function(sid){
     var sp = content.spells[sid];
@@ -2605,6 +2420,62 @@ function renderClassSpellPicker(idx, c) {
     byLevel[lv].push(sp);
   });
 
+  var spellSlots = getSpellSlots();
+  var maxKnown = getMaxSpellsKnownPerLevel();
+
+  var h = '';
+
+  // ====== Known Spells section (top, warlock only) ======
+  if (isWarlock) {
+    h += '<div class="class-spells-selected">';
+    h += '<div class="spell-known-section">';
+    h += '<div class="spell-section-header">Known Spells <span class="section-sub">'+warlockCurrentKnown+' of '+warlockSpellsKnown+' (cantrips: '+pickedCantrips+')</span></div>';
+    if (pickedIds.length) {
+      var pickedByLevelDisplay = {};
+      pickedIds.forEach(function(sid){
+        var sp = content.spells[sid];
+        if (sp) {
+          var lv = sp.level||0;
+          if (!pickedByLevelDisplay[lv]) pickedByLevelDisplay[lv] = [];
+          pickedByLevelDisplay[lv].push(sp);
+        }
+      });
+      Object.keys(pickedByLevelDisplay).sort(function(a,b){return a-b;}).forEach(function(lvlStr){
+        var lvl = parseInt(lvlStr,10);
+        var suffix = lvl===0?'':(lvl===1?'st':lvl===2?'nd':lvl===3?'rd':'th');
+        var label = lvl===0?'Cantrips':lvl+suffix+' Level';
+        h += '<div class="spell-level-group"><div class="spell-level-header">'+label+'</div>';
+        pickedByLevelDisplay[lvl].forEach(function(sp){ h += renderClassPickedRow(sp, idx); });
+        h += '</div>';
+      });
+    } else {
+      h += '<div class="empty-state">No spells selected. Choose from Available Spells below.</div>';
+    }
+    h += '</div>';
+    h += '</div>';
+  }
+
+  // ====== Available Spells ======
+  h += '<div class="class-spell-picker" data-class="'+idx+'">';
+
+  // Search
+  h += '<div class="picker-search" style="margin-bottom:8px">';
+  h += '<input class="form-input picker-search-input" type="text" placeholder="Search spells..." oninput="filterClassSpells(this.value,'+idx+')">';
+  h += '</div>';
+
+  // ====== Pool Base ======
+  h += '<div class="spell-pool-base">';
+
+  // Cantrips
+  if (allCantrips.length) {
+    var cantripMax = maxKnown[0] || spellSlots.cantrips;
+    var cantripPicked = pickedByLevel[0]||0;
+    h += '<div class="spell-level-group"><div class="spell-level-header">Cantrips ('+cantripPicked+'/'+cantripMax+')</div>';
+    allCantrips.forEach(function(sid){ var sp=content.spells[sid]; if(sp) h+=renderClassSpellRow(sp, idx); });
+    h += '</div>';
+  }
+
+  // Leveled spells grouped by level
   Object.keys(byLevel).sort(function(a,b){return a-b;}).forEach(function(lvlStr){
     var lvl = parseInt(lvlStr,10);
     var pickable = byLevel[lvl] || [];
@@ -2615,9 +2486,10 @@ function renderClassSpellPicker(idx, c) {
     pickable.forEach(function(sp){ h += renderClassSpellRow(sp, idx); });
     h += '</div>';
   });
+
   h += '</div>';
 
-  // ========== SUBCLASS SPELLS (MYSTIC ARCANUM) ==========
+  // ====== Mystic Arcanum ======
   if (mysticArcanum.length) {
     h += '<div class="spell-subclass-section">';
     h += '<div class="spell-section-header">Subclass Spells <span class="section-sub">Mystic Arcanum - do not count against spells known limit</span></div>';
@@ -2637,7 +2509,7 @@ function renderClassSpellPicker(idx, c) {
     h += '</div>';
   }
 
-  // ========== PREPARATION NOTE ==========
+  // ====== Warlock prep note ======
   if (isWarlock) {
     h += '<div class="warlock-prep-note">';
     h += '<strong>Preparation:</strong> Warlocks do not prepare spells daily. ';
@@ -2645,8 +2517,6 @@ function renderClassSpellPicker(idx, c) {
     h += '</div>';
   }
 
-  h += '</div>';
-  h += '</details>';
   h += '</div>';
   return h;
 }
@@ -2669,7 +2539,7 @@ function renderClassSpellRow(sp, idx) {
   h += '<div class="picker-row-icon"><img src="/static/img/spell-schools/'+schoolImg+'.png" alt="'+esc(sp.school)+'" width="28" height="28" onerror="this.style.display=\'none\'"></div>';
   h += '<div class="picker-row-info">';
   h += '<div class="picker-row-name">'+esc(sp.name)+'</div>';
-  h += '<div class="picker-row-meta">'+(SPELL_SCHOOLS[sp.school]||sp.level===0?'Cantrip':'Level '+sp.level)+' &middot; '+esc(sp.castingTime||'1 action')+' &middot; '+esc(sp.range||'Self')+tags+'</div>';
+  h += '<div class="picker-row-meta">'+(SPELL_SCHOOLS[sp.school]||(sp.level===0?'Cantrip':'Level '+sp.level))+' &middot; '+esc(sp.castingTime||'1 action')+' &middot; '+esc(sp.range||'Self')+tags+'</div>';
   h += '</div>';
   h += (rec?'<div class="picker-row-badge" title="'+esc(rec)+'">Recommended</div>':'');
   if (isClassSpell) h += '<div class="picker-row-badge class-spell-badge" title="Warlock spell">Warlock</div>';
@@ -2692,7 +2562,7 @@ function renderClassGrantedRow(g, idx) {
   h += '<div class="picker-row-icon"><img src="/static/img/spell-schools/'+schoolImg+'.png" alt="'+esc(sp.school)+'" width="28" height="28" onerror="this.style.display=\'none\'"></div>';
   h += '<div class="picker-row-info">';
   h += '<div class="picker-row-name">'+esc(sp.name)+' &#10003;</div>';
-  h += '<div class="picker-row-meta">'+(SPELL_SCHOOLS[sp.school]||sp.level===0?'Cantrip':'Level '+sp.level)+' &middot; '+esc(sp.castingTime||'1 action')+' &middot; '+esc(sp.range||'Self')+tags+'</div>';
+  h += '<div class="picker-row-meta">'+(SPELL_SCHOOLS[sp.school]||(sp.level===0?'Cantrip':'Level '+sp.level))+' &middot; '+esc(sp.castingTime||'1 action')+' &middot; '+esc(sp.range||'Self')+tags+'</div>';
   h += '</div>';
   h += '<div class="picker-row-source">'+esc(g.source||'Granted')+'</div>';
   h += (rec?'<div class="picker-row-badge" title="'+esc(rec)+'">Recommended</div>':'');
@@ -2705,7 +2575,7 @@ function renderClassPickedRow(sp, idx) {
   h += '<div class="picked-row-icon"><img src="/static/img/spell-schools/'+schoolImg+'.png" width="20" height="20" onerror="this.style.display=\'none\'"></div>';
   h += '<div class="picked-row-info">';
   h += '<div class="picked-row-name">'+esc(sp.name)+'</div>';
-  h += '<div class="picked-row-meta">'+(SPELL_SCHOOLS[sp.school]||sp.level===0?'Cantrips':'Level '+sp.level)+'</div>';
+  h += '<div class="picked-row-meta">'+(SPELL_SCHOOLS[sp.school]||(sp.level===0?'Cantrips':'Level '+sp.level))+'</div>';
   h += '</div>';
   h += '<button class="picked-row-remove" onclick="toggleSpell(\''+esc(sp.id)+'\','+sp.level+','+idx+')" title="Remove">&#10005;</button>';
   h += '</div>';
@@ -2789,13 +2659,28 @@ function closeSpellDetailModal(e) {
   document.body.classList.remove('modal-open');
 }
 
+function getWarlockSpellIds(c) {
+  var classSpells = getClassSpellsForPicker(c);
+  if (!classSpells) return [];
+  var maxLevel = getMaxSpellLevel('warlock', c.level);
+  var ids = [];
+  Object.keys(classSpells).forEach(function(lvl){
+    var ilvl = parseInt(lvl,10);
+    if (ilvl > maxLevel) return;
+    classSpells[lvl].cantrips.forEach(function(sid){ if (ids.indexOf(sid)===-1) ids.push(sid); });
+    classSpells[lvl].spells.forEach(function(sid){ if (ids.indexOf(sid)===-1) ids.push(sid); });
+  });
+  return ids;
+}
+
 function confirmSpellSelection(spellId, level, classIdx) {
   var c = state.classes[classIdx];
   if (!c) { closeSpellDetailModal(); return; }
   var isWarlock = c.id === 'warlock';
   if (isWarlock) {
     var maxKnown = getSpellsKnown('warlock', c.level);
-    var currentKnown = state.spells.filter(function(s){var sp=content.spells[s];return sp&&sp.level>=1;}).length;
+    var warlockIds = getWarlockSpellIds(c);
+    var currentKnown = state.spells.filter(function(s){return warlockIds.indexOf(s)!==-1 && content.spells[s] && content.spells[s].level>=1;}).length;
     if (currentKnown >= maxKnown) {
       alert('Maximum '+maxKnown+' spells known for Warlock level '+c.level+'.');
       closeSpellDetailModal();
@@ -2819,7 +2704,8 @@ function toggleSpell(spellId, level, classIdx) {
   } else {
     if (isWarlock) {
       var maxKnown = getSpellsKnown('warlock', c.level);
-      var currentKnown = state.spells.filter(function(s){var sp=content.spells[s];return sp&&sp.level>=1;}).length;
+      var warlockIds = getWarlockSpellIds(c);
+      var currentKnown = state.spells.filter(function(s){return warlockIds.indexOf(s)!==-1 && content.spells[s] && content.spells[s].level>=1;}).length;
       if (currentKnown >= maxKnown) { alert('Maximum '+maxKnown+' spells known for Warlock level '+c.level+'.'); return; }
       var maxLevel = getMaxSpellLevel('warlock', c.level);
       var sp = content.spells[spellId];
@@ -2855,38 +2741,6 @@ function filterClassSpells(query, classIdx) {
   });
 }
 
-function confirmSpellSelection(spellId, level, classIdx) {
-  var c = state.classes[classIdx];
-  if (!c) return;
-  
-  // Warlock-specific: check spellsKnown limit
-  if (c.id === 'warlock') {
-    var maxKnown = getSpellsKnown('warlock', c.level);
-    var currentKnown = state.spells.filter(function(s){
-      var sp = content.spells[s];
-      return sp && sp.level >= 1;
-    }).length;
-    if (currentKnown >= maxKnown) {
-      alert('Maximum '+maxKnown+' spells known for Warlock level '+c.level+'.');
-      closeSpellDetailModal();
-      return;
-    }
-    var maxLevel = getMaxSpellLevel('warlock', c.level);
-    var sp = content.spells[spellId];
-    if (sp && sp.level > maxLevel) {
-      alert('Cannot learn spells above level '+maxLevel+' at Warlock level '+c.level+'.');
-      closeSpellDetailModal();
-      return;
-    }
-  }
-  
-  // Add to state.spells
-  if (state.spells.indexOf(spellId) === -1) {
-    state.spells.push(spellId);
-}
-  closeSpellDetailModal();
-  renderClass(getMain());
-}
 
 function filterSpells(query) {
   query = (query||'').toLowerCase();
@@ -2897,17 +2751,6 @@ function filterSpells(query) {
   });
 }
 
-function filterClassSpells(query, classIdx) {
-  query = (query||'').toLowerCase();
-  var details = document.getElementById('class-spell-details-'+classIdx);
-  if (!details) return;
-  if (query) details.open = true;
-  var rows = details.querySelectorAll('.class-spell-picker-row');
-  rows.forEach(function(r){
-    var name = r.getAttribute('data-name')||'';
-    r.style.display = name.indexOf(query)!==-1 ? '' : 'none';
-  });
-}
 
 function confirmSpells() { goTo(11); }
 

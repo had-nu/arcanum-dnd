@@ -1,7 +1,8 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/preact-query';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Switch, Route } from 'wouter';
-import { useEffect } from 'preact/hooks';
+import { useEffect } from 'react';
 
+import { HomePage } from '@/pages/HomePage';
 import { BuilderPage } from '@/pages/BuilderPage';
 import { CharactersPage } from '@/pages/CharactersPage';
 import { CharacterView } from '@/pages/CharacterView';
@@ -39,10 +40,11 @@ export function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ToastProvider>
-        <div class="min-h-screen flex flex-col">
+        <div className="min-h-screen flex flex-col">
           <Header onThemeToggle={toggleTheme} />
-          <main class="flex-1 w-full max-w-7xl mx-auto px-4 py-6">
+          <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-6">
             <Switch>
+              <Route path="/" component={HomePage} />
               <Route path="/builder" component={BuilderPage} />
               <Route path="/characters/:name" component={CharacterView} />
               <Route path="/characters" component={CharactersPage} />

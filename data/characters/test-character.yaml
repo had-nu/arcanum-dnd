@@ -1,12 +1,13 @@
 name: Test Character
 classes:
-    - id: fighter
-      name: Fighter
-      level: 3
+    - id: warlock
+      name: Warlock
+      level: 13
+      subclassId: the-great-old-one
 backgroundId: soldier
 backgroundName: Soldier
 speciesId: human
-level: 3
+level: 13
 abilityMethod: standard
 abilities:
     CHA: 8
@@ -20,5 +21,5 @@ skills:
     - insight
 xp: 0
 progressionType: milestone
-createdAt: "2026-07-24T23:15:30+01:00"
-updatedAt: "2026-07-24T23:15:30+01:00"
+createdAt: "2026-07-25T01:52:11+01:00"
+updatedAt: "2026-07-25T01:52:11+01:00"

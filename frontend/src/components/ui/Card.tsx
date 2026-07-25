@@ -1,5 +1,5 @@
 import { clsx } from 'clsx';
-import { HTMLAttributes } from 'preact/compat';
+import { HTMLAttributes } from 'react';
 
 interface CardProps extends HTMLAttributes<HTMLDivElement> {
   variant?: 'default' | 'parchment' | 'stone';

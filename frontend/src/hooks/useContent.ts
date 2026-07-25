@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/preact-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/api/client';
 import type { SaveCharacterRequest } from '@/types/api';
 
@@ -42,7 +42,7 @@ export function useCharacter(name: string) {
 
 export function useSaveCharacter() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: (payload: SaveCharacterRequest) => api.saveCharacter(payload),
     onSuccess: () => {
@@ -53,7 +53,7 @@ export function useSaveCharacter() {
 
 export function useUpdateCharacter(name: string) {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: (payload: SaveCharacterRequest) => api.updateCharacter(name, payload),
     onSuccess: () => {
@@ -65,7 +65,7 @@ export function useUpdateCharacter(name: string) {
 
 export function useDeleteCharacter() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: (name: string) => api.deleteCharacter(name),
     onSuccess: () => {

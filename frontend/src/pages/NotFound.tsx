@@ -1,5 +1,5 @@
 import { Link } from 'wouter';
-import { Home, Search } from 'lucide-preact';
+import { Home, Search } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 export function NotFound() {

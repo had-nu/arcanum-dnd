@@ -1,6 +1,6 @@
-import { useState, useCallback, useContext } from 'preact/hooks';
-import { createContext } from 'preact';
-import { XIcon } from 'lucide-preact';
+import { useState, useCallback, useContext } from 'react';
+import { createContext } from 'react';
+import { XIcon } from 'lucide-react';
 import { clsx } from 'clsx';
 
 interface Toast {
