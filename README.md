@@ -8,11 +8,35 @@ D&D 5.5 Edition Manager — TUI-first, Event-Sourced, Living World Engine
 
 ## Quick Start
 
+### Docker (Recommended)
+
+```sh
+# Development with hot reload
+docker compose --profile dev up -d
+# Access at http://localhost:5173
+
+# Production (single container)
+docker compose --profile prod up -d
+# Access at http://localhost:8080
+```
+
+### Local Development
+
+```sh
+# Backend
+go run ./cmd/server/
+
+# Frontend (separate terminal)
+cd frontend && npm run dev
+```
+
+### TUI Commands
+
 ```sh
 go run ./cmd/tui-player/
 ```
 
-## Comandos
+## Commands
 
 ```sh
 make build      # compila tudo
@@ -22,7 +46,7 @@ make run-player # go run ./cmd/tui-player/
 make run-master # go run ./cmd/tui-master/
 ```
 
-## Arquitetura
+## Architecture
 
 ```
 internal/
@@ -33,7 +57,7 @@ internal/
   rng/          RNG interface (default + seeded)
 ```
 
-Padrões portados de [greghcarr/dnd-srd-engine](https://github.com/greghcarr/dnd-srd-engine):
+Patterns ported from [greghcarr/dnd-srd-engine](https://github.com/greghcarr/dnd-srd-engine):
 Event Sourcing, Plan/Commit split, Effect Primitives, Branded IDs, Derive layer.
 
 ## Spec

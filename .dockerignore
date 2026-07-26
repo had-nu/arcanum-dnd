@@ -1,0 +1,56 @@
+# Git
+.git
+.gitignore
+
+# Go
+server
+spells
+tui-player
+*.exe
+
+# Node
+node_modules
+frontend/node_modules
+frontend/dist
+frontend/.vite
+
+# Build
+dist
+build
+*.tar.gz
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.yml
+Dockerfile*
+.dockerignore
+
+# Data
+var/*.db
+var/*.db-shm
+var/*.db-wal
+data/*
+
+# Logs
+*.log
+logs/
+
+# Test
+*.test
+*.out
+coverage.out
+
+# Misc
+*.tmp
+*.temp
+.tmp
+temp/
