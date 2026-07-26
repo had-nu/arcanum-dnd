@@ -155,7 +155,9 @@ export function BuilderPage() {
             </div>
           </nav>
 
-          {renderStep()}
+          <div className="step-content">
+            {renderStep()}
+          </div>
 
           <div className="actions flex justify-between pt-6 border-t border-stone-700 mt-8">
             {currentStepIndex > 0 && (

@@ -3,7 +3,7 @@ import { useBuilderStore } from '@/stores/builderStore';
 import { useWizardUIStore } from '@/stores/wizardUIStore';
 import { ClassCard } from './ClassCard';
 import { SpellManager } from './SpellManager';
-import { ClassGlyph, LevelSelect, Button, Tabs, TabList, Tab, TabPanel } from '@/shared/ui';
+import { ClassGlyph, LevelSelect, Button, Tabs, TabList, Tab, TabPanel, XIcon, CheckIcon, LockIcon } from '@/shared/ui';
 
 export function ClassStep() {
   const { draft, addClass, setClassLevel, removeClass, setSubclass, preview } = useBuilderStore();
@@ -17,14 +17,14 @@ export function ClassStep() {
   const totalLevel = draft.classes.reduce((sum: number, c: { level: number }) => sum + c.level, 0);
   const hitDice = draft.classes.map((c: { id: string; level: number }) => {
     const cd = allClasses.find((cl) => cl.id === c.id);
-    const hitDie = cd?.hitDie ? parseInt(cd.hitDie) : 8;
-    return `${c.level}d${hitDie}`;
+    const hd = cd?.hitDie ? parseInt(cd.hitDie.replace('d', '')) : 8;
+    return `${c.level}d${hd}`;
   }).join(' + ');
 
   const calculateHP = (classId: string, level: number, con: number): number => {
     const cd = allClasses.find((c) => c.id === classId);
     if (!cd) return 0;
-    const hitDie = cd.hitDie ? parseInt(cd.hitDie) : 8;
+    const hitDie = cd.hitDie ? parseInt(cd.hitDie.replace('d', '')) : 8;
     const conMod = Math.floor((con - 10) / 2);
     if (level === 1) return hitDie + conMod;
     const avgHD = Math.floor(hitDie / 2) + 1;
@@ -37,7 +37,7 @@ export function ClassStep() {
         <div className="class-picker">
           <h2 className="sec-title">Choose Class</h2>
           <div className="card-grid">
-            {allClasses.map((c) => (
+            {[...allClasses].sort((a, b) => (a.name ?? '').localeCompare(b.name ?? '')).map((c) => (
               <ClassCard
                 key={c.id}
                 classData={c}
@@ -69,9 +69,9 @@ export function ClassStep() {
                   <div className="selected-class-hp flex items-center gap-2">
                     <span className="text-stone-400">HP</span>
                     <strong className="text-white text-xl">{calculateHP(c.id, c.level, draft.abilityScores.CON)}</strong>
-                    <span className="hp-detail text-stone-500 text-sm">(d{cd?.hitDie} + CON)</span>
+                    <span className="hp-detail text-stone-500 text-sm">({cd?.hitDie} + CON)</span>
                   </div>
-                  <Button variant="danger" size="sm" onClick={() => removeClass(c.id)}>✕</Button>
+                  <Button variant="danger" size="sm" onClick={() => removeClass(c.id)}><XIcon size={14} /></Button>
                 </div>
 
                 <div className="selected-class-body p-4">
@@ -96,9 +96,9 @@ export function ClassStep() {
                             </span>
                             <span className="feat-name flex-1 text-white">{f.name}</span>
                             {(f.level ?? 0) <= c.level ? (
-                              <span className="feat-unlocked text-green-500">✓</span>
+                              <span className="feat-unlocked text-green-500"><CheckIcon size={18} /></span>
                             ) : (
-                              <span className="feat-locked text-stone-500">🔒</span>
+                              <span className="feat-locked text-stone-500"><LockIcon size={18} /></span>
                             )}
                           </div>
                         ))}

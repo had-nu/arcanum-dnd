@@ -7,3 +7,4 @@ export { LevelSelect } from './LevelSelect';
 export { Chevron } from './Chevron';
 export { ClassGlyph } from './ClassGlyph';
 export { ToastProvider, useToast, ToastContainer } from './Toast';
+export { XIcon, CheckIcon, ScrollIcon, LockIcon, TheaterIcon, DnaIcon } from './icons';

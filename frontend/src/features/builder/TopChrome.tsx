@@ -10,7 +10,7 @@ export function TopChrome() {
   const ac = preview?.ac ?? 10;
   const hitDice = draft.classes.map((c) => {
     const classDef = allClasses.find((cl) => cl.id === c.id);
-    return classDef ? `d${classDef.hitDie}` : 'd?';
+    return classDef ? classDef.hitDie : '?';
   }).join(' / ');
 
   if (!draft.name && draft.classes.length === 0) return null;

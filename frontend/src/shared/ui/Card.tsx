@@ -1,4 +1,3 @@
-"use client";
 
 import React, { forwardRef, type HTMLAttributes } from 'react';
 import { clsx } from 'clsx';
@@ -35,7 +34,13 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
         )}
         {...props}
       >
-        {selected && <span className="absolute top-2 right-2 text-amber-500 font-bold">✓</span>}
+        {selected && (
+          <span className="absolute top-2 right-2 text-amber-500">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </span>
+        )}
         {children}
       </div>
     );

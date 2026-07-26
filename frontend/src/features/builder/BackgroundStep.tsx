@@ -1,6 +1,6 @@
 import { useContentStore } from '@/stores/contentStore';
 import { useBuilderStore } from '@/stores/builderStore';
-import { Button, Card, CardTitle, CardMeta, CardTags } from '@/shared/ui';
+import { Button, Card, CardTitle, CardMeta, CardTags, ScrollIcon, XIcon } from '@/shared/ui';
 
 export function BackgroundStep() {
   const { draft, setBackground } = useBuilderStore();
@@ -25,7 +25,7 @@ export function BackgroundStep() {
                 onClick={() => setBackground(bg.id!)}
               >
                 <div className="flex items-center gap-3 mb-2">
-                  <span className="text-2xl">📜</span>
+                  <ScrollIcon size={24} className="text-stone-400" />
                   <CardTitle>{bg.name}</CardTitle>
                 </div>
                 <CardMeta>Feat: {bg.feat}</CardMeta>
@@ -53,7 +53,7 @@ export function BackgroundStep() {
               <span className="tag tag-gold">Feat: {bg?.feat}</span>
             </div>
           </div>
-          <Button variant="danger" size="sm" onClick={() => setBackground('')}>✕</Button>
+          <Button variant="danger" size="sm" onClick={() => setBackground('')}><XIcon size={14} /></Button>
         </div>
         <div className="selected-bg-body">
           <CardMeta>{bg?.skills?.join(', ')}</CardMeta>

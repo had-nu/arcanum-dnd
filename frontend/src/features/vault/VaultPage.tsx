@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/api/endpoints';
-import { Card, Button, Input } from '@/shared/ui';
+import { Card, Button, Input, ScrollIcon } from '@/shared/ui';
 
 export function VaultPage() {
   const navigate = useNavigate();
@@ -59,7 +59,7 @@ export function VaultPage() {
 
       {filtered.length === 0 ? (
         <div className="empty-state text-center py-16">
-          <div className="empty-icon text-6xl mb-4 opacity-50">📜</div>
+          <div className="empty-icon mb-4 opacity-50"><ScrollIcon size={64} className="text-stone-500" /></div>
           <h3 className="font-heading text-xl text-white mb-2">No characters yet</h3>
           <p className="text-stone-400 mb-6">Create your first hero to begin your adventure</p>
           <Button variant="primary" onClick={() => navigate('/builder/new')}>
@@ -86,7 +86,10 @@ function CharacterCard({ character, onEdit }: { character: any; onEdit: () => vo
         <div className="character-name font-label text-lg text-white">{character.name}</div>
         <div className="character-delete">
           <button className="text-stone-500 hover:text-red-500 transition-colors p-1" onClick={(e) => e.stopPropagation()}>
-            ✕
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
           </button>
         </div>
       </div>

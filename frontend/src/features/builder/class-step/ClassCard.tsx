@@ -12,18 +12,18 @@ export function ClassCard({ classData, onClick }: ClassCardProps) {
       onClick={() => onClick(classData.id!)}
       className="h-full flex flex-col"
     >
-      <div className="flex items-center justify-center mb-3">
-        <ClassGlyph classId={classData.id!} size="lg" />
+      <div className="flex items-center justify-center mb-2">
+        <ClassGlyph classId={classData.id!} size="md" />
       </div>
-      <CardTitle className="text-center">{classData.name}</CardTitle>
-      <CardMeta className="text-center mb-3">
-        HD d{classData.hitDie} ·{' '}
+      <CardTitle className="text-center font-heading text-white">{classData.name}</CardTitle>
+      <CardMeta className="text-center mb-2">
+        HD {classData.hitDie} ·{' '}
         {classData.spellcaster ? 'Spellcaster' : 'Martial'}
         {classData.primaryAbility && (
           <> · Primary: {classData.primaryAbility.join('/')}</>
         )}
       </CardMeta>
-      <CardTags>
+      <CardTags className="justify-center">
         {classData.savingThrows?.map((st) => (
           <span key={st} className="tag tag-blue">{st}</span>
         ))}

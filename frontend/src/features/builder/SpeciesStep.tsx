@@ -1,6 +1,6 @@
 import { useContentStore } from '@/stores/contentStore';
 import { useBuilderStore } from '@/stores/builderStore';
-import { Button, Card, CardTitle, CardMeta } from '@/shared/ui';
+import { Button, Card, CardTitle, CardMeta, DnaIcon, XIcon } from '@/shared/ui';
 
 export function SpeciesStep() {
   const { draft, setSpecies } = useBuilderStore();
@@ -25,7 +25,7 @@ export function SpeciesStep() {
                 onClick={() => setSpecies(sp.id!)}
               >
                 <div className="flex items-center gap-3 mb-2">
-                  <span className="text-2xl">🧬</span>
+                  <DnaIcon size={24} className="text-stone-400" />
                   <CardTitle>{sp.name}</CardTitle>
                 </div>
                 <CardMeta>{sp.size} · {sp.speed} ft · {sp.variants?.length || 0} variants</CardMeta>
@@ -51,7 +51,7 @@ export function SpeciesStep() {
               <span className="tag tag-green">{sp?.speed} ft</span>
             </div>
           </div>
-          <Button variant="danger" size="sm" onClick={() => setSpecies('')}>✕</Button>
+          <Button variant="danger" size="sm" onClick={() => setSpecies('')}><XIcon size={14} /></Button>
         </div>
         <div className="selected-species-body">
           <CardMeta className="mb-4">{sp?.name} - {sp?.size}, {sp?.speed} ft speed</CardMeta>

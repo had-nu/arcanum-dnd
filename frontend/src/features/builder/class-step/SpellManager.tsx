@@ -110,7 +110,12 @@ export function SpellManager({ classData, classDef, preview }: SpellManagerProps
           <Card className="w-full max-w-2xl max-h-[80vh] overflow-hidden" variant="elevated">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-heading text-xl text-white">Add Spells</h3>
-              <button onClick={() => setShowModal(false)} className="text-stone-400 hover:text-white">✕</button>
+              <button onClick={() => setShowModal(false)} className="text-stone-400 hover:text-white">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
             </div>
 
             <Input

@@ -165,9 +165,6 @@
     background: linear-gradient(180deg, #14141a 0%, #0d0d12 100%);
     border-bottom: 2px solid var(--border);
     padding: 12px 0;
-    position: sticky;
-    top: var(--header-h, 60px);
-    z-index: 90;
   }
 
   .steps-inner {

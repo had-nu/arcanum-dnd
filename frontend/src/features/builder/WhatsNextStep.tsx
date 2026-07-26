@@ -1,5 +1,5 @@
 import { useBuilderStore } from '@/stores/builderStore';
-import { Card } from '@/shared/ui';
+import { Card, CheckIcon, ScrollIcon, TheaterIcon } from '@/shared/ui';
 
 export function WhatsNextStep() {
   const { pendingChoices, preview, draft } = useBuilderStore();
@@ -9,7 +9,7 @@ export function WhatsNextStep() {
       <h2 className="sec-title">What's Next?</h2>
       {pendingChoices.length === 0 ? (
         <div className="text-center py-12">
-          <div className="text-6xl mb-4">✅</div>
+          <div className="mb-4"><CheckIcon size={48} className="text-green-500" /></div>
           <h3 className="font-heading text-xl text-white mb-2">All choices complete!</h3>
           <p className="text-stone-400">Your character is ready to adventure.</p>
         </div>
@@ -19,9 +19,13 @@ export function WhatsNextStep() {
             <Card key={i} className="p-4">
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0 w-10 h-10 rounded-full bg-red-600/20 flex items-center justify-center text-red-500">
-                  {choice.type === 'subclass' && '🎭'}
-                  {choice.type === 'spell' && '📜'}
-                  {choice.type === 'ability-improvement' && '⬆️'}
+                  {choice.type === 'subclass' && <TheaterIcon size={24} className="text-red-500" />}
+                  {choice.type === 'spell' && <ScrollIcon size={24} className="text-red-500" />}
+                  {choice.type === 'ability-improvement' && (
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-red-500">
+                      <polyline points="18 15 12 9 6 15" />
+                    </svg>
+                  )}
                 </div>
                 <div className="flex-1">
                   <h4 className="font-label text-white">{choice.name}</h4>
