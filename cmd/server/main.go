@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"flag"
 	"log"
@@ -17,6 +18,7 @@ import (
 	"time"
 
 	contentpack "github.com/hadnu/arcanum/internal/content"
+	"github.com/hadnu/arcanum/internal/database"
 	"github.com/hadnu/arcanum/internal/engine"
 	"github.com/hadnu/arcanum/internal/engine/derive"
 	"github.com/hadnu/arcanum/internal/config"
@@ -32,6 +34,7 @@ type Server struct {
 	engine   *engine.Engine
 	campaign engine.Campaign
 	config   *config.Config
+	db       *sql.DB
 }
 
 type BuildRequest struct {
@@ -195,11 +198,41 @@ func main() {
 		len(content.Classes), len(content.Species), len(content.Backgrounds),
 		len(content.Feats), len(content.Spells), len(content.Items))
 
+	db, err := database.Open(cfg.Data.SQLitePath)
+	if err != nil {
+		log.Fatalf("Failed to open database: %v", err)
+	}
+	defer db.Close()
+
+	if err := database.Migrate(db); err != nil {
+		log.Fatalf("Failed to migrate database: %v", err)
+	}
+
+	if err := database.SeedFromYAML(db, &content); err != nil {
+		log.Fatalf("Failed to seed database: %v", err)
+	}
+	log.Println("Database seeded from YAML content")
+
+	withToolsDir := filepath.Join("..", "5etools-src", "data")
+	if _, err := os.Stat(withToolsDir); err == nil {
+		if err := database.Import5eFeatures(db, withToolsDir); err != nil {
+			log.Printf("Warning: 5etools import failed: %v", err)
+		} else {
+			log.Println("5etools feature descriptions imported")
+		}
+	} else {
+		log.Println("5etools-src not found, skipping feature description import")
+	}
+
+	if err := database.ProcessInbox(db, filepath.Join(cfg.Data.ContentDir, "inbox")); err != nil {
+		log.Printf("Warning: inbox processing failed: %v", err)
+	}
+
 	randSource := rng.NewSeededRNG(42)
 	e := engine.NewEngine(content, randSource)
 	campaign := e.CreateCampaign("Arcanum Web")
 
-	srv := &Server{content: content, engine: e, campaign: campaign, config: cfg}
+	srv := &Server{content: content, engine: e, campaign: campaign, config: cfg, db: db}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", srv.handleHealth)
