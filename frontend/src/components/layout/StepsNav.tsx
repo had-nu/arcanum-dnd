@@ -1,4 +1,6 @@
-import { clsx } from 'clsx';
+"use client"
+
+import { clsx } from 'clsx'
 
 const steps = [
   { id: 'name', label: 'Name' },
@@ -8,30 +10,30 @@ const steps = [
   { id: 'abilities', label: 'Abilities' },
   { id: 'equipment', label: 'Equipment' },
   { id: 'sheet', label: 'Sheet' },
-];
+]
 
 interface StepsNavProps {
-  currentStep: string;
-  completedSteps: string[];
-  onStepClick?: (stepId: string) => void;
+  currentStep: string
+  completedSteps: string[]
+  onStepClick?: (stepId: string) => void
 }
 
 export function StepsNav({ currentStep, completedSteps, onStepClick }: StepsNavProps) {
-  const currentIndex = steps.findIndex(s => s.id === currentStep);
+  const currentIndex = steps.findIndex(s => s.id === currentStep)
 
   const canAccess = (stepId: string) => {
-    const stepIndex = steps.findIndex(s => s.id === stepId);
-    return stepIndex <= currentIndex + 1 || completedSteps.includes(stepId);
-  };
+    const stepIndex = steps.findIndex(s => s.id === stepId)
+    return stepIndex <= currentIndex + 1 || completedSteps.includes(stepId)
+  }
 
   return (
     <nav className="relative" aria-label="Character creation steps">
       <div className="absolute top-1/2 left-0 right-0 -translate-y-1/2 h-1 bg-dnd-stone-200 dark:bg-dnd-stone-700" />
       <ol className="relative flex items-center justify-between px-2">
         {steps.map((step, index) => {
-          const isCompleted = completedSteps.includes(step.id);
-          const isActive = step.id === currentStep;
-          const isAccessible = canAccess(step.id);
+          const isCompleted = completedSteps.includes(step.id)
+          const isActive = step.id === currentStep
+          const isAccessible = canAccess(step.id)
 
           return (
             <li key={step.id} className="relative flex flex-col items-center gap-2">

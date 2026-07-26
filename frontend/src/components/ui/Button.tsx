@@ -1,60 +1,41 @@
-import { clsx } from 'clsx';
-import { Slot } from '@radix-ui/react-slot';
+"use client"
+
+import React from 'react'
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
   size?: 'sm' | 'md' | 'lg';
-  loading?: boolean;
   asChild?: boolean;
 }
 
-export function Button({
-  className,
-  variant = 'primary',
-  size = 'md',
-  loading,
-  asChild,
-  disabled,
-  children,
-  ...props
+export function Button({ 
+  className = '', 
+  variant = 'primary', 
+  size = 'md', 
+  asChild = false,
+  ...props 
 }: ButtonProps) {
-  const Comp = asChild ? Slot : 'button';
-
-  const variants = {
-    primary: 'bg-dnd-blood-600 text-white hover:bg-dnd-blood-700 active:bg-dnd-blood-800 focus-visible:ring-dnd-blood-500',
-    secondary: 'bg-dnd-stone-100 text-dnd-stone-900 hover:bg-dnd-stone-200 active:bg-dnd-stone-300 focus-visible:ring-dnd-stone-400 dark:bg-dnd-stone-800 dark:text-dnd-stone-100 dark:hover:bg-dnd-stone-700',
-    outline: 'border-2 border-dnd-stone-300 bg-transparent hover:bg-dnd-stone-100 active:bg-dnd-stone-200 focus-visible:ring-dnd-stone-400 dark:border-dnd-stone-600 dark:hover:bg-dnd-stone-800',
-    ghost: 'bg-transparent hover:bg-dnd-stone-100 active:bg-dnd-stone-200 focus-visible:ring-dnd-stone-400 dark:hover:bg-dnd-stone-800',
-    danger: 'bg-red-600 text-white hover:bg-red-700 active:bg-red-800 focus-visible:ring-red-500',
+  const baseClasses = 'inline-flex items-center justify-center font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
+  
+  const variantClasses = {
+    primary: 'bg-dnd-blood-600 border-dnd-blood-600 text-white hover:bg-dnd-blood-700 dark:bg-dnd-blood-600 dark:border-dnd-blood-600 dark:text-white focus:ring-dnd-blood-500',
+    secondary: 'bg-dnd-stone-100 border-dnd-stone-300 text-dnd-stone-900 hover:bg-dnd-stone-200 dark:bg-dnd-stone-700 dark:border-dnd-stone-600 dark:text-dnd-stone-100 focus:ring-dnd-stone-500',
+    outline: 'border-dnd-stone-300 text-dnd-stone-700 hover:bg-dnd-stone-50 dark:border-dnd-stone-600 dark:text-dnd-stone-300 dark:hover:bg-dnd-stone-800 focus:ring-dnd-stone-500',
+    ghost: 'text-dnd-stone-700 hover:bg-dnd-stone-50 dark:text-dnd-stone-300 dark:hover:bg-dnd-stone-800 focus:ring-dnd-stone-500',
+    danger: 'border-dnd-blood-600 text-dnd-blood-700 hover:bg-dnd-blood-50 dark:border-dnd-blood-500 dark:text-dnd-blood-400 focus:ring-dnd-blood-500',
   };
-
-  const sizes = {
-    sm: 'px-3 py-1.5 text-xs',
-    md: 'px-4 py-2.5 text-sm',
-    lg: 'px-6 py-3 text-base',
+  
+  const sizeClasses = {
+    sm: 'px-3 py-1.5 text-sm rounded-md',
+    md: 'px-4 py-2 text-base rounded-lg',
+    lg: 'px-6 py-3 text-lg rounded-xl',
   };
-
-  return (
-    <Comp
-      className={clsx(
-        'inline-flex items-center justify-center gap-2 font-medium rounded-lg',
-        'transition-all duration-150',
-        'focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-dnd-parchment dark:focus-visible:ring-offset-dnd-stone-950',
-        'disabled:opacity-50 disabled:cursor-not-allowed',
-        variants[variant],
-        sizes[size],
-        className
-      )}
-      disabled={disabled || loading}
-      {...props}
-    >
-      {loading && (
-        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" fill="none" />
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-        </svg>
-      )}
-      {children}
-    </Comp>
-  );
+  
+  const classes = `${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`;
+  
+  if (asChild) {
+    return <>{props.children}</>;
+  }
+  
+  return <button className={classes} {...props} />;
 }

@@ -121,6 +121,8 @@ export interface BuildRequest {
 export interface ClassReq {
   id: string;
   level: number;
+  subclassId?: string;
+  classTab?: 'features' | 'spells';
 }
 
 export interface AbilityScores {
@@ -130,6 +132,10 @@ export interface AbilityScores {
   INT: number;
   WIS: number;
   CHA: number;
+  method?: 'standard' | 'point-buy' | 'roll';
+  rolledScores?: number[];
+  assignedRolls?: number[];
+  [key: string]: number | string | number[] | undefined;
 }
 
 export interface BuildResponse {

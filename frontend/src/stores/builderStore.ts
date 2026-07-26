@@ -2,7 +2,10 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { BuildRequest, AbilityScores, ClassReq, SavedCharacter } from '@/types/api';
 
-const defaultAbilities: AbilityScores = { STR: 10, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10 };
+const defaultAbilities: AbilityScores = { 
+  STR: 10, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10,
+  method: 'standard'
+};
 
 type BuilderStep = 'name' | 'class' | 'background' | 'species' | 'abilities' | 'equipment' | 'sheet';
 
@@ -40,6 +43,10 @@ interface BuilderState {
   isSubmitting: boolean;
   submitError: string | null;
   submitSuccess: boolean;
+
+  // Class-specific spell tracking
+  classSpellIds: Record<string, string[]>;
+  classSpellTabs: Record<string, 'features' | 'spells'>;
 }
 
 interface BuilderActions {
@@ -49,6 +56,11 @@ interface BuilderActions {
   setSpeciesVariant: (variant: string) => void;
   setBackgroundId: (id: string) => void;
   setClasses: (classes: ClassReq[]) => void;
+  addClass: (cls: ClassReq) => void;
+  removeClass: (index: number) => void;
+  setClassLevel: (index: number, level: number) => void;
+  setClassTab: (index: number, tab: 'features' | 'spells') => void;
+  setSubclass: (index: number, subclassId: string) => void;
   setAbilityScores: (scores: AbilityScores) => void;
   setAbilityMethod: (method: BuilderState['abilityMethod']) => void;
   setSkills: (skills: string[]) => void;
@@ -79,6 +91,11 @@ interface BuilderActions {
   setSubmitSuccess: (success: boolean) => void;
   reset: () => void;
   loadFromCharacter: (character: SavedCharacter) => void;
+
+  // Spell management
+  setClassSpellIds: (classId: string, spellIds: string[]) => void;
+  setClassSpellTab: (classId: string, tab: 'features' | 'spells') => void;
+  toggleSpell: (classId: string, spellId: string) => void;
 }
 
 export const builderStore = create<BuilderState & BuilderActions>()(
@@ -117,6 +134,8 @@ export const builderStore = create<BuilderState & BuilderActions>()(
       isSubmitting: false,
       submitError: null,
       submitSuccess: false,
+      classSpellIds: {},
+      classSpellTabs: {},
 
       setStep: (step) => set({ step }),
       setName: (name) => set({ name }),
@@ -124,6 +143,25 @@ export const builderStore = create<BuilderState & BuilderActions>()(
       setSpeciesVariant: (speciesVariant) => set({ speciesVariant }),
       setBackgroundId: (backgroundId) => set({ backgroundId }),
       setClasses: (classes) => set({ classes }),
+      addClass: (cls) => set((state) => ({ classes: [...state.classes, cls] })),
+      removeClass: (index) => set((state) => ({
+        classes: state.classes.filter((_, i) => i !== index)
+      })),
+      setClassLevel: (index, level) => set((state) => {
+        const classes = [...state.classes];
+        classes[index] = { ...classes[index], level };
+        return { classes };
+      }),
+      setClassTab: (index, tab) => set((state) => {
+        const classes = [...state.classes];
+        classes[index] = { ...classes[index], classTab: tab };
+        return { classes };
+      }),
+      setSubclass: (index, subclassId) => set((state) => {
+        const classes = [...state.classes];
+        classes[index] = { ...classes[index], subclassId };
+        return { classes };
+      }),
       setAbilityScores: (abilityScores) => set({ abilityScores }),
       setAbilityMethod: (abilityMethod) => set({ abilityMethod }),
       setSkills: (skills) => set({ skills }),
@@ -198,6 +236,8 @@ export const builderStore = create<BuilderState & BuilderActions>()(
         isSubmitting: false,
         submitError: null,
         submitSuccess: false,
+        classSpellIds: {},
+        classSpellTabs: {},
       }),
 
       loadFromCharacter: (character) => set({
@@ -236,12 +276,33 @@ export const builderStore = create<BuilderState & BuilderActions>()(
         xp: character.xp,
         progressionType: character.progressionType,
         completedSteps: ['name', 'class', 'background', 'species'],
+        classSpellIds: {},
+        classSpellTabs: {},
+      }),
+
+      // Spell management
+      setClassSpellIds: (classId: string, spellIds: string[]) => set((state) => ({
+        classSpellIds: { ...state.classSpellIds, [classId]: spellIds }
+      })),
+      setClassSpellTab: (classId: string, tab: 'features' | 'spells') => set((state) => ({
+        classSpellTabs: { ...state.classSpellTabs, [classId]: tab }
+      })),
+      toggleSpell: (classId: string, spellId: string) => set((state) => {
+        const current = state.classSpellIds[classId] || [];
+        const hasSpell = current.includes(spellId);
+        return {
+          classSpellIds: {
+            ...state.classSpellIds,
+            [classId]: hasSpell
+              ? current.filter(id => id !== spellId)
+              : [...current, spellId]
+          }
+        };
       }),
     }),
     {
       name: 'arcanum-builder',
       partialize: (state) => ({
-        // Only persist builder data, not UI state
         step: state.step,
         name: state.name,
         speciesId: state.speciesId,
@@ -271,11 +332,24 @@ export const builderStore = create<BuilderState & BuilderActions>()(
         xp: state.xp,
         progressionType: state.progressionType,
         completedSteps: state.completedSteps,
+        classSpellIds: state.classSpellIds,
+        classSpellTabs: state.classSpellTabs,
       }),
     }
   )
 );
 
+export function useBuilderStore() {
+  return builderStore();
+}
+
+export function useNavigate() {
+  return (path: string) => {
+    window.location.href = path;
+  };
+}
+
+// Helper functions for the store
 export const getTotalLevel = () => {
   const state = builderStore.getState();
   return state.classes.reduce((sum, c) => sum + c.level, 0);
@@ -312,7 +386,7 @@ export const getSaveRequest = () => {
       id: c.id,
       name: '',
       level: c.level,
-      subclassId: state.subclassId || undefined,
+      subclassId: c.subclassId || state.subclassId || undefined,
     })),
     backgroundId: state.backgroundId,
     backgroundName: '',

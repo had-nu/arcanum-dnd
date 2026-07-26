@@ -145,4 +145,7 @@ function InformationCircleIcon({ className }: { className?: string }) {
   );
 }
 
-export { ToastProvider as ToastContainer };
+export function ToastContainer() {
+  const { toasts, removeToast } = useToast()
+  return <ToastList toasts={toasts} onRemove={removeToast} />
+}

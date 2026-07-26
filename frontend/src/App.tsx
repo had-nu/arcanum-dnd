@@ -1,15 +1,15 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Switch, Route } from 'wouter';
-import { useEffect } from 'react';
+"use client"
 
-import { HomePage } from '@/pages/HomePage';
-import { BuilderPage } from '@/pages/BuilderPage';
-import { CharactersPage } from '@/pages/CharactersPage';
-import { CharacterView } from '@/pages/CharacterView';
-import { NotFound } from '@/pages/NotFound';
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
-import { ToastProvider } from '@/components/ui/Toast';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { Switch, Route } from 'wouter'
+import { useEffect } from 'react'
+import { HomePage } from '@/pages/HomePage'
+import { BuilderPage } from '@/pages/BuilderPage'
+import { CharactersPage } from '@/pages/CharactersPage'
+import { CharacterView } from '@/pages/CharacterView'
+import { NotFound } from '@/pages/NotFound'
+import { AppShell } from '@/components/layout/AppShell'
+import { ToastProvider } from '@/components/ui/Toast'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -19,41 +19,32 @@ const queryClient = new QueryClient({
       refetchOnWindowFocus: false,
     },
   },
-});
+})
 
 export function App() {
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const savedTheme = localStorage.getItem('theme')
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
     if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
-      document.documentElement.classList.add('dark');
+      document.documentElement.classList.add('dark')
     } else {
-      document.documentElement.classList.remove('dark');
+      document.documentElement.classList.remove('dark')
     }
-  }, []);
-
-  const toggleTheme = () => {
-    const isDark = document.documentElement.classList.toggle('dark');
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
-  };
+  }, [])
 
   return (
     <QueryClientProvider client={queryClient}>
       <ToastProvider>
-        <div className="min-h-screen flex flex-col">
-          <Header onThemeToggle={toggleTheme} />
-          <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-6">
-            <Switch>
-              <Route path="/" component={HomePage} />
-              <Route path="/builder" component={BuilderPage} />
-              <Route path="/characters/:name" component={CharacterView} />
-              <Route path="/characters" component={CharactersPage} />
-              <Route path="*" component={NotFound} />
-            </Switch>
-          </main>
-          <Footer />
-        </div>
+        <AppShell>
+          <Switch>
+            <Route path="/" component={HomePage} />
+            <Route path="/builder" component={BuilderPage} />
+            <Route path="/characters/:name" component={CharacterView} />
+            <Route path="/characters" component={CharactersPage} />
+            <Route path="*" component={NotFound} />
+          </Switch>
+        </AppShell>
       </ToastProvider>
     </QueryClientProvider>
-  );
+  )
 }
