@@ -1,0 +1,183 @@
+import { useContentStore } from '@/stores/contentStore';
+import { useBuilderStore } from '@/stores/builderStore';
+import { useWizardUIStore } from '@/stores/wizardUIStore';
+import { ClassCard } from './ClassCard';
+import { SpellManager } from './SpellManager';
+import { ClassGlyph, LevelSelect, Button, Tabs, TabList, Tab, TabPanel } from '@/shared/ui';
+
+export function ClassStep() {
+  const { draft, addClass, setClassLevel, removeClass, setSubclass, preview } = useBuilderStore();
+  const { classes: allClasses } = useContentStore();
+  const { activeClassTab, setActiveClassTab } = useWizardUIStore();
+
+  const currentClass = draft.classes[0];
+  const classDef = currentClass ? allClasses.find((c) => c.id === currentClass.id) : null;
+  const isSpellcaster = classDef?.spellcaster;
+
+  const totalLevel = draft.classes.reduce((sum: number, c: { level: number }) => sum + c.level, 0);
+  const hitDice = draft.classes.map((c: { id: string; level: number }) => {
+    const cd = allClasses.find((cl) => cl.id === c.id);
+    const hitDie = cd?.hitDie ? parseInt(cd.hitDie) : 8;
+    return `${c.level}d${hitDie}`;
+  }).join(' + ');
+
+  const calculateHP = (classId: string, level: number, con: number): number => {
+    const cd = allClasses.find((c) => c.id === classId);
+    if (!cd) return 0;
+    const hitDie = cd.hitDie ? parseInt(cd.hitDie) : 8;
+    const conMod = Math.floor((con - 10) / 2);
+    if (level === 1) return hitDie + conMod;
+    const avgHD = Math.floor(hitDie / 2) + 1;
+    return hitDie + conMod + (level - 1) * (avgHD + conMod);
+  };
+
+  return (
+    <div className="space-y-6">
+      {draft.classes.length === 0 ? (
+        <div className="class-picker">
+          <h2 className="sec-title">Choose Class</h2>
+          <div className="card-grid">
+            {allClasses.map((c) => (
+              <ClassCard
+                key={c.id}
+                classData={c}
+                onClick={addClass}
+              />
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="selected-classes space-y-4">
+          {draft.classes.map((c: { id: string; level: number; subclassId?: string }) => {
+            const cd = allClasses.find((cl) => cl.id === c.id);
+            const className = cd?.name ?? c.id;
+            const subLvl = cd?.subclassLevel || 3;
+            const showSubclass = c.level >= subLvl && (cd?.subClasses?.length || 0) > 0;
+            const subClass = cd?.subClasses?.find((sc) => sc.id === c.subclassId);
+
+            return (
+              <div key={c.id} className="selected-class-row bg-stone-900/50 border border-stone-700 rounded-lg overflow-hidden">
+                <div className="selected-class-hdr p-4 border-b border-stone-700 flex flex-wrap items-center gap-4">
+                  <div className="selected-class-name flex items-center gap-3">
+                    <ClassGlyph classId={c.id} size="md" />
+                    <span className="font-label text-lg text-white">{className}</span>
+                  </div>
+                  <div className="selected-class-sub flex items-center gap-2">
+                    <span className="text-stone-400">Level</span>
+                    <LevelSelect level={c.level} onChange={(lvl) => setClassLevel(c.id, lvl)} />
+                  </div>
+                  <div className="selected-class-hp flex items-center gap-2">
+                    <span className="text-stone-400">HP</span>
+                    <strong className="text-white text-xl">{calculateHP(c.id, c.level, draft.abilityScores.CON)}</strong>
+                    <span className="hp-detail text-stone-500 text-sm">(d{cd?.hitDie} + CON)</span>
+                  </div>
+                  <Button variant="danger" size="sm" onClick={() => removeClass(c.id)}>✕</Button>
+                </div>
+
+                <div className="selected-class-body p-4">
+                  <Tabs defaultTab={activeClassTab} onTabChange={(tab) => setActiveClassTab(tab as any)}>
+                    <TabList>
+                      <Tab value="features">Features</Tab>
+                      {isSpellcaster && <Tab value="spells">Spells</Tab>}
+                      {showSubclass && <Tab value="optional-features">Optional Features</Tab>}
+                    </TabList>
+
+                    <TabPanel value="features">
+                      <div className="selected-class-features space-y-3">
+                        {cd?.features?.map((f) => (
+                          <div
+                            key={`${f.name}-${f.level}`}
+                            className={`class-feature-row flex items-center gap-3 p-3 rounded-md ${
+                              (f.level ?? 0) > c.level ? 'locked bg-stone-800/50' : 'bg-stone-800/50'
+                            }`}
+                          >
+                            <span className="feat-level-badge px-2 py-1 bg-stone-700 rounded text-xs font-mono">
+                              Lv.{f.level}
+                            </span>
+                            <span className="feat-name flex-1 text-white">{f.name}</span>
+                            {(f.level ?? 0) <= c.level ? (
+                              <span className="feat-unlocked text-green-500">✓</span>
+                            ) : (
+                              <span className="feat-locked text-stone-500">🔒</span>
+                            )}
+                          </div>
+                        ))}
+
+                        {showSubclass && (
+                          <div className="subclass-select-row pt-4 border-t border-stone-700">
+                            <label className="block text-sm font-medium text-stone-300 mb-1">Subclass</label>
+                            <select
+                              value={c.subclassId || ''}
+                              onChange={(e) => setSubclass(c.id, e.target.value)}
+                              className="w-full px-3 py-2 bg-stone-900 border border-stone-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                            >
+                              <option value="">-- Choose --</option>
+                              {cd?.subClasses?.map((sc) => (
+                                <option key={sc.id} value={sc.id}>{sc.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+
+                        {c.subclassId && subClass && (
+                          <div className="subclass-desc-box mt-4 p-3 bg-stone-800/50 rounded-md border border-stone-700">
+                            <div className="subclass-desc-title font-label text-amber-500 mb-1">{subClass.name}</div>
+                            <div className="subclass-desc-text text-stone-300">{subClass.description}</div>
+                          </div>
+                        )}
+                      </div>
+                    </TabPanel>
+
+                    {isSpellcaster && (
+                      <TabPanel value="spells">
+                        <SpellManager classData={c} classDef={cd!} preview={preview} />
+                      </TabPanel>
+                    )}
+
+                    {showSubclass && (
+                      <TabPanel value="optional-features">
+                        <div className="text-stone-400 text-center py-8">
+                          Optional features coming soon (feats, fighting styles, etc.)
+                        </div>
+                      </TabPanel>
+                    )}
+                  </Tabs>
+                </div>
+              </div>
+            );
+          })}
+
+          {draft.classes.length < 2 && (
+            <div className="add-class-section text-center pt-4">
+              <Button className="btn-add-class" onClick={() => useWizardUIStore.getState().setActiveStep('class')}>
+                + Add Another Class
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="preview-stats mt-6 p-4 bg-stone-900/50 border border-stone-700 rounded-lg">
+        <h3 className="font-label text-amber-500 mb-3">Live Preview (from /build)</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+          <div>
+            <div className="text-3xl font-heading text-white">{preview?.level || totalLevel}</div>
+            <div className="text-stone-400 text-sm">Level</div>
+          </div>
+          <div>
+            <div className="text-3xl font-heading text-white">{preview?.hp?.max || '—'}</div>
+            <div className="text-stone-400 text-sm">Max HP</div>
+          </div>
+          <div>
+            <div className="text-3xl font-heading text-white">{preview?.ac || '—'}</div>
+            <div className="text-stone-400 text-sm">AC</div>
+          </div>
+          <div>
+            <div className="text-3xl font-heading text-white">{hitDice}</div>
+            <div className="text-stone-400 text-sm">Hit Dice</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

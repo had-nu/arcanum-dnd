@@ -1,0 +1,104 @@
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { api } from '@/api/endpoints';
+import { Card, Button, Input } from '@/shared/ui';
+
+export function VaultPage() {
+  const navigate = useNavigate();
+  const [characters, setCharacters] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    loadCharacters();
+  }, []);
+
+  async function loadCharacters() {
+    try {
+      const data = await api.listCharacters();
+      setCharacters(data || []);
+    } catch (error) {
+      console.error('Failed to load characters:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const filtered = characters.filter((c) =>
+    c.name?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  if (loading) {
+    return (
+      <div className="characters-loading grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {[...Array(6)].map((_, i) => (
+          <Card key={i} className="animate-pulse">
+            <div className="h-6 bg-stone-800 rounded w-3/4 mb-2" />
+            <div className="h-4 bg-stone-800 rounded w-1/2" />
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="vault-page">
+      <div className="section-header flex items-center justify-between mb-8">
+        <h2 className="section-title font-heading text-2xl text-white">My Characters</h2>
+        <Button variant="primary" onClick={() => navigate('/builder/new')}>
+          + New Character
+        </Button>
+      </div>
+
+      <Input
+        placeholder="Search characters..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="mb-6 max-w-md"
+      />
+
+      {filtered.length === 0 ? (
+        <div className="empty-state text-center py-16">
+          <div className="empty-icon text-6xl mb-4 opacity-50">📜</div>
+          <h3 className="font-heading text-xl text-white mb-2">No characters yet</h3>
+          <p className="text-stone-400 mb-6">Create your first hero to begin your adventure</p>
+          <Button variant="primary" onClick={() => navigate('/builder/new')}>
+            Create Character
+          </Button>
+        </div>
+      ) : (
+        <div className="characters-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filtered.map((char) => (
+            <CharacterCard key={char.name} character={char} onEdit={() => navigate(`/builder/${char.name}`)} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CharacterCard({ character, onEdit }: { character: any; onEdit: () => void }) {
+  const totalLevel = character.level || 1;
+
+  return (
+    <Card onClick={onEdit} className="character-card">
+      <div className="character-header flex items-center justify-between mb-4 pb-3 border-b border-stone-700">
+        <div className="character-name font-label text-lg text-white">{character.name}</div>
+        <div className="character-delete">
+          <button className="text-stone-500 hover:text-red-500 transition-colors p-1" onClick={(e) => e.stopPropagation()}>
+            ✕
+          </button>
+        </div>
+      </div>
+      <div className="character-meta flex flex-wrap gap-2 mb-4">
+        <span className="character-level tag tag-gold">Level {totalLevel}</span>
+        <span className="character-species tag tag-green">{character.species || '—'}</span>
+      </div>
+      <div className="character-actions">
+        <Button variant="primary" size="sm" className="w-full" onClick={(e) => { e.stopPropagation(); onEdit(); }}>
+          Edit
+        </Button>
+      </div>
+    </Card>
+  );
+}

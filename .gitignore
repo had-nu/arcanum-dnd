@@ -29,5 +29,11 @@ Thumbs.db
 # Logs
 *.log
 
+# Compiled binary
+server
+
+# Vite cache
+.vite/
+
 # Docker
 .docker/

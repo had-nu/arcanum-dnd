@@ -1,420 +1,291 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import type { BuildRequest, AbilityScores, ClassReq, SavedCharacter } from '@/types/api';
+import { devtools, persist } from 'zustand/middleware';
+import type { BuildRequest, AbilityScores, CharacterSheet, BuildResponse, ClassEntry, SubClassEntry, ClassReq } from '@/api/endpoints/generated';
+import { useContentStore } from './contentStore';
 
-const defaultAbilities: AbilityScores = { 
-  STR: 10, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10,
-  method: 'standard'
+interface ChoicePoint {
+  type: 'subclass' | 'spell' | 'ability-improvement';
+  classId?: string;
+  level: number;
+  name: string;
+  description: string;
+  options: Array<{ id: string; name: string; description: string }>;
+}
+
+interface ClassWithSubclass extends ClassReq {
+  subclassId?: string;
+}
+
+interface DraftWithSubclass extends Omit<BuildRequest, 'classes'> {
+  classes: ClassWithSubclass[];
+}
+
+interface BuilderStore {
+  draft: DraftWithSubclass;
+  preview: CharacterSheet | null;
+  pendingChoices: ChoicePoint[];
+  debounceTimer: ReturnType<typeof setTimeout> | null;
+
+  setName: (name: string) => void;
+  addClass: (classId: string) => void;
+  setClassLevel: (classId: string, level: number) => void;
+  removeClass: (classId: string) => void;
+  setSubclass: (classId: string, subclassId: string | undefined) => void;
+  setBackground: (backgroundId: string) => void;
+  setSpecies: (speciesId: string, variant?: string) => void;
+  setAbilityScore: (ability: keyof AbilityScores, value: number) => void;
+  setAbilityMethod: (method: BuildRequest['abilityMethod']) => void;
+  toggleSkill: (skillId: string) => void;
+  addPreparedSpell: (spellId: string) => void;
+  removePreparedSpell: (spellId: string) => void;
+  addFeat: (featId: string) => void;
+  removeFeat: (featId: string) => void;
+
+  requestPreview: () => void;
+  cancelPreview: () => void;
+  save: () => Promise<void>;
+  reset: () => void;
+  loadFromCharacter: (character: any) => void;
+  deriveChoices: (classesData: ClassEntry[]) => void;
+}
+
+const defaultAbilities: AbilityScores = { STR: 10, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10 };
+
+const initialDraft: DraftWithSubclass = {
+  name: '',
+  classes: [],
+  backgroundId: '',
+  speciesId: '',
+  speciesVariant: undefined,
+  level: 1,
+  abilityScores: defaultAbilities,
+  abilityMethod: 'standard',
+  skills: [],
+  spells: [],
+  feats: [],
 };
 
-type BuilderStep = 'name' | 'class' | 'background' | 'species' | 'abilities' | 'equipment' | 'sheet';
+export const useBuilderStore = create<BuilderStore>()(
+  devtools(
+    persist(
+      (set, get) => ({
+        draft: initialDraft,
+        preview: null,
+        pendingChoices: [],
+        debounceTimer: null,
 
-interface BuilderState {
-  step: BuilderStep;
-  name: string;
-  speciesId: string;
-  speciesVariant: string;
-  backgroundId: string;
-  classes: ClassReq[];
-  abilityScores: AbilityScores;
-  abilityMethod: 'standard' | 'point-buy' | 'roll';
-  skills: string[];
-  spells: string[];
-  feats: string[];
-  equipment: string[];
-  subclassId: string;
-  bgAlignment: string;
-  bgFaith: string;
-  bgTrait: string;
-  bgIdeal: string;
-  bgBond: string;
-  bgFlaw: string;
-  bgAge: string;
-  bgHeight: string;
-  bgWeight: string;
-  bgEyes: string;
-  bgSkin: string;
-  bgHair: string;
-  bgNotes: string;
-  xp: number;
-  progressionType: 'milestone' | 'xp';
-  completedSteps: string[];
-  errors: Record<string, string>;
-  isSubmitting: boolean;
-  submitError: string | null;
-  submitSuccess: boolean;
+        setName: (name) => set((state) => ({ draft: { ...state.draft, name } })),
+        addClass: (classId) =>
+          set((state) => ({
+            draft: { ...state.draft, classes: [...state.draft.classes, { id: classId, level: 1 }] },
+          })),
+        setClassLevel: (classId, level) =>
+          set((state) => ({
+            draft: {
+              ...state.draft,
+              classes: state.draft.classes.map((c) => (c.id === classId ? { ...c, level } : c)),
+            },
+          })),
+        removeClass: (classId) =>
+          set((state) => ({
+            draft: { ...state.draft, classes: state.draft.classes.filter((c) => c.id !== classId) },
+          })),
+        setSubclass: (classId, subclassId) =>
+          set((state) => ({
+            draft: {
+              ...state.draft,
+              classes: state.draft.classes.map((c) =>
+                c.id === classId ? { ...c, subclassId } : c
+              ),
+            },
+          })),
+        setBackground: (backgroundId) => set((state) => ({ draft: { ...state.draft, backgroundId } })),
+        setSpecies: (speciesId, variant) =>
+          set((state) => ({ draft: { ...state.draft, speciesId, speciesVariant: variant } })),
+        setAbilityScore: (ability, value) =>
+          set((state) => ({
+            draft: { ...state.draft, abilityScores: { ...state.draft.abilityScores, [ability]: value } },
+          })),
+        setAbilityMethod: (abilityMethod) => set((state) => ({ draft: { ...state.draft, abilityMethod } })),
+        toggleSkill: (skillId) =>
+          set((state) => {
+            const skills = state.draft.skills ?? [];
+            return {
+              draft: {
+                ...state.draft,
+                skills: skills.includes(skillId)
+                  ? skills.filter((s) => s !== skillId)
+                  : [...skills, skillId],
+              },
+            };
+          }),
+        addPreparedSpell: (spellId) =>
+          set((state) => ({
+            draft: { ...state.draft, spells: [...(state.draft.spells ?? []), spellId] },
+          })),
+        removePreparedSpell: (spellId) =>
+          set((state) => ({
+            draft: { ...state.draft, spells: (state.draft.spells ?? []).filter((s) => s !== spellId) },
+          })),
+        addFeat: (featId) =>
+          set((state) => ({
+            draft: { ...state.draft, feats: [...(state.draft.feats ?? []), featId] },
+          })),
+        removeFeat: (featId) =>
+          set((state) => ({
+            draft: { ...state.draft, feats: (state.draft.feats ?? []).filter((f) => f !== featId) },
+          })),
 
-  // Class-specific spell tracking
-  classSpellIds: Record<string, string[]>;
-  classSpellTabs: Record<string, 'features' | 'spells'>;
-}
+        requestPreview: () => {
+          const { debounceTimer } = get();
+          if (debounceTimer) clearTimeout(debounceTimer);
 
-interface BuilderActions {
-  setStep: (step: BuilderStep) => void;
-  setName: (name: string) => void;
-  setSpeciesId: (id: string) => void;
-  setSpeciesVariant: (variant: string) => void;
-  setBackgroundId: (id: string) => void;
-  setClasses: (classes: ClassReq[]) => void;
-  addClass: (cls: ClassReq) => void;
-  removeClass: (index: number) => void;
-  setClassLevel: (index: number, level: number) => void;
-  setClassTab: (index: number, tab: 'features' | 'spells') => void;
-  setSubclass: (index: number, subclassId: string) => void;
-  setAbilityScores: (scores: AbilityScores) => void;
-  setAbilityMethod: (method: BuilderState['abilityMethod']) => void;
-  setSkills: (skills: string[]) => void;
-  setSpells: (spells: string[]) => void;
-  setFeats: (feats: string[]) => void;
-  setEquipment: (equipment: string[]) => void;
-  setSubclassId: (id: string) => void;
-  setBgAlignment: (alignment: string) => void;
-  setBgFaith: (faith: string) => void;
-  setBgTrait: (trait: string) => void;
-  setBgIdeal: (ideal: string) => void;
-  setBgBond: (bond: string) => void;
-  setBgFlaw: (flaw: string) => void;
-  setBgAge: (age: string) => void;
-  setBgHeight: (height: string) => void;
-  setBgWeight: (weight: string) => void;
-  setBgEyes: (eyes: string) => void;
-  setBgSkin: (skin: string) => void;
-  setBgHair: (hair: string) => void;
-  setBgNotes: (notes: string) => void;
-  setXp: (xp: number) => void;
-  setProgressionType: (type: BuilderState['progressionType']) => void;
-  markStepComplete: (step: string) => void;
-  setErrors: (errors: Record<string, string>) => void;
-  clearError: (field: string) => void;
-  setIsSubmitting: (submitting: boolean) => void;
-  setSubmitError: (error: string | null) => void;
-  setSubmitSuccess: (success: boolean) => void;
-  reset: () => void;
-  loadFromCharacter: (character: SavedCharacter) => void;
+          const timer = setTimeout(async () => {
+            const { draft } = get();
+            if (!draft.name || draft.classes.length === 0 || !draft.backgroundId || !draft.speciesId) {
+              set({ preview: null });
+              return;
+            }
 
-  // Spell management
-  setClassSpellIds: (classId: string, spellIds: string[]) => void;
-  setClassSpellTab: (classId: string, tab: 'features' | 'spells') => void;
-  toggleSpell: (classId: string, spellId: string) => void;
-}
+            try {
+              const response = await fetch('/api/build', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(draft),
+              });
+              if (!response.ok) throw new Error('Build failed');
+              const data: BuildResponse = await response.json();
+              set({ preview: data.sheet ?? null });
+              const { classes: allClasses } = useContentStore.getState();
+              get().deriveChoices(allClasses);
+            } catch (error) {
+              console.error('Preview error:', error);
+              set({ preview: null });
+            }
+          }, 300);
 
-export const builderStore = create<BuilderState & BuilderActions>()(
-  persist(
-    (set, get) => ({
-      step: 'name',
-      name: '',
-      speciesId: '',
-      speciesVariant: '',
-      backgroundId: '',
-      classes: [{ id: '', level: 1 }],
-      abilityScores: { ...defaultAbilities },
-      abilityMethod: 'standard',
-      skills: [],
-      spells: [],
-      feats: [],
-      equipment: [],
-      subclassId: '',
-      bgAlignment: '',
-      bgFaith: '',
-      bgTrait: '',
-      bgIdeal: '',
-      bgBond: '',
-      bgFlaw: '',
-      bgAge: '',
-      bgHeight: '',
-      bgWeight: '',
-      bgEyes: '',
-      bgSkin: '',
-      bgHair: '',
-      bgNotes: '',
-      xp: 0,
-      progressionType: 'milestone',
-      completedSteps: [],
-      errors: {},
-      isSubmitting: false,
-      submitError: null,
-      submitSuccess: false,
-      classSpellIds: {},
-      classSpellTabs: {},
+          set({ debounceTimer: timer });
+        },
 
-      setStep: (step) => set({ step }),
-      setName: (name) => set({ name }),
-      setSpeciesId: (speciesId) => set({ speciesId }),
-      setSpeciesVariant: (speciesVariant) => set({ speciesVariant }),
-      setBackgroundId: (backgroundId) => set({ backgroundId }),
-      setClasses: (classes) => set({ classes }),
-      addClass: (cls) => set((state) => ({ classes: [...state.classes, cls] })),
-      removeClass: (index) => set((state) => ({
-        classes: state.classes.filter((_, i) => i !== index)
-      })),
-      setClassLevel: (index, level) => set((state) => {
-        const classes = [...state.classes];
-        classes[index] = { ...classes[index], level };
-        return { classes };
-      }),
-      setClassTab: (index, tab) => set((state) => {
-        const classes = [...state.classes];
-        classes[index] = { ...classes[index], classTab: tab };
-        return { classes };
-      }),
-      setSubclass: (index, subclassId) => set((state) => {
-        const classes = [...state.classes];
-        classes[index] = { ...classes[index], subclassId };
-        return { classes };
-      }),
-      setAbilityScores: (abilityScores) => set({ abilityScores }),
-      setAbilityMethod: (abilityMethod) => set({ abilityMethod }),
-      setSkills: (skills) => set({ skills }),
-      setSpells: (spells) => set({ spells }),
-      setFeats: (feats) => set({ feats }),
-      setEquipment: (equipment) => set({ equipment }),
-      setSubclassId: (subclassId) => set({ subclassId }),
-      setBgAlignment: (bgAlignment) => set({ bgAlignment }),
-      setBgFaith: (bgFaith) => set({ bgFaith }),
-      setBgTrait: (bgTrait) => set({ bgTrait }),
-      setBgIdeal: (bgIdeal) => set({ bgIdeal }),
-      setBgBond: (bgBond) => set({ bgBond }),
-      setBgFlaw: (bgFlaw) => set({ bgFlaw }),
-      setBgAge: (bgAge) => set({ bgAge }),
-      setBgHeight: (bgHeight) => set({ bgHeight }),
-      setBgWeight: (bgWeight) => set({ bgWeight }),
-      setBgEyes: (bgEyes) => set({ bgEyes }),
-      setBgSkin: (bgSkin) => set({ bgSkin }),
-      setBgHair: (bgHair) => set({ bgHair }),
-      setBgNotes: (bgNotes) => set({ bgNotes }),
-      setXp: (xp) => set({ xp }),
-      setProgressionType: (progressionType) => set({ progressionType }),
+        cancelPreview: () => {
+          const { debounceTimer } = get();
+          if (debounceTimer) clearTimeout(debounceTimer);
+          set({ debounceTimer: null });
+        },
 
-      markStepComplete: (step) => {
-        const current = get().completedSteps;
-        if (!current.includes(step)) {
-          set({ completedSteps: [...current, step] });
-        }
-      },
+        deriveChoices: (classesData: ClassEntry[]) => {
+          const { draft, preview } = get();
+          if (!preview) return;
 
-      setErrors: (errors) => set({ errors }),
-      clearError: (field) => {
-        const current = get().errors;
-        const { [field]: _, ...rest } = current;
-        set({ errors: rest });
-      },
-      setIsSubmitting: (isSubmitting) => set({ isSubmitting }),
-      setSubmitError: (submitError) => set({ submitError }),
-      setSubmitSuccess: (submitSuccess) => set({ submitSuccess }),
+          const choices: ChoicePoint[] = [];
 
-      reset: () => set({
-        step: 'name',
-        name: '',
-        speciesId: '',
-        speciesVariant: '',
-        backgroundId: '',
-        classes: [{ id: '', level: 1 }],
-        abilityScores: { ...defaultAbilities },
-        abilityMethod: 'standard',
-        skills: [],
-        spells: [],
-        feats: [],
-        equipment: [],
-        subclassId: '',
-        bgAlignment: '',
-        bgFaith: '',
-        bgTrait: '',
-        bgIdeal: '',
-        bgBond: '',
-        bgFlaw: '',
-        bgAge: '',
-        bgHeight: '',
-        bgWeight: '',
-        bgEyes: '',
-        bgSkin: '',
-        bgHair: '',
-        bgNotes: '',
-        xp: 0,
-        progressionType: 'milestone',
-        completedSteps: [],
-        errors: {},
-        isSubmitting: false,
-        submitError: null,
-        submitSuccess: false,
-        classSpellIds: {},
-        classSpellTabs: {},
-      }),
+          for (const cls of draft.classes) {
+            const classDef = classesData.find((c) => c.id === cls.id);
+            if (!classDef) continue;
 
-      loadFromCharacter: (character) => set({
-        name: character.name,
-        speciesId: character.speciesId,
-        speciesVariant: character.speciesVariant || '',
-        backgroundId: character.backgroundId,
-        classes: character.classes.map(c => ({ id: c.id, level: c.level })),
-        subclassId: character.subclassId || '',
-        abilityScores: {
-          STR: character.abilities.STR ?? 10,
-          DEX: character.abilities.DEX ?? 10,
-          CON: character.abilities.CON ?? 10,
-          INT: character.abilities.INT ?? 10,
-          WIS: character.abilities.WIS ?? 10,
-          CHA: character.abilities.CHA ?? 10,
-        } as AbilityScores,
-        abilityMethod: character.abilityMethod as BuilderState['abilityMethod'],
-        skills: character.skills,
-        spells: character.spells || [],
-        feats: character.feats || [],
-        equipment: character.equipment || [],
-        bgAlignment: character.bgAlignment || '',
-        bgFaith: character.bgFaith || '',
-        bgTrait: character.bgTrait || '',
-        bgIdeal: character.bgIdeal || '',
-        bgBond: character.bgBond || '',
-        bgFlaw: character.bgFlaw || '',
-        bgAge: character.bgAge || '',
-        bgHeight: character.bgHeight || '',
-        bgWeight: character.bgWeight || '',
-        bgEyes: character.bgEyes || '',
-        bgSkin: character.bgSkin || '',
-        bgHair: character.bgHair || '',
-        bgNotes: character.bgNotes || '',
-        xp: character.xp,
-        progressionType: character.progressionType,
-        completedSteps: ['name', 'class', 'background', 'species'],
-        classSpellIds: {},
-        classSpellTabs: {},
-      }),
+            if (classDef.subclassLevel && cls.level >= classDef.subclassLevel && !cls.subclassId) {
+              choices.push({
+                type: 'subclass',
+                classId: cls.id,
+                level: classDef.subclassLevel,
+                name: 'Choose Subclass',
+                description: `Select a subclass for ${classDef.name}`,
+                options: (classDef.subClasses ?? []).map((sc: SubClassEntry) => ({
+                  id: sc.id ?? '',
+                  name: sc.name ?? '',
+                  description: sc.description ?? '',
+                })),
+              });
+            }
 
-      // Spell management
-      setClassSpellIds: (classId: string, spellIds: string[]) => set((state) => ({
-        classSpellIds: { ...state.classSpellIds, [classId]: spellIds }
-      })),
-      setClassSpellTab: (classId: string, tab: 'features' | 'spells') => set((state) => ({
-        classSpellTabs: { ...state.classSpellTabs, [classId]: tab }
-      })),
-      toggleSpell: (classId: string, spellId: string) => set((state) => {
-        const current = state.classSpellIds[classId] || [];
-        const hasSpell = current.includes(spellId);
-        return {
-          classSpellIds: {
-            ...state.classSpellIds,
-            [classId]: hasSpell
-              ? current.filter(id => id !== spellId)
-              : [...current, spellId]
+            if (classDef.spellcaster) {
+              const spellcasting = classDef.spellcasting;
+              if (spellcasting?.preparedSpells && spellcasting.preparedSpells[cls.level - 1]) {
+                const maxPrepared = spellcasting.preparedSpells[cls.level - 1];
+                const currentPrepared = preview.spells?.length ?? 0;
+                if (currentPrepared < maxPrepared) {
+                  choices.push({
+                    type: 'spell',
+                    classId: cls.id,
+                    level: cls.level,
+                    name: 'Prepare Spells',
+                    description: `Choose ${maxPrepared - currentPrepared} more prepared spells`,
+                    options: [],
+                  });
+                }
+              }
+            }
           }
-        };
+
+          if (preview.level && preview.level >= 4 && preview.level % 4 === 0) {
+            choices.push({
+              type: 'ability-improvement',
+              level: preview.level,
+              name: 'Ability Score Improvement',
+              description: 'Increase one ability by 2, or two abilities by 1, or choose a feat',
+              options: [],
+            });
+          }
+
+          set({ pendingChoices: choices });
+        },
+
+        save: async () => {
+          const { draft, preview } = get();
+          if (!draft.name || !preview) return;
+
+          const saveRequest = {
+            name: draft.name,
+            classes: draft.classes.map((c) => ({ id: c.id, level: c.level, subclassId: c.subclassId })),
+            backgroundId: draft.backgroundId,
+            speciesId: draft.speciesId,
+            speciesVariant: draft.speciesVariant,
+            level: draft.classes.reduce((sum, c) => sum + c.level, 0),
+            abilityMethod: draft.abilityMethod,
+            abilities: draft.abilityScores,
+            skills: draft.skills,
+            spells: draft.spells,
+            feats: draft.feats,
+            equipment: [],
+            progressionType: 'milestone' as const,
+          };
+
+          const response = await fetch('/api/characters', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(saveRequest),
+          });
+
+          if (!response.ok) throw new Error('Save failed');
+        },
+
+        reset: () => set({ draft: initialDraft, preview: null, pendingChoices: [] }),
+
+        loadFromCharacter: (character) => {
+          set({
+            draft: {
+              name: character.name || '',
+              classes: (character.classes || []).map((c: any) => ({ id: c.id, level: c.level, subclassId: c.subclassId })),
+              backgroundId: character.backgroundId || '',
+              speciesId: character.speciesId || '',
+              speciesVariant: character.speciesVariant,
+              level: character.level || 1,
+              abilityScores: character.abilities || defaultAbilities,
+              abilityMethod: character.abilityMethod as BuildRequest['abilityMethod'] || 'standard',
+              skills: character.skills || [],
+              spells: character.spells || [],
+              feats: character.feats || [],
+            },
+            preview: null,
+            pendingChoices: [],
+          });
+        },
       }),
-    }),
-    {
-      name: 'arcanum-builder',
-      partialize: (state) => ({
-        step: state.step,
-        name: state.name,
-        speciesId: state.speciesId,
-        speciesVariant: state.speciesVariant,
-        backgroundId: state.backgroundId,
-        classes: state.classes,
-        abilityScores: state.abilityScores,
-        abilityMethod: state.abilityMethod,
-        skills: state.skills,
-        spells: state.spells,
-        feats: state.feats,
-        equipment: state.equipment,
-        subclassId: state.subclassId,
-        bgAlignment: state.bgAlignment,
-        bgFaith: state.bgFaith,
-        bgTrait: state.bgTrait,
-        bgIdeal: state.bgIdeal,
-        bgBond: state.bgBond,
-        bgFlaw: state.bgFlaw,
-        bgAge: state.bgAge,
-        bgHeight: state.bgHeight,
-        bgWeight: state.bgWeight,
-        bgEyes: state.bgEyes,
-        bgSkin: state.bgSkin,
-        bgHair: state.bgHair,
-        bgNotes: state.bgNotes,
-        xp: state.xp,
-        progressionType: state.progressionType,
-        completedSteps: state.completedSteps,
-        classSpellIds: state.classSpellIds,
-        classSpellTabs: state.classSpellTabs,
-      }),
-    }
+      {
+        name: 'arcanum-builder',
+        partialize: (state) => ({ draft: state.draft }),
+      }
+    ),
+    { name: 'builder-store' }
   )
 );
-
-export function useBuilderStore() {
-  return builderStore();
-}
-
-export function useNavigate() {
-  return (path: string) => {
-    window.location.href = path;
-  };
-}
-
-// Helper functions for the store
-export const getTotalLevel = () => {
-  const state = builderStore.getState();
-  return state.classes.reduce((sum, c) => sum + c.level, 0);
-};
-
-export const getPrimaryClass = () => {
-  const state = builderStore.getState();
-  return state.classes[0] || { id: '', level: 1 };
-};
-
-// Helper functions for the store
-export const getBuilderRequest = () => {
-  const state = builderStore.getState();
-  return {
-    name: state.name,
-    classes: state.classes,
-    backgroundId: state.backgroundId,
-    speciesId: state.speciesId,
-    speciesVariant: state.speciesVariant || undefined,
-    level: getTotalLevel(),
-    abilityScores: state.abilityScores,
-    abilityMethod: state.abilityMethod,
-    skills: state.skills,
-    spells: state.spells,
-    feats: state.feats,
-  } as BuildRequest;
-};
-
-export const getSaveRequest = () => {
-  const state = builderStore.getState();
-  return {
-    name: state.name,
-    classes: state.classes.map(c => ({
-      id: c.id,
-      name: '',
-      level: c.level,
-      subclassId: c.subclassId || state.subclassId || undefined,
-    })),
-    backgroundId: state.backgroundId,
-    backgroundName: '',
-    speciesId: state.speciesId,
-    speciesVariant: state.speciesVariant || undefined,
-    speciesHybrid: undefined,
-    level: getTotalLevel(),
-    abilityMethod: state.abilityMethod,
-    abilities: state.abilityScores as unknown as Record<string, number>,
-    skills: state.skills,
-    spells: state.spells,
-    feats: state.feats,
-    equipment: state.equipment,
-    subclassId: state.subclassId || undefined,
-    bgAlignment: state.bgAlignment || undefined,
-    bgFaith: state.bgFaith || undefined,
-    bgTrait: state.bgTrait || undefined,
-    bgIdeal: state.bgIdeal || undefined,
-    bgBond: state.bgBond || undefined,
-    bgFlaw: state.bgFlaw || undefined,
-    bgAge: state.bgAge || undefined,
-    bgHeight: state.bgHeight || undefined,
-    bgWeight: state.bgWeight || undefined,
-    bgEyes: state.bgEyes || undefined,
-    bgSkin: state.bgSkin || undefined,
-    bgHair: state.bgHair || undefined,
-    bgNotes: state.bgNotes || undefined,
-    xp: state.xp,
-    progressionType: state.progressionType,
-  };
-};

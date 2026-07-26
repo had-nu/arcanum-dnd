@@ -212,17 +212,16 @@ func main() {
 	mux.HandleFunc("PUT /api/characters/{name}", srv.handleSaveCharacter)
 	mux.HandleFunc("DELETE /api/characters/{name}", srv.handleDeleteCharacter)
 
-	// Built frontend (Vite/React SPA)
+	// React SPA frontend (frontend/dist)
 	frontendDir := "./frontend/dist"
 	fs := http.FileServer(http.Dir(frontendDir))
 	mux.Handle("GET /assets/", fs)
-	mux.Handle("GET /fonts/", fs)
 	mux.Handle("GET /img/", fs)
+	mux.Handle("GET /fonts/", fs)
 	mux.Handle("GET /favicon.svg", fs)
-	mux.Handle("GET /icons.svg", fs)
 
-	// SPA fallback — serve index.html for all other routes
-	mux.HandleFunc("GET /{path...}", srv.handleSPA(frontendDir))
+	// SPA fallback for React app
+	mux.HandleFunc("GET /", srv.handleReactSPA(frontendDir))
 
 	handler := corsMiddleware(cfg)(mux)
 
@@ -291,6 +290,20 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleSPA(staticDir string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasPrefix(r.URL.Path, "/api/") {
+			http.NotFound(w, r)
+			return
+		}
+		http.ServeFile(w, r, filepath.Join(staticDir, "index.html"))
+	}
+}
+
+func (s *Server) handleReactSPA(staticDir string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/api/") ||
+			strings.HasPrefix(r.URL.Path, "/assets/") ||
+			strings.HasPrefix(r.URL.Path, "/img/") ||
+			strings.HasPrefix(r.URL.Path, "/fonts/") ||
+			strings.HasPrefix(r.URL.Path, "/favicon.svg") {
 			http.NotFound(w, r)
 			return
 		}
