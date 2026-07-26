@@ -90,7 +90,7 @@ export function BuilderPage() {
   }, [characterId, loadFromCharacter, reset, setActiveStep]);
 
   useEffect(() => {
-    if (loaded && draft.name && draft.classes.length > 0) {
+    if (loaded && draft.classes.length > 0) {
       requestPreview();
     }
   }, [loaded, draft, requestPreview]);
@@ -129,33 +129,35 @@ export function BuilderPage() {
   };
 
   return (
-    <div className="min-h-screen bg-stone-950">
+    <div className="min-h-screen bg-stone-950 flex flex-col">
       <TopChrome />
-      <main className="main-content">
+      <nav className="steps-bar" aria-label="Character creation steps">
         <div className="container mx-auto px-4">
-          <nav className="steps-bar" aria-label="Character creation steps">
-            <div className="steps-inner">
-              {STEPS.map((s, index) => {
-                const isCompleted = index < currentStepIndex;
-                const isActive = s.id === activeStep;
-                const isAccessible = index <= currentStepIndex + 1;
+          <div className="steps-inner">
+            {STEPS.map((s, index) => {
+              const isCompleted = index < currentStepIndex;
+              const isActive = s.id === activeStep;
+              const isAccessible = index <= currentStepIndex + 1;
 
-                return (
-                  <button
-                    key={s.id}
-                    className={`step ${isCompleted ? 'done' : ''} ${isActive ? 'active' : ''}`}
-                    onClick={() => isAccessible && goToStep(s.id)}
-                    disabled={!isAccessible}
-                    aria-current={isActive ? 'step' : undefined}
-                  >
-                    {s.label}
-                  </button>
-                );
-              })}
-            </div>
-          </nav>
+              return (
+                <button
+                  key={s.id}
+                  className={`step ${isCompleted ? 'done' : ''} ${isActive ? 'active' : ''}`}
+                  onClick={() => isAccessible && goToStep(s.id)}
+                  disabled={!isAccessible}
+                  aria-current={isActive ? 'step' : undefined}
+                >
+                  {s.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </nav>
 
-          <div className="step-content">
+      <main className="flex-1 overflow-y-auto">
+        <div className="container mx-auto px-4 pb-8">
+          <div className="step-content pt-6">
             {renderStep()}
           </div>
 
