@@ -15,7 +15,7 @@ export function LandingPage() {
         <div className="container bar h-[60px] flex items-center justify-between">
           <button className="logo flex flex-col items-start line-height-[1] bg-none border-none cursor-pointer" onClick={() => navigate('/')}>
             <span className="top text-[var(--red)] text-xs tracking-wider font-bold">D&D</span>
-            <span className="main text-[18px] font-serif tracking-[0.02em] -mt-[2px]" style={{fontFamily: 'Georgia, \"Times New Roman\", serif'}}>
+            <span className="main text-[18px] tracking-[0.02em] -mt-[2px] font-heading">
               Arcanum
             </span>
           </button>
@@ -51,15 +51,11 @@ export function LandingPage() {
         </div>
 
         <div className="head-row flex flex-wrap items-start justify-between gap-4 mb-2">
-          <h1 className="title" style={{fontFamily: 'Georgia, "Times New Roman", serif', fontSize: '36px', color: '#fff'}}>
+          <h1 className="title font-heading text-[36px] text-white">
             My Characters
           </h1>
-          <Button variant="primary" onClick={() => navigate('/builder/new')} className="btn flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-base border border-[var(--red)] transition-colors">
-            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            Create Character
+          <Button variant="primary" onClick={() => navigate('/builder/new')}>
+            <span>+ Create a character</span>
           </Button>
         </div>
 
@@ -94,14 +90,13 @@ export function LandingPage() {
 
         {recentCharacters.length === 0 ? (
           <div className="empty-state text-center py-16">
-            <div className="text-6xl mb-4 opacity-50">📜</div>
-            <h3 className="font-heading text-xl text-white mb-2" style={{fontFamily: 'Georgia, "Times New Roman", serif'}}>
+            <h3 className="font-heading text-xl text-white mb-2">
               No characters yet
             </h3>
             <p className="text-[var(--text-muted)] mb-6">
               Your vault is empty. Create your first hero to begin.
             </p>
-            <Button variant="primary" onClick={() => navigate('/builder/new')} className="px-6 py-3 text-base">
+            <Button variant="primary" onClick={() => navigate('/builder/new')} className="px-6 py-3">
               Create Character
             </Button>
           </div>
