@@ -476,9 +476,9 @@ This project incorporates data derived from the following sources:
 1. 5e.tools / 5etools-mirror-1 (https://github.com/5etools-mirror-1/5etools-src)
    - Source data files: class features, subclass features, optional features (metamagic),
      spells, feats, items, monsters, and other D&D 5e content
-   - License: 5e.tools data is provided under a non-commercial, attribution-required license.
-     See https://5e.tools/license.html for full terms.
-   - Attribution: "Data provided by 5e.tools (https://5e.tools) — used under license."
+   - License: 5e.tools provides data as a reference tool for content you own.
+     See https://5e.tools/ for terms.
+   - Attribution: "Data provided by 5e.tools (https://5e.tools) — used as reference."
    - The 5e.tools project aggregates content from Wizards of the Coast publications
      (SRD 5.1, Player's Handbook, Xanathar's Guide, Tasha's Cauldron, etc.) and
      community contributions. This project uses their parsed JSON data files for
