@@ -40,7 +40,7 @@ type LogConfig struct {
 }
 
 func Load() (*Config, error) {
-	cfgPath := getEnv("CONFIG_PATH", "backend/config.yaml")
+	cfgPath := getEnv("CONFIG_PATH", "config.yaml")
 	data, err := os.ReadFile(cfgPath)
 	if err != nil {
 		return nil, err
