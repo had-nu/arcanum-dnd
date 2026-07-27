@@ -80,5 +80,5 @@ func (v CharacterSheetView) Print() {
 			fmt.Printf("    • %s\n", f)
 		}
 	}
-	fmt.Println("═══════════════════════════════════════\n")
+	fmt.Println("═══════════════════════════════════════")
 }
