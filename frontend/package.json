@@ -25,7 +25,6 @@
     "react-hook-form": "^7.82.0",
     "react-router-dom": "^7.18.1",
     "tailwind-merge": "^3.6.0",
-    "wouter": "^3.10.0",
     "zod": "^4.4.3",
     "zustand": "^5.0.0"
   },

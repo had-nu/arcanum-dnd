@@ -11,7 +11,7 @@ COPY frontend/ ./
 RUN npm run build
 
 # Stage 2: Build backend
-FROM golang:1.26-alpine AS backend-builder
+FROM golang:1.23-alpine AS backend-builder
 
 WORKDIR /app
 
@@ -33,12 +33,12 @@ WORKDIR /app
 
 COPY --from=backend-builder /app/server .
 COPY --from=backend-builder /app/frontend/dist ./frontend/dist
-COPY --from=backend-builder /app/backend/config.yaml ./backend/config.yaml
+COPY --from=backend-builder /app/config.yaml ./config.yaml
 COPY --from=backend-builder /app/data ./data
 COPY --from=backend-builder /app/var ./var
 
 EXPOSE 8080
 
-ENV CONFIG_PATH=/app/backend/config.yaml
+ENV CONFIG_PATH=/app/config.yaml
 
 CMD ["./server"]

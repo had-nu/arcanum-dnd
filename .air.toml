@@ -1,0 +1,25 @@
+[build]
+  cmd = "go build -buildvcs=false -o ./dist/server ./cmd/server"
+  bin = "./dist/server"
+  full_bin = ""
+  watch = true
+  watch_dir = "."
+  exclude_dir = ["vendor", "node_modules", "frontend", "data", "var", "dist", "src", ".git", ".opencode"]
+  include_ext = ["go", "tpl", "tmpl", "html", "yaml", "yml"]
+  exclude_file = []
+  exclude_regex = ["_test.go"]
+  follow_symlink = false
+
+[run]
+  args = []
+  env = ["CONFIG_PATH=./backend/config.yaml"]
+  include_ext = ["go", "tpl", "tmpl", "html", "yaml", "yml"]
+  exclude_dir = ["vendor", "node_modules", "frontend", "data", "var", "dist", "src", ".git", ".opencode"]
+
+[watch]
+  poll = false
+  poll_interval = 0
+
+[misc]
+  clean_on_exit = true
+  log_time = false

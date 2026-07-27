@@ -29,8 +29,12 @@ Thumbs.db
 # Logs
 *.log
 
-# Compiled binary
+# Compiled binaries
 server
+spells
+tui-player
+arcsrv
+*.exe
 
 # Vite cache
 .vite/

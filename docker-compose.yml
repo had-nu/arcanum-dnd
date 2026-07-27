@@ -5,7 +5,7 @@ services:
   backend-dev:
     build:
       context: .
-      dockerfile: backend/Dockerfile.dev
+      dockerfile: Dockerfile.dev
     container_name: arcanum-backend-dev
     ports:
       - "8080:8080"
@@ -27,8 +27,8 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.dev
     container_name: arcanum-frontend-dev
-    expose:
-      - "5173"
+    ports:
+      - "5173:5173"
     volumes:
       - ./frontend:/app
       - /app/node_modules
@@ -39,22 +39,6 @@ services:
     profiles:
       - dev
     depends_on:
-      - backend-dev
-
-  # Nginx reverse proxy for dev - single port access
-  nginx-dev:
-    image: nginx:alpine
-    container_name: arcanum-nginx-dev
-    ports:
-      - "5173:5173"
-    volumes:
-      - ./frontend/nginx.dev.conf:/etc/nginx/nginx.conf:ro
-    networks:
-      - arcanum-dev
-    profiles:
-      - dev
-    depends_on:
-      - frontend-dev
       - backend-dev
 
   # Production profile: single container serving both API and built SPA

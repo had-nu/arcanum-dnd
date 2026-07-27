@@ -1,0 +1,22 @@
+name: Aberon
+classes:
+    - id: sorcerer
+      name: ""
+      level: 20
+      subclassId: aberrant-sorcery
+backgroundId: acolyte
+speciesId: human
+level: 20
+abilityMethod: standard
+abilities:
+    CHA: 10
+    CON: 13
+    DEX: 12
+    INT: 14
+    STR: 8
+    WIS: 15
+skills: []
+xp: 0
+progressionType: milestone
+createdAt: "2026-07-26T21:35:14+01:00"
+updatedAt: "2026-07-26T21:35:14+01:00"
