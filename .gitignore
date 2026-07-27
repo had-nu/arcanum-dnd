@@ -16,6 +16,10 @@ src/arts/D&D 5/
 *.so
 *.dylib
 
+# CI artifacts
+coverage.out
+security.sarif
+
 # IDE
 .vscode/
 .idea/
