@@ -131,7 +131,7 @@ Debounced POST `/build` a cada mudança relevante → painel live de HP/AC/Spell
 
 ### Third-Party Attributions
 
-- **5e.tools / 5etools-mirror-1** — Data for class features, subclass features, metamagic, spells, feats, items. Used as reference (https://5e.tools). Attribution required.
+- **5e.tools / 5etools-mirror-3** — Data for class features, subclass features, metamagic, spells, feats, items. MIT licensed (https://github.com/5etools-mirror-3/5etools-src).
 - **D&D 5e SRD 5.1** — Wizards of the Coast, CC BY 4.0
 - **greghcarr/dnd-srd-engine** — Architectural patterns (Event Sourcing, Plan/Commit, Effect Primitives, Branded IDs)
 - Go/React ecosystem dependencies — respective MIT/BSD/Apache-2.0 licenses
