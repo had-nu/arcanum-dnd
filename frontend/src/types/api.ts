@@ -270,6 +270,23 @@ export interface CharacterSummary {
   updatedAt: string;
 }
 
+export interface ClassFeatureEntry {
+  classId: string;
+  name: string;
+  level: number;
+  source?: string;
+  entries: unknown[];
+}
+
+export interface FeaturesResponse {
+  classId: string;
+  className: string;
+  subclassId?: string;
+  subclassName?: string;
+  features: ClassFeatureEntry[];
+  subclassFeatures?: ClassFeatureEntry[];
+}
+
 export interface SaveCharacterRequest {
   name: string;
   classes: SavedClass[];

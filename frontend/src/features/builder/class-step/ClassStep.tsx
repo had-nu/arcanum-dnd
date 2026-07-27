@@ -1,18 +1,68 @@
+import { useEffect, useState } from 'react';
 import { useContentStore } from '@/stores/contentStore';
 import { useBuilderStore } from '@/stores/builderStore';
 import { useWizardUIStore } from '@/stores/wizardUIStore';
+import { api } from '@/api/endpoints';
 import { ClassCard } from './ClassCard';
 import { SpellManager } from './SpellManager';
-import { ClassGlyph, LevelSelect, Button, Tabs, TabList, Tab, TabPanel, XIcon, CheckIcon, LockIcon } from '@/shared/ui';
+import { ClassGlyph, LevelSelect, Button, Tabs, TabList, Tab, TabPanel, XIcon, FeatureRenderer } from '@/shared/ui';
+import type { ClassFeatureEntry } from '@/types/api';
 
 export function ClassStep() {
   const { draft, addClass, setClassLevel, removeClass, setSubclass, preview } = useBuilderStore();
   const { classes: allClasses } = useContentStore();
   const { activeClassTab, setActiveClassTab } = useWizardUIStore();
+  const [featuresMap, setFeaturesMap] = useState<Record<string, ClassFeatureEntry[]>>({});
+  const [subclassFeaturesMap, setSubclassFeaturesMap] = useState<Record<string, ClassFeatureEntry[]>>({});
 
   const currentClass = draft.classes[0];
   const classDef = currentClass ? allClasses.find((c) => c.id === currentClass.id) : null;
   const isSpellcaster = classDef?.spellcaster;
+
+  // Track previous subclass selection to clear stale features when changed
+  const prevKeyRef = { current: '' };
+
+  useEffect(() => {
+    for (const c of draft.classes) {
+      if (!featuresMap[c.id]) {
+        api.getFeatures(c.id).then((res) => {
+          setFeaturesMap((prev) => ({ ...prev, [c.id]: res.features }));
+        }).catch(() => {});
+      }
+    }
+  }, [draft.classes.map((c) => c.id).join(',')]);
+
+  useEffect(() => {
+    for (const c of draft.classes) {
+      if (!c.subclassId) {
+        // Clear subclass features if subclassId removed
+        const prevKey = prevKeyRef.current;
+        if (prevKey) {
+          setSubclassFeaturesMap(prev => {
+            const newMap = { ...prev };
+            delete newMap[prevKey];
+            return newMap;
+          });
+          prevKeyRef.current = '';
+        }
+        continue;
+      }
+
+      const key = c.id + '-' + c.subclassId;
+      
+      if (!subclassFeaturesMap[key]) {
+        api.getFeatures(c.id, c.subclassId).then((res) => {
+          setSubclassFeaturesMap((prev) => ({ ...prev, [key]: res.subclassFeatures ?? [] }));
+        }).catch(() => {});
+        
+        // Update previous key to track changes
+        prevKeyRef.current = key;
+      } else if (prevKeyRef.current !== key) {
+        // Update previous key if subclass selection changes
+        prevKeyRef.current = key;
+      }
+    }
+  }, [draft.classes]);
 
   const totalLevel = draft.classes.reduce((sum: number, c: { level: number }) => sum + c.level, 0);
   const hitDice = draft.classes.map((c: { id: string; level: number }) => {
@@ -83,25 +133,25 @@ export function ClassStep() {
                     </TabList>
 
                     <TabPanel value="features">
-                      <div className="selected-class-features space-y-3">
-                        {cd?.features?.map((f) => (
-                          <div
-                            key={`${f.name}-${f.level}`}
-                            className={`class-feature-row flex items-center gap-3 p-3 rounded-md ${
-                              (f.level ?? 0) > c.level ? 'locked bg-stone-800/50' : 'bg-stone-800/50'
-                            }`}
-                          >
-                            <span className="feat-level-badge px-2 py-1 bg-stone-700 rounded text-xs font-mono">
-                              Lv.{f.level}
-                            </span>
-                            <span className="feat-name flex-1 text-white">{f.name}</span>
-                            {(f.level ?? 0) <= c.level ? (
-                              <span className="feat-unlocked text-green-500"><CheckIcon size={18} /></span>
-                            ) : (
-                              <span className="feat-locked text-stone-500"><LockIcon size={18} /></span>
-                            )}
-                          </div>
-                        ))}
+                      <div className="selected-class-features space-y-2">
+                        {(() => {
+                          const entries = featuresMap[c.id]?.length
+                            ? featuresMap[c.id]
+                            : (cd?.features?.map((f) => ({
+                                classId: c.id,
+                                name: f.name,
+                                level: f.level,
+                                entries: [],
+                              }) as ClassFeatureEntry) ?? []);
+                          return entries.map((f, i) => (
+                            <FeatureRenderer
+                              key={f.name + '-' + f.level + '-' + i}
+                              feature={f}
+                              isUnlocked={f.level <= c.level}
+                              level={f.level}
+                            />
+                          ));
+                        })()}
 
                         {showSubclass && (
                           <div className="subclass-select-row pt-4 border-t border-stone-700">
@@ -120,9 +170,22 @@ export function ClassStep() {
                         )}
 
                         {c.subclassId && subClass && (
-                          <div className="subclass-desc-box mt-4 p-3 bg-stone-800/50 rounded-md border border-stone-700">
-                            <div className="subclass-desc-title font-label text-amber-500 mb-1">{subClass.name}</div>
-                            <div className="subclass-desc-text text-stone-300">{subClass.description}</div>
+                          <div className="subclass-section mt-4 pt-4 border-t border-stone-700">
+                            <div className="subclass-desc-box mb-3 p-3 bg-stone-800/50 rounded-md border border-stone-700">
+                              <div className="subclass-desc-title font-label text-amber-500 mb-1">{subClass.name}</div>
+                              <div className="subclass-desc-text text-stone-300">{subClass.description}</div>
+                            </div>
+                            <h4 className="font-heading text-xs text-amber-400 mb-2">Subclass Features</h4>
+                            <div className="space-y-2">
+                              {(subclassFeaturesMap[c.id + '-' + c.subclassId] ?? []).map((f, i) => (
+                                <FeatureRenderer
+                                  key={f.name + '-' + f.level + '-' + i}
+                                  feature={f}
+                                  isUnlocked={f.level <= c.level}
+                                  level={f.level}
+                                />
+                              ))}
+                            </div>
                           </div>
                         )}
                       </div>

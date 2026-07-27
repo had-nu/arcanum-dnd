@@ -9,6 +9,8 @@ import {
   type GetSpellsParams,
 } from './endpoints/generated';
 
+import type { FeaturesResponse } from '@/types/api';
+
 const API_BASE = import.meta.env.VITE_API_BASE || '/api';
 
 async function fetchWithBase<T>(
@@ -75,6 +77,12 @@ export const api = {
       method: 'DELETE',
     }),
 
+  getFeatures: (classId: string, subclassId?: string) => {
+    let url = `/features/${encodeURIComponent(classId)}`;
+    if (subclassId) url += `?subclassId=${encodeURIComponent(subclassId)}`;
+    return fetchWithBase<FeaturesResponse>(url);
+  },
+
   health: () =>
     fetchWithBase<{ status: string; version: string; timestamp: string }>('/health'),
 };
@@ -88,4 +96,5 @@ export type {
   SavedCharacter,
   SaveCharacterRequest,
   GetSpellsParams,
+  FeaturesResponse,
 };

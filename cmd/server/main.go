@@ -129,6 +129,24 @@ type featureDef struct {
 	Name  string `json:"name"`
 }
 
+type ClassFeatureEntry struct {
+	ClassID    string          `json:"classId"`
+	SubclassID string          `json:"subclassId,omitempty"`
+	Name       string          `json:"name"`
+	Level      int             `json:"level"`
+	Source     string          `json:"source,omitempty"`
+	Entries    json.RawMessage `json:"entries"`
+}
+
+type FeaturesResponse struct {
+	ClassID          string              `json:"classId"`
+	ClassName        string              `json:"className"`
+	SubclassID       string              `json:"subclassId,omitempty"`
+	SubclassName     string              `json:"subclassName,omitempty"`
+	Features         []ClassFeatureEntry `json:"features"`
+	SubclassFeatures []ClassFeatureEntry `json:"subclassFeatures,omitempty"`
+}
+
 type speciesEntry struct {
 	ID       string           `json:"id"`
 	Name     string           `json:"name"`
@@ -198,7 +216,24 @@ func main() {
 		len(content.Classes), len(content.Species), len(content.Backgrounds),
 		len(content.Feats), len(content.Spells), len(content.Items))
 
-	db, err := database.Open(cfg.Data.SQLitePath)
+	dbPath := cfg.Data.SQLitePath
+	absPath, _ := filepath.Abs(dbPath)
+	log.Printf("Database path: %s (abs: %s)", dbPath, absPath)
+
+	dbDir := filepath.Dir(absPath)
+	log.Printf("Creating database directory: %s", dbDir)
+	if err := os.MkdirAll(dbDir, 0755); err != nil {
+		log.Fatalf("Failed to create database directory %s: %v", dbDir, err)
+	}
+
+	// Verify directory is writable
+	testFile := filepath.Join(dbDir, ".write_test")
+	if err := os.WriteFile(testFile, []byte("test"), 0644); err != nil {
+		log.Fatalf("Database directory %s is not writable: %v", dbDir, err)
+	}
+	os.Remove(testFile)
+
+	db, err := database.Open(absPath)
 	if err != nil {
 		log.Fatalf("Failed to open database: %v", err)
 	}
@@ -238,6 +273,7 @@ func main() {
 	mux.HandleFunc("GET /health", srv.handleHealth)
 	mux.HandleFunc("GET /api/content", srv.handleContent)
 	mux.HandleFunc("GET /api/spells", srv.handleSpells)
+	mux.HandleFunc("GET /api/features/{classId}", srv.handleFeatures)
 	mux.HandleFunc("POST /api/build", srv.handleBuild)
 	mux.HandleFunc("GET /api/characters", srv.handleListCharacters)
 	mux.HandleFunc("POST /api/characters", srv.handleSaveCharacter)
@@ -527,6 +563,109 @@ func (s *Server) handleSpells(w http.ResponseWriter, r *http.Request) {
 	sort.Slice(resp.Cantrips, func(i, j int) bool { return resp.Cantrips[i].Name < resp.Cantrips[j].Name })
 	for i := range resp.Leveled {
 		sort.Slice(resp.Leveled[i], func(a, b int) bool { return resp.Leveled[i][a].Name < resp.Leveled[i][b].Name })
+	}
+
+	writeJSON(w, resp)
+}
+
+func (s *Server) handleFeatures(w http.ResponseWriter, r *http.Request) {
+	classID := r.PathValue("classId")
+	if classID == "" {
+		http.Error(w, "classId required", http.StatusBadRequest)
+		return
+	}
+
+	className := classID
+	if c, ok := s.content.Classes[types.ClassID(classID)]; ok {
+		className = c.Name
+	} else {
+		for _, c := range s.content.Classes {
+			if strings.EqualFold(string(c.ID), classID) {
+				className = c.Name
+				classID = string(c.ID)
+				break
+			}
+		}
+	}
+
+	rows, err := s.db.Query(`
+		SELECT class_id, name, level, COALESCE(source, ''), COALESCE(entries_json, '')
+		FROM class_features
+		WHERE class_id = ?
+		ORDER BY level, id
+	`, classID)
+	if err != nil {
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	features := []ClassFeatureEntry{}
+	for rows.Next() {
+		var fe ClassFeatureEntry
+		var entriesStr string
+		if err := rows.Scan(&fe.ClassID, &fe.Name, &fe.Level, &fe.Source, &entriesStr); err != nil {
+			continue
+		}
+		if entriesStr == "" {
+			fe.Entries = json.RawMessage("[]")
+		} else {
+			fe.Entries = json.RawMessage(entriesStr)
+		}
+		features = append(features, fe)
+	}
+
+	resp := FeaturesResponse{
+		ClassID:   classID,
+		ClassName: className,
+		Features:  features,
+	}
+
+	if subclassID := r.URL.Query().Get("subclassId"); subclassID != "" {
+		log.Printf("DEBUG: Fetching subclass features for classID=%s, subclassID=%s", classID, subclassID)
+		subclassName := subclassID
+		if sc, ok := s.content.Classes[types.ClassID(classID)]; ok {
+			for _, s := range sc.SubClasses {
+				if string(s.ID) == subclassID {
+					subclassName = s.Name
+					break
+				}
+			}
+		}
+		resp.SubclassID = subclassID
+		resp.SubclassName = subclassName
+
+		srows, err := s.db.Query(`
+			SELECT subclass_id, name, level, COALESCE(source, ''), COALESCE(entries_json, '')
+			FROM subclass_features
+			WHERE subclass_id = ?
+			ORDER BY level, id
+		`, subclassID)
+		if err != nil {
+			log.Printf("DEBUG: Query error: %v", err)
+		} else {
+			defer srows.Close()
+			count := 0
+			for srows.Next() {
+				var fe ClassFeatureEntry
+				var entriesStr string
+				if err := srows.Scan(&fe.SubclassID, &fe.Name, &fe.Level, &fe.Source, &entriesStr); err != nil {
+					log.Printf("DEBUG: Scan error: %v", err)
+					continue
+				}
+				if entriesStr == "" {
+					fe.Entries = json.RawMessage("[]")
+				} else {
+					fe.Entries = json.RawMessage(entriesStr)
+				}
+				resp.SubclassFeatures = append(resp.SubclassFeatures, fe)
+				count++
+			}
+			log.Printf("DEBUG: Loaded %d subclass features for %s", count, subclassID)
+			if err := srows.Err(); err != nil {
+				log.Printf("DEBUG: Rows error: %v", err)
+			}
+		}
 	}
 
 	writeJSON(w, resp)
