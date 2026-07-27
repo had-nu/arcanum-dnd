@@ -30,11 +30,13 @@ import (
 )
 
 type Server struct {
-	content  scontent.ResolvedContent
-	engine   *engine.Engine
-	campaign engine.Campaign
-	config   *config.Config
-	db       *sql.DB
+	content      scontent.ResolvedContent
+	engine       *engine.Engine
+	campaign     engine.Campaign
+	config       *config.Config
+	db           *sql.DB
+	eventStore   database.EventStore
+	snapshotStore database.SnapshotStore
 }
 
 type BuildRequest struct {
@@ -264,10 +266,17 @@ func main() {
 	}
 
 	randSource := rng.NewSeededRNG(42)
-	e := engine.NewEngine(content, randSource)
-	campaign := e.CreateCampaign("Arcanum Web")
+	eventStore := database.NewEventStore(db)
+	snapshotStore := database.NewSnapshotStore(db)
+	e := engine.NewEngine(content, randSource, eventStore, snapshotStore)
 
-	srv := &Server{content: content, engine: e, campaign: campaign, config: cfg, db: db}
+	ctx := context.Background()
+	campaign, err := e.CreateCampaign(ctx, "Arcanum Web")
+	if err != nil {
+		log.Fatalf("Failed to create campaign: %v", err)
+	}
+
+	srv := &Server{content: content, engine: e, campaign: campaign, config: cfg, db: db, eventStore: eventStore, snapshotStore: snapshotStore}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", srv.handleHealth)
@@ -816,8 +825,29 @@ func (s *Server) handleBuild(w http.ResponseWriter, r *http.Request) {
 		evtEvt.Classes = append(evtEvt.Classes, events.ClassEntry{ClassID: cr.ID, Level: cr.Level})
 	}
 
-	evt := events.Event{Type: events.EventCharacterCreated, CharacterCreated: &evtEvt}
-	s.campaign = s.engine.Commit(s.campaign, []events.Event{evt})
+	evt := &events.CharacterCreatedEvent{
+		CharacterID:    evtEvt.CharacterID,
+		Name:           evtEvt.Name,
+		SpeciesID:      evtEvt.SpeciesID,
+		SpeciesVariant: evtEvt.SpeciesVariant,
+		BackgroundID:   evtEvt.BackgroundID,
+		Classes:        evtEvt.Classes,
+		Level:          evtEvt.Level,
+		AbilityScores:  evtEvt.AbilityScores,
+		MaxHP:          evtEvt.MaxHP,
+		SavingThrows:   evtEvt.SavingThrows,
+		Skills:         evtEvt.Skills,
+		Spells:         evtEvt.Spells,
+		Feats:          evtEvt.Feats,
+		AbilityMethod:  evtEvt.AbilityMethod,
+	}
+	ctx := r.Context()
+	newCampaign, err := s.engine.Commit(ctx, s.campaign, []events.Event{evt})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	s.campaign = newCampaign
 	char, ok := s.campaign.State.Characters[evtEvt.CharacterID]
 	if !ok { http.Error(w, "Character not found in state", http.StatusInternalServerError); return }
 

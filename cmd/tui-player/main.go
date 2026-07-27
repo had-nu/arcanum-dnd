@@ -1,11 +1,13 @@
 package main
 
 import (
+	"context"
 	"log"
 	"time"
 
 	"github.com/hadnu/arcanum/internal/character"
 	contentpack "github.com/hadnu/arcanum/internal/content"
+	"github.com/hadnu/arcanum/internal/database"
 	"github.com/hadnu/arcanum/internal/engine"
 	"github.com/hadnu/arcanum/internal/engine/derive"
 	"github.com/hadnu/arcanum/internal/rng"
@@ -33,14 +35,56 @@ func main() {
 	result := creator.Result
 
 	randSource := rng.NewSeededRNG(42)
-	e := engine.NewEngine(content, randSource)
-	campaign := e.CreateCampaign("Arcanum Playtest")
-
-	evt := events.Event{
-		Type:             events.EventCharacterCreated,
-		CharacterCreated: &result.Event,
+	
+	// Create in-memory event store for TUI player (no persistence)
+	db, err := database.Open(":memory:")
+	if err != nil {
+		log.Fatalf("Failed to open database: %v", err)
 	}
-	campaign = e.Commit(campaign, []events.Event{evt})
+	defer db.Close()
+	
+	if err := database.Migrate(db); err != nil {
+		log.Fatalf("Failed to migrate database: %v", err)
+	}
+	
+	eventStore := database.NewEventStore(db)
+	snapshotStore := database.NewSnapshotStore(db)
+	
+	e := engine.NewEngine(content, randSource, eventStore, snapshotStore)
+	
+	ctx := context.Background()
+	campaign, err := e.CreateCampaign(ctx, "Arcanum Playtest")
+	if err != nil {
+		log.Fatalf("Failed to create campaign: %v", err)
+	}
+
+	evt := &events.CharacterCreatedEvent{
+		CharacterID:    result.Event.CharacterID,
+		Name:           result.Event.Name,
+		SpeciesID:      result.Event.SpeciesID,
+		SpeciesVariant: result.Event.SpeciesVariant,
+		BackgroundID:   result.Event.BackgroundID,
+		Classes:        make([]events.ClassEntry, len(result.Event.Classes)),
+		Level:          result.Event.Level,
+		AbilityScores:  result.Event.AbilityScores,
+		MaxHP:          result.Event.MaxHP,
+		SavingThrows:   result.Event.SavingThrows,
+		Skills:         result.Event.Skills,
+		Spells:         result.Event.Spells,
+		Feats:          result.Event.Feats,
+		AbilityMethod:  result.Event.AbilityMethod,
+	}
+	for i, c := range result.Event.Classes {
+		evt.Classes[i] = events.ClassEntry{
+			ClassID:    c.ClassID,
+			Level:      c.Level,
+			SubclassID: c.SubclassID,
+		}
+	}
+	campaign, err = e.Commit(ctx, campaign, []events.Event{evt})
+	if err != nil {
+		log.Fatalf("Failed to commit: %v", err)
+	}
 
 	char, ok := campaign.State.Characters[result.Event.CharacterID]
 	if !ok {
@@ -53,5 +97,5 @@ func main() {
 
 	result.Sheet.Print()
 
-	log.Printf("Events: %d | Campaign: %s", campaign.Cursor, campaign.ID)
+	log.Printf("Events: %d | Campaign: %s", campaign.Version, campaign.ID)
 }

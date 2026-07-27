@@ -8,14 +8,14 @@ import (
 )
 
 type AttackIntent struct {
-	AttackerID types.CharacterID   `json:"attackerId"`
-	TargetID   types.CharacterID   `json:"targetId"`
-	WeaponID   string              `json:"weaponId,omitempty"`
-	SpellID    string              `json:"spellId,omitempty"`
-	AttackBonus int                `json:"attackBonus"`
-	DamageDice  string             `json:"damageDice"`
-	DamageType  types.DamageType   `json:"damageType"`
-	DamageBonus int                `json:"damageBonus"`
+	AttackerID  types.CharacterID   `json:"attackerId"`
+	TargetID    types.CharacterID   `json:"targetId"`
+	WeaponID    string              `json:"weaponId,omitempty"`
+	SpellID     string              `json:"spellId,omitempty"`
+	AttackBonus int                 `json:"attackBonus"`
+	DamageDice  string              `json:"damageDice"`
+	DamageType  types.DamageType    `json:"damageType"`
+	DamageBonus int                 `json:"damageBonus"`
 }
 
 func PlanAttack(state runtime.CampaignState, r rng.RNG, intent AttackIntent) events.Event {
@@ -32,47 +32,34 @@ func PlanAttack(state runtime.CampaignState, r rng.RNG, intent AttackIntent) eve
 
 	hit := isCrit || (!isFumble && total >= targetAC)
 
-	var damageEvents []events.Event
-	if hit {
-		dmgEvent := planDamage(r, intent, isCrit)
-		damageEvents = append(damageEvents, dmgEvent)
-		_ = damageEvents
-	}
-
-	return events.Event{
-		Type: events.EventAttackRolled,
-		AttackRolled: &events.AttackRolledEvent{
-			AttackerID:  intent.AttackerID,
-			TargetID:    intent.TargetID,
-			WeaponID:    intent.WeaponID,
-			AttackBonus: intent.AttackBonus,
-			Roll:        roll,
-			Total:       total,
-			IsCrit:      isCrit,
-			IsFumble:    isFumble,
-			Hit:         hit,
-		},
+	return &events.AttackRolledEvent{
+		AttackerID:  intent.AttackerID,
+		TargetID:    intent.TargetID,
+		WeaponID:    intent.WeaponID,
+		AttackBonus: intent.AttackBonus,
+		Roll:        roll,
+		Total:       total,
+		IsCrit:      isCrit,
+		IsFumble:    isFumble,
+		Hit:         hit,
 	}
 }
 
-func planDamage(r rng.RNG, intent AttackIntent, isCrit bool) events.Event {
+func planDamage(r rng.RNG, intent AttackIntent, isCrit bool) *events.DamageRolledEvent {
 	count := 1
 	if isCrit {
 		count = 2
 	}
 	damageDice := rng.RollDice(r, count, 8, intent.DamageBonus)
 
-	return events.Event{
-		Type: events.EventDamageRolled,
-		DamageRolled: &events.DamageRolledEvent{
-			AttackerID: intent.AttackerID,
-			TargetID:   intent.TargetID,
-			Components: []events.DamageComponent{
-				{
-					Type:   intent.DamageType,
-					Dice:   intent.DamageDice,
-					Amount: damageDice.Total,
-				},
+	return &events.DamageRolledEvent{
+		AttackerID: intent.AttackerID,
+		TargetID:   intent.TargetID,
+		Components: []events.DamageComponent{
+			{
+				Type:   intent.DamageType,
+				Dice:   intent.DamageDice,
+				Amount: damageDice.Total,
 			},
 		},
 	}

@@ -1,67 +1,94 @@
 package engine
 
 import (
+	scontent "github.com/hadnu/arcanum/internal/schemas/content"
 	"github.com/hadnu/arcanum/internal/schemas/events"
 	sruntime "github.com/hadnu/arcanum/internal/schemas/runtime"
 	"github.com/hadnu/arcanum/internal/types"
 )
 
+type Applier struct {
+	content scontent.ResolvedContent
+}
+
+func NewApplier(content scontent.ResolvedContent) *Applier {
+	return &Applier{content: content}
+}
+
 func (a *Applier) Apply(state sruntime.CampaignState, evt events.Event) sruntime.CampaignState {
-	switch evt.Type {
-	case events.EventCharacterCreated:
-		return a.applyCharacterCreated(state, *evt.CharacterCreated)
-	case events.EventDamageApplied:
-		return a.applyDamageApplied(state, *evt.DamageApplied)
-	case events.EventHealed:
-		return a.applyHealed(state, *evt.Healed)
-	case events.EventTempHPGranted:
-		return a.applyTempHPGranted(state, *evt.TempHPGranted)
-	case events.EventConditionApplied:
-		return a.applyConditionApplied(state, *evt.ConditionApplied)
-	case events.EventConditionRemoved:
-		return a.applyConditionRemoved(state, *evt.ConditionRemoved)
-	case events.EventAttackRolled:
-		return a.applyAttackRolled(state, *evt.AttackRolled)
-	case events.EventDamageRolled:
-		return a.applyDamageRolled(state, *evt.DamageRolled)
-	case events.EventShortRestStarted:
-		return a.applyShortRestStarted(state, *evt.ShortRestStarted)
-	case events.EventShortRestEnded:
-		return a.applyShortRestEnded(state, *evt.ShortRestEnded)
-	case events.EventLongRestStarted:
-		return a.applyLongRestStarted(state, *evt.LongRestStarted)
-	case events.EventLongRestEnded:
-		return a.applyLongRestEnded(state, *evt.LongRestEnded)
-	case events.EventItemAcquired:
-		return a.applyItemAcquired(state, *evt.ItemAcquired)
-	case events.EventItemEquipped:
-		return a.applyItemEquipped(state, *evt.ItemEquipped)
-	case events.EventResourceSpent:
-		return a.applyResourceSpent(state, *evt.ResourceSpent)
-	case events.EventResourceRestored:
-		return a.applyResourceRestored(state, *evt.ResourceRestored)
-	case events.EventLevelUpResolved:
-		return a.applyLevelUpResolved(state, *evt.LevelUpResolved)
-	case events.EventWorldClockAdvanced:
-		return a.applyWorldClockAdvanced(state, *evt.WorldClockAdvanced)
-	case events.EventEncounterCreated:
-		return a.applyEncounterCreated(state, *evt.EncounterCreated)
-	case events.EventEncounterStarted:
-		return a.applyEncounterStarted(state, *evt.EncounterStarted)
-	case events.EventInitiativeRolled:
-		return a.applyInitiativeRolled(state, *evt.InitiativeRolled)
-	case events.EventTurnStarted:
-		return a.applyTurnStarted(state, *evt.TurnStarted)
-	case events.EventTurnEnded:
-		return a.applyTurnEnded(state, *evt.TurnEnded)
-	case events.EventEncounterEnded:
-		return a.applyEncounterEnded(state, *evt.EncounterEnded)
-	case events.EventChoiceRequired:
-		return a.applyChoiceRequired(state, *evt.ChoiceRequired)
-	case events.EventChoiceResolved:
-		return a.applyChoiceResolved(state, *evt.ChoiceResolved)
-	case events.EventNPCActionResolved:
-		return a.applyNPCActionResolved(state, *evt.NPCActionResolved)
+	switch e := evt.(type) {
+	case *events.CharacterCreatedEvent:
+		return a.applyCharacterCreated(state, *e)
+	case *events.DamageAppliedEvent:
+		return a.applyDamageApplied(state, *e)
+	case *events.HealedEvent:
+		return a.applyHealed(state, *e)
+	case *events.TempHPGrantedEvent:
+		return a.applyTempHPGranted(state, *e)
+	case *events.ConditionAppliedEvent:
+		return a.applyConditionApplied(state, *e)
+	case *events.ConditionRemovedEvent:
+		return a.applyConditionRemoved(state, *e)
+	case *events.AttackRolledEvent:
+		return a.applyAttackRolled(state, *e)
+	case *events.DamageRolledEvent:
+		return a.applyDamageRolled(state, *e)
+	case *events.ShortRestStartedEvent:
+		return a.applyShortRestStarted(state, *e)
+	case *events.ShortRestEndedEvent:
+		return a.applyShortRestEnded(state, *e)
+	case *events.LongRestStartedEvent:
+		return a.applyLongRestStarted(state, *e)
+	case *events.LongRestEndedEvent:
+		return a.applyLongRestEnded(state, *e)
+	case *events.ItemAcquiredEvent:
+		return a.applyItemAcquired(state, *e)
+	case *events.ItemEquippedEvent:
+		return a.applyItemEquipped(state, *e)
+	case *events.ResourceSpentEvent:
+		return a.applyResourceSpent(state, *e)
+	case *events.ResourceRestoredEvent:
+		return a.applyResourceRestored(state, *e)
+	case *events.CharacterLeveledUpEvent:
+		return a.applyCharacterLeveledUp(state, *e)
+	case *events.FeatTakenEvent:
+		return a.applyFeatTaken(state, *e)
+	case *events.SubclassChosenEvent:
+		return a.applySubclassChosen(state, *e)
+	case *events.SpellCastDeclaredEvent:
+		return a.applySpellCastDeclared(state, *e)
+	case *events.SpellSlotUsedEvent:
+		return a.applySpellSlotUsed(state, *e)
+	case *events.ConcentrationStartedEvent:
+		return a.applyConcentrationStarted(state, *e)
+	case *events.ConcentrationBrokenEvent:
+		return a.applyConcentrationBroken(state, *e)
+	case *events.ExhaustionChangedEvent:
+		return a.applyExhaustionChanged(state, *e)
+	case *events.DeathSaveRolledEvent:
+		return a.applyDeathSaveRolled(state, *e)
+	case *events.StabilizedEvent:
+		return a.applyStabilized(state, *e)
+	case *events.EncounterCreatedEvent:
+		return a.applyEncounterCreated(state, *e)
+	case *events.EncounterStartedEvent:
+		return a.applyEncounterStarted(state, *e)
+	case *events.InitiativeRolledEvent:
+		return a.applyInitiativeRolled(state, *e)
+	case *events.TurnStartedEvent:
+		return a.applyTurnStarted(state, *e)
+	case *events.TurnEndedEvent:
+		return a.applyTurnEnded(state, *e)
+	case *events.RoundEndedEvent:
+		return a.applyRoundEnded(state, *e)
+	case *events.EncounterEndedEvent:
+		return a.applyEncounterEnded(state, *e)
+	case *events.ChoiceRequiredEvent:
+		return a.applyChoiceRequired(state, *e)
+	case *events.ChoiceResolvedEvent:
+		return a.applyChoiceResolved(state, *e)
+	case *events.HitDieSpentEvent:
+		return a.applyHitDieSpent(state, *e)
 	}
 	return state
 }
@@ -70,7 +97,7 @@ func (a *Applier) applyCharacterCreated(state sruntime.CampaignState, evt events
 	classes := make([]sruntime.ClassEnrollment, len(evt.Classes))
 	level := 0
 	for i, c := range evt.Classes {
-		classes[i] = sruntime.ClassEnrollment{ClassID: c.ClassID, Level: c.Level}
+		classes[i] = sruntime.ClassEnrollment{ClassID: c.ClassID, Level: c.Level, SubClassID: c.SubclassID}
 		level += c.Level
 	}
 	if evt.Level > level {
@@ -244,7 +271,7 @@ func (a *Applier) applyResourceRestored(state sruntime.CampaignState, evt events
 	return state
 }
 
-func (a *Applier) applyLevelUpResolved(state sruntime.CampaignState, evt events.LevelUpResolvedEvent) sruntime.CampaignState {
+func (a *Applier) applyCharacterLeveledUp(state sruntime.CampaignState, evt events.CharacterLeveledUpEvent) sruntime.CampaignState {
 	char, ok := state.Characters[evt.CharacterID]
 	if !ok {
 		return state
@@ -261,11 +288,14 @@ func (a *Applier) applyLevelUpResolved(state sruntime.CampaignState, evt events.
 	if evt.FeatChoice != nil {
 		char.Feats = append(char.Feats, *evt.FeatChoice)
 	}
-	return state
-}
-
-func (a *Applier) applyWorldClockAdvanced(state sruntime.CampaignState, evt events.WorldClockAdvancedEvent) sruntime.CampaignState {
-	state.World.CurrentTime = evt.To
+	if evt.SubclassChoice != nil {
+		for i, c := range char.Classes {
+			if c.ClassID == evt.ClassID {
+				char.Classes[i].SubClassID = evt.SubclassChoice
+				break
+			}
+		}
+	}
 	return state
 }
 
@@ -300,6 +330,14 @@ func (a *Applier) applyTurnStarted(state sruntime.CampaignState, evt events.Turn
 }
 
 func (a *Applier) applyTurnEnded(state sruntime.CampaignState, evt events.TurnEndedEvent) sruntime.CampaignState {
+	return state
+}
+
+func (a *Applier) applyRoundEnded(state sruntime.CampaignState, evt events.RoundEndedEvent) sruntime.CampaignState {
+	enc, ok := state.Encounters[evt.EncounterID]
+	if ok {
+		enc.Round++
+	}
 	return state
 }
 
@@ -342,6 +380,104 @@ func (a *Applier) applyChoiceResolved(state sruntime.CampaignState, evt events.C
 	return state
 }
 
-func (a *Applier) applyNPCActionResolved(state sruntime.CampaignState, evt events.NPCActionResolvedEvent) sruntime.CampaignState {
+func (a *Applier) applySpellCastDeclared(state sruntime.CampaignState, evt events.SpellCastDeclaredEvent) sruntime.CampaignState {
+	return state
+}
+
+func (a *Applier) applySpellSlotUsed(state sruntime.CampaignState, evt events.SpellSlotUsedEvent) sruntime.CampaignState {
+	char, ok := state.Characters[evt.CharacterID]
+	if !ok {
+		return state
+	}
+	for i := range char.SpellSlotsUsed {
+		if i == evt.SlotLevel && char.SpellSlotsUsed[i] > 0 {
+			char.SpellSlotsUsed[i]--
+			break
+		}
+	}
+	return state
+}
+
+func (a *Applier) applyConcentrationStarted(state sruntime.CampaignState, evt events.ConcentrationStartedEvent) sruntime.CampaignState {
+	char, ok := state.Characters[evt.CharacterID]
+	if !ok {
+		return state
+	}
+	char.ActiveConcentration = &sruntime.ActiveConcentration{
+		SpellID: evt.SpellID,
+	}
+	return state
+}
+
+func (a *Applier) applyConcentrationBroken(state sruntime.CampaignState, evt events.ConcentrationBrokenEvent) sruntime.CampaignState {
+	char, ok := state.Characters[evt.CharacterID]
+	if !ok {
+		return state
+	}
+	char.ActiveConcentration = nil
+	return state
+}
+
+func (a *Applier) applyExhaustionChanged(state sruntime.CampaignState, evt events.ExhaustionChangedEvent) sruntime.CampaignState {
+	char, ok := state.Characters[evt.CharacterID]
+	if !ok {
+		return state
+	}
+	char.ExhaustionLevel = evt.NewLevel
+	return state
+}
+
+func (a *Applier) applyDeathSaveRolled(state sruntime.CampaignState, evt events.DeathSaveRolledEvent) sruntime.CampaignState {
+	char, ok := state.Characters[evt.CharacterID]
+	if !ok {
+		return state
+	}
+	char.DeathSaves.Successes = evt.Successes
+	char.DeathSaves.Failures = evt.Failures
+	return state
+}
+
+func (a *Applier) applyStabilized(state sruntime.CampaignState, evt events.StabilizedEvent) sruntime.CampaignState {
+	char, ok := state.Characters[evt.CharacterID]
+	if !ok {
+		return state
+	}
+	char.DeathSaves.Successes = 3
+	char.DeathSaves.Failures = 0
+	return state
+}
+
+func (a *Applier) applyFeatTaken(state sruntime.CampaignState, evt events.FeatTakenEvent) sruntime.CampaignState {
+	char, ok := state.Characters[evt.CharacterID]
+	if !ok {
+		return state
+	}
+	char.Feats = append(char.Feats, evt.FeatID)
+	return state
+}
+
+func (a *Applier) applySubclassChosen(state sruntime.CampaignState, evt events.SubclassChosenEvent) sruntime.CampaignState {
+	char, ok := state.Characters[evt.CharacterID]
+	if !ok {
+		return state
+	}
+	for i, c := range char.Classes {
+		if c.ClassID == evt.ClassID {
+			char.Classes[i].SubClassID = &evt.SubclassID
+			break
+		}
+	}
+	return state
+}
+
+func (a *Applier) applyHitDieSpent(state sruntime.CampaignState, evt events.HitDieSpentEvent) sruntime.CampaignState {
+	char, ok := state.Characters[evt.CharacterID]
+	if !ok {
+		return state
+	}
+	if char.HitDiceUsed == nil {
+		char.HitDiceUsed = make(map[types.HitDie]int)
+	}
+	char.HitDiceUsed[evt.Die] += evt.Rolled
 	return state
 }

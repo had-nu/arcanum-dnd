@@ -49,6 +49,14 @@ func NewEventID() EventID {
 	return EventID{ulid.MustNew(ulid.Timestamp(time.Now()), defaultEntropy)}
 }
 
+func ParseEventID(s string) (EventID, error) {
+	u, err := ulid.Parse(s)
+	if err != nil {
+		return EventID{}, fmt.Errorf("parse event id: %w", err)
+	}
+	return EventID{u}, nil
+}
+
 func (id EventID) String() string { return id.ULID.String() }
 
 type CampaignID struct{ ulid.ULID }
