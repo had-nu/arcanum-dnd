@@ -271,6 +271,7 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", srv.handleHealth)
+	mux.HandleFunc("GET /api/health", srv.handleHealth)
 	mux.HandleFunc("GET /api/content", srv.handleContent)
 	mux.HandleFunc("GET /api/spells", srv.handleSpells)
 	mux.HandleFunc("GET /api/features/{classId}", srv.handleFeatures)

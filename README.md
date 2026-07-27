@@ -9,25 +9,46 @@ Frontend React SPA servido pelo backend Go. Character builder funcional com clas
 
 ## Quick Start
 
+### Docker (Optional)
+
+```sh
+# Development with hot reload
+docker compose --profile dev up -d
+# Access at http://localhost:5173
+
+# Production (single container)
+docker compose --profile prod up -d
+# Access at http://localhost:8080
+```
+
+### Local Development (Primary)
+
 ```sh
 # Backend (serve API + frontend SPA)
 go run ./cmd/server/
 
-# Ou build + run
+# Frontend (separate terminal)
+cd frontend && npm run dev
+```
+
+Frontend available at `http://localhost:5173` (proxies API to backend `:8080`).
+
+### TUI Commands
+
+```sh
+go run ./cmd/tui-player/
+```
+
+Or build + run:
+
+```sh
 make build
 ./server
-
-# TUI Player (event-sourced engine)
 make run-player
-# ou: go run ./cmd/tui-player/
-
-# TUI Master (DM tools)
 make run-master
 ```
 
-Frontend disponível em `http://localhost:8080` (React SPA servida pelo Go backend).
-
-## Comandos
+## Commands
 
 ```sh
 make build      # compila tudo (backend + frontend)
@@ -39,7 +60,7 @@ make frontend   # build apenas frontend (Vite)
 make dev        # backend + frontend em modo dev (concurrently)
 ```
 
-## Arquitetura
+## Architecture
 
 ```
 cmd/
@@ -63,7 +84,7 @@ frontend/       # React + TypeScript + Vite + Zustand
     shared/     # UI atoms, theme (wine/gold/parchment)
 ```
 
-Padrões portados de [greghcarr/dnd-srd-engine](https://github.com/greghcarr/dnd-srd-engine):
+Patterns ported from [greghcarr/dnd-srd-engine](https://github.com/greghcarr/dnd-srd-engine):
 Event Sourcing, Plan/Commit split, Effect Primitives, Branded IDs, Derive layer.
 
 ## API Endpoints

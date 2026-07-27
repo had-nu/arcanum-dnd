@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  # Development profile: hot reload for both frontend and backend
+  backend-dev:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile.dev
+    container_name: arcanum-backend-dev
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/app
+      - ./backend/config.yaml:/app/backend/config.yaml:ro
+      - ./data:/app/data
+      - ./var:/app/var
+    environment:
+      - CONFIG_PATH=/app/backend/config.yaml
+    working_dir: /app
+    networks:
+      - arcanum-dev
+    profiles:
+      - dev
+
+  frontend-dev:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: arcanum-frontend-dev
+    expose:
+      - "5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_PROXY_TARGET=http://backend-dev:8080
+    networks:
+      - arcanum-dev
+    profiles:
+      - dev
+    depends_on:
+      - backend-dev
+
+  # Nginx reverse proxy for dev - single port access
+  nginx-dev:
+    image: nginx:alpine
+    container_name: arcanum-nginx-dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend/nginx.dev.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - arcanum-dev
+    profiles:
+      - dev
+    depends_on:
+      - frontend-dev
+      - backend-dev
+
+  # Production profile: single container serving both API and built SPA
+  app-prod:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    container_name: arcanum-app-prod
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/app/data
+      - ./var:/app/var
+    environment:
+      - CONFIG_PATH=/app/backend/config.yaml
+    networks:
+      - arcanum-prod
+    profiles:
+      - prod
+
+networks:
+  arcanum-dev:
+    driver: bridge
+  arcanum-prod:
+    driver: bridge
