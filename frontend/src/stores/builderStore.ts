@@ -20,11 +20,24 @@ interface DraftWithSubclass extends Omit<BuildRequest, 'classes'> {
   classes: ClassWithSubclass[];
 }
 
+interface AsiChoice {
+  type: 'asi' | 'feat';
+  abilityScores?: string[]; // e.g., ['STR'] for +2, or ['STR', 'DEX'] for +1/+1
+  featId?: string;
+}
+
 interface BuilderStore {
   draft: DraftWithSubclass;
   preview: CharacterSheet | null;
   pendingChoices: ChoicePoint[];
   debounceTimer: ReturnType<typeof setTimeout> | null;
+
+  // Choice state
+  skillProficiencies: Record<string, string[]>; // classId -> skillIds[]
+  metamagicSelections: Record<string, string[]>; // classId -> metamagicOptionIds[]
+  subclassSelections: Record<string, string>; // classId -> subclassId
+  asiChoices: Record<string, AsiChoice>; // `${classId}_${level}` -> AsiChoice
+  featSelections: Record<string, string[]>; // classId -> featIds[]
 
   setName: (name: string) => void;
   addClass: (classId: string) => void;
@@ -40,6 +53,12 @@ interface BuilderStore {
   removePreparedSpell: (spellId: string) => void;
   addFeat: (featId: string) => void;
   removeFeat: (featId: string) => void;
+
+  // Choice actions
+  setSkillProficiency: (classId: string, index: number, skillId: string) => void;
+  setMetamagicSelection: (classId: string, metamagicIds: string[]) => void;
+  setAsiChoice: (classId: string, level: number, choice: AsiChoice) => void;
+  setFeatSelection: (classId: string, featIds: string[]) => void;
 
   requestPreview: () => void;
   cancelPreview: () => void;
@@ -74,6 +93,13 @@ export const useBuilderStore = create<BuilderStore>()(
         pendingChoices: [],
         debounceTimer: null,
 
+        // Choice state
+        skillProficiencies: {},
+        metamagicSelections: {},
+        subclassSelections: {},
+        asiChoices: {},
+        featSelections: {},
+
         setName: (name) => set((state) => ({ draft: { ...state.draft, name } })),
         addClass: (classId) =>
           set((state) => ({
@@ -98,6 +124,7 @@ export const useBuilderStore = create<BuilderStore>()(
                 c.id === classId ? { ...c, subclassId } : c
               ),
             },
+            subclassSelections: { ...state.subclassSelections, [classId]: subclassId || '' },
           })),
         setBackground: (backgroundId) => set((state) => ({ draft: { ...state.draft, backgroundId } })),
         setSpecies: (speciesId, variant) =>
@@ -134,6 +161,35 @@ export const useBuilderStore = create<BuilderStore>()(
         removeFeat: (featId) =>
           set((state) => ({
             draft: { ...state.draft, feats: (state.draft.feats ?? []).filter((f) => f !== featId) },
+          })),
+
+        // Choice state actions
+        setSkillProficiency: (classId: string, index: number, skillId: string) =>
+          set((state) => {
+            const current = state.skillProficiencies[classId] ?? [];
+            const updated = [...current];
+            updated[index] = skillId;
+            return { skillProficiencies: { ...state.skillProficiencies, [classId]: updated } };
+          }),
+
+        setMetamagicSelection: (classId: string, featureIds: string[]) =>
+          set((state) => ({
+            metamagicSelections: { ...state.metamagicSelections, [classId]: featureIds },
+          })),
+
+        setSubclassSelection: (classId: string, subclassId: string) =>
+          set((state) => ({
+            subclassSelections: { ...state.subclassSelections, [classId]: subclassId },
+          })),
+
+        setAsiChoice: (classId: string, level: number, choice: { type: 'asi' | 'feat'; abilityScores?: string[]; featId?: string }) =>
+          set((state) => ({
+            asiChoices: { ...state.asiChoices, [`${classId}_${level}`]: choice },
+          })),
+
+        setFeatSelection: (classId: string, featIds: string[]) =>
+          set((state) => ({
+            featSelections: { ...state.featSelections, [classId]: featIds },
           })),
 
         requestPreview: () => {

@@ -9,7 +9,7 @@ import {
   type GetSpellsParams,
 } from './endpoints/generated';
 
-import type { FeaturesResponse } from '@/types/api';
+import type { FeaturesResponse, MetamagicOptionsResponse, FeatsResponse } from '@/types/api';
 
 const API_BASE = import.meta.env.VITE_API_BASE || '/api';
 
@@ -82,6 +82,10 @@ export const api = {
     if (subclassId) url += `?subclassId=${encodeURIComponent(subclassId)}`;
     return fetchWithBase<FeaturesResponse>(url);
   },
+
+  getMetamagicOptions: () => fetchWithBase<MetamagicOptionsResponse>('/metamagic-options'),
+
+  getFeats: () => fetchWithBase<FeatsResponse>('/feats'),
 
   health: () =>
     fetchWithBase<{ status: string; version: string; timestamp: string }>('/health'),

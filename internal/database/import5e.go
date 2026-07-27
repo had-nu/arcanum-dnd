@@ -19,6 +19,14 @@ type fiveEFeature struct {
 	SubclassShortName  string          `json:"subclassShortName"`
 }
 
+type fiveEOptionalFeature struct {
+	Name        string          `json:"name"`
+	Source      string          `json:"source"`
+	Description json.RawMessage `json:"entries"`
+	FeatureType string          `json:"featureType"`
+	Level       int             `json:"level"`
+}
+
 type fiveEClassFile struct {
 	Class           []map[string]any   `json:"class"`
 	ClassFeature    []fiveEFeature     `json:"classFeature"`
@@ -57,6 +65,12 @@ func Import5eFeatures(db *sql.DB, dataDir string) error {
 			return fmt.Errorf("import %s: %w", entry.Name(), err)
 		}
 	}
+
+	// Import metamagic options from optionalfeatures.json
+	if err := importMetamagicOptions(db, dataDir); err != nil {
+		return fmt.Errorf("import metamagic options: %w", err)
+	}
+
 	return nil
 }
 
@@ -184,3 +198,65 @@ func kebabCase(s string) string {
 	)
 	return replacer.Replace(lower)
 }
+
+func importMetamagicOptions(db *sql.DB, dataDir string) error {
+	optionalFeaturesPath := filepath.Join(dataDir, "optionalfeatures.json")
+	data, err := os.ReadFile(optionalFeaturesPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return fmt.Errorf("read optionalfeatures.json: %w", err)
+	}
+
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return fmt.Errorf("parse optionalfeatures top-level: %w", err)
+	}
+
+	var features []struct {
+		Name        string          `json:"name"`
+		Source      string          `json:"source"`
+		Entries     json.RawMessage `json:"entries"`
+		FeatureType []string        `json:"featureType"`
+		Level       int             `json:"level"`
+	}
+	if of, ok := raw["optionalfeature"]; ok {
+		if err := json.Unmarshal(of, &features); err != nil {
+			return fmt.Errorf("parse optionalfeature array: %w", err)
+		}
+	}
+
+	for _, feat := range features {
+		isMetamagic := false
+		for _, ft := range feat.FeatureType {
+			if ft == "MM" {
+				isMetamagic = true
+				break
+			}
+		}
+		if !isMetamagic {
+			continue
+		}
+
+		featureID := fmt.Sprintf("metamagic.%s", kebabCase(feat.Name))
+		entriesJSON, _ := json.Marshal(feat.Entries)
+
+		level := 2
+
+		_, err := db.Exec(`
+			INSERT INTO metamagic_options (id, name, source, description, level)
+			VALUES (?, ?, ?, ?, ?)
+			ON CONFLICT(id) DO UPDATE SET
+				name = excluded.name,
+				description = excluded.description,
+				source = excluded.source
+		`, featureID, feat.Name, feat.Source, string(entriesJSON), level)
+		if err != nil {
+			return fmt.Errorf("upsert metamagic option %s: %w", featureID, err)
+		}
+	}
+
+	return nil
+}
+

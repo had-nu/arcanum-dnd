@@ -274,6 +274,8 @@ func main() {
 	mux.HandleFunc("GET /api/content", srv.handleContent)
 	mux.HandleFunc("GET /api/spells", srv.handleSpells)
 	mux.HandleFunc("GET /api/features/{classId}", srv.handleFeatures)
+	mux.HandleFunc("GET /api/metamagic-options", srv.handleMetamagicOptions)
+	mux.HandleFunc("GET /api/feats", srv.handleFeats)
 	mux.HandleFunc("POST /api/build", srv.handleBuild)
 	mux.HandleFunc("GET /api/characters", srv.handleListCharacters)
 	mux.HandleFunc("POST /api/characters", srv.handleSaveCharacter)
@@ -669,6 +671,69 @@ func (s *Server) handleFeatures(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, resp)
+}
+
+func (s *Server) handleMetamagicOptions(w http.ResponseWriter, r *http.Request) {
+	rows, err := s.db.Query(`
+		SELECT id, name, source, COALESCE(description, ''), level
+		FROM metamagic_options
+		ORDER BY name
+	`)
+	if err != nil {
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	type MetamagicOption struct {
+		ID          string `json:"id"`
+		Name        string `json:"name"`
+		Source      string `json:"source"`
+		Description string `json:"description"`
+		Level       int    `json:"level"`
+	}
+
+	var options []MetamagicOption
+	for rows.Next() {
+		var m MetamagicOption
+		if err := rows.Scan(&m.ID, &m.Name, &m.Source, &m.Description, &m.Level); err != nil {
+			continue
+		}
+		options = append(options, m)
+	}
+
+	writeJSON(w, map[string][]MetamagicOption{"metamagicOptions": options})
+}
+
+func (s *Server) handleFeats(w http.ResponseWriter, r *http.Request) {
+	rows, err := s.db.Query(`
+		SELECT id, name, COALESCE(entries_json, ''), COALESCE(prerequisites_json, '')
+		FROM feats
+		ORDER BY name
+	`)
+	if err != nil {
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	type FeatEntry struct {
+		ID            string `json:"id"`
+		Name          string `json:"name"`
+		Description   string `json:"description"`
+		Prerequisites string `json:"prerequisites"`
+	}
+
+	var feats []FeatEntry
+	for rows.Next() {
+		var f FeatEntry
+		if err := rows.Scan(&f.ID, &f.Name, &f.Description, &f.Prerequisites); err != nil {
+			continue
+		}
+		feats = append(feats, f)
+	}
+
+	writeJSON(w, map[string][]FeatEntry{"feats": feats})
 }
 
 func (s *Server) handleBuild(w http.ResponseWriter, r *http.Request) {

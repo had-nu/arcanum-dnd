@@ -99,7 +99,8 @@ func Migrate(db *sql.DB) error {
 		name TEXT NOT NULL,
 		level INTEGER NOT NULL,
 		source TEXT DEFAULT '',
-		entries_json TEXT DEFAULT ''
+		entries_json TEXT DEFAULT '',
+		spell_list_json TEXT DEFAULT ''
 	);
 
 	CREATE TABLE IF NOT EXISTS feats (
@@ -108,6 +109,30 @@ func Migrate(db *sql.DB) error {
 		source TEXT DEFAULT '',
 		prerequisites_json TEXT DEFAULT '',
 		entries_json TEXT DEFAULT ''
+	);
+
+	CREATE TABLE IF NOT EXISTS metamagic_options (
+		id TEXT PRIMARY KEY,
+		name TEXT NOT NULL,
+		source TEXT DEFAULT '',
+		description TEXT DEFAULT '',
+		level INTEGER NOT NULL
+	);
+
+	CREATE TABLE IF NOT EXISTS class_asi_feats (
+		class_id TEXT NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+		level INTEGER NOT NULL,
+		choice_type TEXT NOT NULL DEFAULT 'asi', -- 'asi' | 'feat'
+		ability_scores TEXT DEFAULT '[]', -- JSON array of ability score IDs
+		feat_id TEXT DEFAULT '',
+		PRIMARY KEY (class_id, level)
+	);
+
+	CREATE TABLE IF NOT EXISTS class_skill_proficiencies (
+		class_id TEXT NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+		skill_id TEXT NOT NULL,
+		choose_count INTEGER NOT NULL DEFAULT 1,
+		PRIMARY KEY (class_id, skill_id)
 	);
 
 	CREATE INDEX IF NOT EXISTS idx_class_features_class ON class_features(class_id, level);

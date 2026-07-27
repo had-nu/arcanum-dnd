@@ -84,6 +84,9 @@ export interface FeatEntry {
   prerequisites?: unknown;
 }
 
+// Re-export for builderStore
+export type Skill = SkillEntry;
+
 export interface SpellsResponse {
   cantrips: SpellEntry[];
   leveled: SpellEntry[][];
@@ -285,6 +288,22 @@ export interface FeaturesResponse {
   subclassName?: string;
   features: ClassFeatureEntry[];
   subclassFeatures?: ClassFeatureEntry[];
+}
+
+export interface MetamagicOption {
+  id: string;
+  name: string;
+  source: string;
+  description: unknown[];
+  level: number;
+}
+
+export interface MetamagicOptionsResponse {
+  metamagicOptions: MetamagicOption[];
+}
+
+export interface FeatsResponse {
+  feats: FeatEntry[];
 }
 
 export interface SaveCharacterRequest {
