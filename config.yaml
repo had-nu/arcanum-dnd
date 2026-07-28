@@ -19,7 +19,7 @@ cors:
 
 data:
   content_dir: "./data"
-  characters_dir: "./var/characters"
+  characters_dir: "./char"
   sqlite_path: "./var/arcanum.db"
 
 log:

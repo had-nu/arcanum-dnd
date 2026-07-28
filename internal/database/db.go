@@ -15,7 +15,7 @@ func Open(dsn string) (*sql.DB, error) {
 		return nil, fmt.Errorf("database open: %w", err)
 	}
 
-	db.SetMaxOpenConns(1)
+	db.SetMaxOpenConns(4)
 
 	if err := db.Ping(); err != nil {
 		return nil, fmt.Errorf("database ping: %w", err)

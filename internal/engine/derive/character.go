@@ -13,6 +13,8 @@ type CharacterSheet struct {
 	Name             string                    `json:"name"`
 	Level            int                       `json:"level"`
 	Classes          []ClassView               `json:"classes"`
+	Species          string                    `json:"species,omitempty"`
+	Background       string                    `json:"background,omitempty"`
 	AC               int                       `json:"ac"`
 	HP               HPView                    `json:"hp"`
 	Speed            int                       `json:"speed"`
@@ -22,10 +24,19 @@ type CharacterSheet struct {
 	Skills           map[types.Skill]*SkillView `json:"skills"`
 	ProficiencyBonus int                       `json:"proficiencyBonus"`
 	Attacks          []AttackView              `json:"attacks,omitempty"`
-	SpellSlots       map[int]SpellSlotView     `json:"spellSlots,omitempty"`
-	SpellSlotsWarlock map[int]SpellSlotView    `json:"spellSlotsWarlock,omitempty"`
-	SpellcastingStats []SpellcastingStatsView  `json:"spellcastingStats,omitempty"`
+	SpellSlots       map[int]int            `json:"spellSlots,omitempty"`
+	SpellSlotsWarlock map[int]int            `json:"spellSlotsWarlock,omitempty"`
+	SpellcastingStats []SpellcastingStatsView   `json:"spellcastingStats,omitempty"`
 	Languages        []string                  `json:"languages,omitempty"`
+	Spells           []string                  `json:"spells,omitempty"`
+	Features         []FeatureView             `json:"features,omitempty"`
+}
+
+type FeatureView struct {
+	Class string `json:"class"`
+	Level int    `json:"level"`
+	Name  string `json:"name"`
+	ID    string `json:"id"`
 }
 
 type ClassView struct {
@@ -54,11 +65,6 @@ type AttackView struct {
 	Type   string `json:"type"`
 }
 
-type SpellSlotView struct {
-	Total     int `json:"total"`
-	Remaining int `json:"remaining"`
-}
-
 type SpellcastingStatsView struct {
 	ClassID      types.ClassID      `json:"classId"`
 	ClassName    string             `json:"className"`
@@ -84,22 +90,68 @@ func BuildCharacterSheet(char runtime.Character, content scontent.ResolvedConten
 	}
 
 	speed := 30
+	speciesName := ""
 	if sp, ok := content.Species[char.Species]; ok {
 		if sp.Speed.Walk > 0 {
 			speed = sp.Speed.Walk
 		}
+		speciesName = sp.Name
+	}
+
+	bgName := ""
+	if bg, ok := content.Backgrounds[char.Background]; ok {
+		bgName = bg.Name
 	}
 
 	sheet := CharacterSheet{
 		ID:               char.ID,
 		Name:             char.Name,
 		Level:            char.Level,
+		Species:          speciesName,
+		Background:       bgName,
 		AC:               computeAC(char, finalScores),
 		HP:               HPView{Current: char.HP.Current, Max: char.HP.Max, Temp: char.TempHP},
 		Speed:            speed,
 		InitBonus:        abilityModifier(finalScores.DEX),
 		AbilityScores:    finalScores,
 		ProficiencyBonus: pb,
+	}
+
+	// Spells
+	sheet.Spells = make([]string, len(char.PreparedSpells))
+	for i, sp := range char.PreparedSpells {
+		sheet.Spells[i] = string(sp.SpellID)
+	}
+
+	// Features
+	for _, c := range char.Classes {
+		cls, ok := content.Classes[c.ClassID]
+		if !ok {
+			continue
+		}
+		for _, lvl := range cls.Levels {
+			if lvl.Level > c.Level {
+				continue
+			}
+			for _, fid := range lvl.Features {
+				fName := string(fid)
+				if f, ok := content.Feats[fid]; ok {
+					fName = f.Name
+				}
+				sheet.Features = append(sheet.Features, FeatureView{
+					Class: cls.Name, Level: lvl.Level, ID: string(fid), Name: fName,
+				})
+			}
+			if lvl.Feat != nil {
+				fName := string(*lvl.Feat)
+				if f, ok := content.Feats[*lvl.Feat]; ok {
+					fName = f.Name
+				}
+				sheet.Features = append(sheet.Features, FeatureView{
+					Class: cls.Name, Level: lvl.Level, ID: string(*lvl.Feat), Name: fName,
+				})
+			}
+		}
 	}
 
 	// Saving Throws
@@ -149,33 +201,8 @@ func BuildCharacterSheet(char runtime.Character, content scontent.ResolvedConten
 	sheet.SpellcastingStats = calculateSpellcastingStats(char, finalScores, pb, content)
 
 	// Spell slots - use class table for single-class, multiclass table for multiclass
-	sheet.SpellSlots = calculateSpellSlots(char, content)
-
-	// Subtract used slots
-	if char.SpellSlotsUsed != nil {
-		for lvl, slot := range sheet.SpellSlots {
-			used := char.SpellSlotsUsed[lvl]
-			rem := slot.Total - used
-			if rem < 0 {
-				rem = 0
-			}
-			slot.Remaining = rem
-			sheet.SpellSlots[lvl] = slot
-		}
-	}
-
-	// Warlock Pact Magic slots
-	sheet.SpellSlotsWarlock = calculateWarlockSpellSlots(char, content)
-	if char.WarlockSlotsUsed > 0 {
-		for lvl, slot := range sheet.SpellSlotsWarlock {
-			rem := slot.Total - char.WarlockSlotsUsed
-			if rem < 0 {
-				rem = 0
-			}
-			slot.Remaining = rem
-			sheet.SpellSlotsWarlock[lvl] = slot
-		}
-	}
+	sheet.SpellSlots = calculateSpellSlotsFlat(char, content)
+	sheet.SpellSlotsWarlock = calculateWarlockSpellSlotsFlat(char, content)
 
 	return sheet
 }
@@ -231,7 +258,7 @@ func getSpellcastingProfile(c runtime.ClassEnrollment, content scontent.Resolved
 	return cls.Spellcasting
 }
 
-func calculateSpellSlots(char runtime.Character, content scontent.ResolvedContent) map[int]SpellSlotView {
+func calculateSpellSlots(char runtime.Character, content scontent.ResolvedContent) map[int]int {
 	spellcastingClasses := []runtime.ClassEnrollment{}
 	for _, c := range char.Classes {
 		prof := getSpellcastingProfile(c, content)
@@ -240,20 +267,26 @@ func calculateSpellSlots(char runtime.Character, content scontent.ResolvedConten
 		}
 	}
 
-	// Single-class caster: use class's own spell slot table
 	if len(spellcastingClasses) == 1 {
-		return calculateSingleClassSpellSlots(spellcastingClasses[0], content)
+		return calculateSingleClassSpellSlotsFlat(spellcastingClasses[0], content)
 	}
 
-	// Multiclass: use multiclass spellcaster table
 	if len(spellcastingClasses) > 1 {
-		return calculateMulticlassSpellSlots(char, content)
+		return calculateMulticlassSpellSlotsFlat(char, content)
 	}
 
 	return nil
 }
 
-func calculateSingleClassSpellSlots(c runtime.ClassEnrollment, content scontent.ResolvedContent) map[int]SpellSlotView {
+func calculateSpellSlotsFlat(char runtime.Character, content scontent.ResolvedContent) map[int]int {
+	return calculateSpellSlots(char, content)
+}
+
+func calculateWarlockSpellSlotsFlat(char runtime.Character, content scontent.ResolvedContent) map[int]int {
+	return calculateWarlockSpellSlots(char, content)
+}
+
+func calculateSingleClassSpellSlotsFlat(c runtime.ClassEnrollment, content scontent.ResolvedContent) map[int]int {
 	cls, ok := content.Classes[c.ClassID]
 	if !ok {
 		return nil
@@ -261,10 +294,10 @@ func calculateSingleClassSpellSlots(c runtime.ClassEnrollment, content scontent.
 	for _, lvl := range cls.Levels {
 		if lvl.Level == c.Level {
 			if lvl.SpellSlots != nil {
-				result := make(map[int]SpellSlotView)
+				result := make(map[int]int)
 				for level, total := range lvl.SpellSlots {
 					if total > 0 {
-						result[level] = SpellSlotView{Total: total, Remaining: total}
+						result[level] = total
 					}
 				}
 				return result
@@ -274,7 +307,7 @@ func calculateSingleClassSpellSlots(c runtime.ClassEnrollment, content scontent.
 	return nil
 }
 
-func calculateMulticlassSpellSlots(char runtime.Character, content scontent.ResolvedContent) map[int]SpellSlotView {
+func calculateMulticlassSpellSlotsFlat(char runtime.Character, content scontent.ResolvedContent) map[int]int {
 	casterLevel := 0
 	for _, c := range char.Classes {
 		prof := getSpellcastingProfile(c, content)
@@ -332,34 +365,32 @@ func calculateMulticlassSpellSlots(char runtime.Character, content scontent.Reso
 		return nil
 	}
 
-	result := make(map[int]SpellSlotView)
+	result := make(map[int]int)
 	for i, total := range slots {
 		if total > 0 {
-			result[i+1] = SpellSlotView{Total: total, Remaining: total}
+			result[i+1] = total
 		}
 	}
 	return result
 }
 
-func calculateWarlockSpellSlots(char runtime.Character, content scontent.ResolvedContent) map[int]SpellSlotView {
+func calculateWarlockSpellSlots(char runtime.Character, content scontent.ResolvedContent) map[int]int {
 	for _, c := range char.Classes {
 		prof := getSpellcastingProfile(c, content)
 		if prof != nil && prof.Type == scontent.CasterTypePact {
-			// Get slots from class levels table if available, or fall back to standard warlock calculation
 			if cls, ok := content.Classes[c.ClassID]; ok {
 				for _, lvl := range cls.Levels {
 					if lvl.Level == c.Level && lvl.SpellSlots != nil {
-						result := make(map[int]SpellSlotView)
+						result := make(map[int]int)
 						for level, total := range lvl.SpellSlots {
 							if total > 0 {
-								result[level] = SpellSlotView{Total: total, Remaining: total}
+								result[level] = total
 							}
 						}
 						return result
 					}
 				}
 			}
-			// Fallback standard Warlock table
 			slotLevel := 1
 			if c.Level >= 9 {
 				slotLevel = 5
@@ -376,8 +407,8 @@ func calculateWarlockSpellSlots(char runtime.Character, content scontent.Resolve
 			} else if c.Level >= 2 {
 				slotCount = 2
 			}
-			return map[int]SpellSlotView{
-				slotLevel: {Total: slotCount, Remaining: slotCount},
+			return map[int]int{
+				slotLevel: slotCount,
 			}
 		}
 	}

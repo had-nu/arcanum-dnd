@@ -1,0 +1,144 @@
+id: efa-backgrounds
+name: "Eberron: Forge of the Artificer — Backgrounds"
+version: "1.0.0"
+license: OGL
+attribution: "Wizards of the Coast — Eberron: Forge of the Artificer"
+
+backgrounds:
+  # Dragonmarked House Heir Backgrounds (grant Dragonmark feats at level 1)
+  - id: house-cannith-heir
+    name: House Cannith Heir
+    abilityScoreOptions: [INT, CON, CHA, DEX, INT ]
+    skills: [ investigation, persuasion ]
+    tools: [ artisans-tools ]
+    feat: mark-of-making
+    description: You are a scion of House Cannith, the House of Making. Your family has shaped the magical industry of Khorvaire for centuries.
+
+  - id: house-deneith-heir
+    name: House Deneith Heir
+    abilityScoreOptions: [ STR, DEX, CON ]
+    skills: [ athletics, intimidation ]
+    tools: [ gaming-set ]
+    feat: mark-of-sentinel
+    description: You belong to House Deneith, the House of Sentinel. Your family provides the finest mercenaries and bodyguards in Khorvaire.
+
+  - id: house-ghallanda-heir
+    name: House Ghallanda Heir
+    abilityScoreOptions: [ CHA, DEX, WIS ]
+    skills: [ insight, persuasion ]
+    tools: [ brewer's-supplies ]
+    feat: mark-of-hospitality
+    description: You are an heir of House Ghallanda, the House of Hospitality. Your family runs the finest inns and waystations across Khorvaire.
+
+  - id: house-jorasco-heir
+    name: House Jorasco Heir
+    abilityScoreOptions: [ WIS, CON, CHA ]
+    skills: [ medicine, insight ]
+    tools: [ herbalism-kit ]
+    feat: mark-of-healing
+    description: You hail from House Jorasco, the House of Healing. Your family holds a near-monopoly on magical healing services.
+
+  - id: house-kundarak-heir
+    name: House Kundarak Heir
+    abilityScoreOptions: [ CON, INT, WIS ]
+    skills: [ investigation, history ]
+    tools: [ thieves-tools ]
+    feat: mark-of-warding
+    description: You are a scion of House Kundarak, the House of Warding. Your family controls the banking and security industries of Khorvaire.
+
+  - id: house-lyrandar-heir
+    name: House Lyrandar Heir
+    abilityScoreOptions: [ CHA, DEX, CON ]
+    skills: [ perception, acrobatics ]
+    tools: [ navigator's-tools ]
+    feat: mark-of-storm
+    description: You belong to House Lyrandar, the House of Storm. Your family commands the winds and the seas, controlling air and sea travel.
+
+  - id: house-medani-heir
+    name: House Medani Heir
+    abilityScoreOptions: [ WIS, INT, CHA ]
+    skills: [ insight, investigation ]
+    tools: [ disguise-kit ]
+    feat: mark-of-detection
+    description: You are an heir of House Medani, the House of Detection. Your family specializes in counterintelligence and predictive magic.
+
+  - id: house-orien-heir
+    name: House Orien Heir
+    abilityScoreOptions: [ DEX, CON, INT ]
+    skills: [ survival, athletics ]
+    tools: [ vehicles-land ]
+    feat: mark-of-passage
+    description: You hail from House Orien, the House of Passage. Your family operates the lightning rail and courier networks across Khorvaire.
+
+  - id: house-phiarlan-heir
+    name: House Phiarlan Heir
+    abilityScoreOptions: [ CHA, DEX, INT ]
+    skills: [ performance, stealth ]
+    tools: [ disguise-kit ]
+    feat: mark-of-shadow
+    description: You are a scion of House Phiarlan, the House of Shadow. Your family are master entertainers and secret spies.
+
+  - id: house-sivis-heir
+    name: House Sivis Heir
+    abilityScoreOptions: [ INT, WIS, CHA ]
+    skills: [ insight, history ]
+    tools: [ calligrapher's-supplies ]
+    feat: mark-of-scribing
+    description: You belong to House Sivis, the House of Scribing. Your family controls the communication and notarization networks of Khorvaire.
+
+  - id: house-tharashk-heir
+    name: House Tharashk Heir
+    abilityScoreOptions: [ WIS, CON, STR ]
+    skills: [ investigation, survival ]
+    tools: [ thieves-tools ]
+    feat: mark-of-finding
+    description: You are an heir of House Tharashk, the House of Finding. Your family excels at bounty hunting, prospecting, and inquisitive work.
+
+  - id: house-thuranni-heir
+    name: House Thuranni Heir
+    abilityScoreOptions: [ DEX, CHA, INT ]
+    skills: [ performance, stealth ]
+    tools: [ poisoner's-kit ]
+    feat: mark-of-shadow
+    description: You hail from House Thuranni, the House of Shadow. Split from Phiarlan, your family blends artistry with assassination.
+
+  - id: house-vadalis-heir
+    name: House Vadalis Heir
+    abilityScoreOptions: [ WIS, CHA, CON ]
+    skills: [ animal-handling, nature ]
+    tools: [ herbalism-kit ]
+    feat: mark-of-handling
+    description: You belong to House Vadalis, the House of Handling. Your family breeds and trains the finest animals and mounts in Khorvaire.
+
+  # Other Eberron-Specific Backgrounds
+  - id: aberrant-heir
+    name: Aberrant Heir
+    abilityScoreOptions: [ CON, CHA, INT ]
+    skills: [ intimidation, arcana ]
+    tools: [ disguise-kit ]
+    feat: aberrant-dragonmark
+    description: You bear an aberrant dragonmark—a chaotic, unpredictable mark that manifests dangerous powers. Dragonmarked houses hunt those like you.
+
+  - id: archaeologist
+    name: Archaeologist
+    abilityScoreOptions: [ INT, WIS, DEX ]
+    skills: [ history, investigation ]
+    tools: [ cartographer's-tools ]
+    feat: skilled
+    description: You have spent your life uncovering the secrets of ancient civilizations, from the giants of Xen'drik to the Dhakaani Empire.
+
+  - id: house-agent
+    name: House Agent
+    abilityScoreOptions: [ INT, CHA, WIS ]
+    skills: [ investigation, insight ]
+    tools: [ choose:1 ]
+    feat: skilled
+    description: You serve as an agent of one of the dragonmarked houses, carrying out missions that advance your house's interests across Khorvaire.
+
+  - id: inquisitive
+    name: Inquisitive
+    abilityScoreOptions: [ WIS, INT, DEX ]
+    skills: [ insight, investigation ]
+    tools: [ thieves-tools ]
+    feat: skilled
+    description: You are a professional investigator in the tradition of Sharn's inquisitives—part detective, part spy, part bounty hunter.

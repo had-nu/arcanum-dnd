@@ -1,0 +1,130 @@
+id: 01KYJQ6AWJEWX2N3CYT2KPADZN
+name: Veyra d'Siberys
+species: kalashtar
+background: aberrant-heir
+classes:
+    - classid: sorcerer
+      subclassid: aberrant-sorcery
+      level: 6
+level: 6
+abilityscores:
+    str: 8
+    dex: 12
+    con: 15
+    int: 10
+    wis: 14
+    cha: 17
+backgroundasi: {}
+hp:
+    current: 38
+    max: 38
+    temp: 0
+temphp: 0
+deathsaves:
+    successes: 0
+    failures: 0
+exhaustionlevel: 0
+preparedspells:
+    - spellid: arms-of-hadar
+      classid: sorcerer
+    - spellid: sending
+      classid: sorcerer
+    - spellid: telepathic-bond
+      classid: sorcerer
+knowncantrips:
+    - spellid: mind-sliver
+      classid: sorcerer
+    - spellid: mage-hand
+      classid: sorcerer
+    - spellid: minor-illusion
+      classid: sorcerer
+    - spellid: message
+      classid: sorcerer
+    - spellid: shield
+      classid: sorcerer
+    - spellid: mage-armor
+      classid: sorcerer
+    - spellid: chromatic-orb
+      classid: sorcerer
+    - spellid: dissonant-whispers
+      classid: sorcerer
+    - spellid: color-spray
+      classid: sorcerer
+    - spellid: thunderwave
+      classid: sorcerer
+    - spellid: witch-bolt
+      classid: sorcerer
+    - spellid: crown-of-madness
+      classid: sorcerer
+    - spellid: detect-thoughts
+      classid: sorcerer
+    - spellid: shatter
+      classid: sorcerer
+    - spellid: misty-step
+      classid: sorcerer
+    - spellid: hunger-of-hadar
+      classid: sorcerer
+    - spellid: hypnotic-pattern
+      classid: sorcerer
+spellslotsused: {}
+warlockslotsused: 0
+hitdiceused: {}
+activeconcentration: null
+conditions: []
+resources: []
+items:
+    - instanceid: 01KYJQ6AWJEWX2N3CYT2QA7ZVZ
+      definitionid: dagger
+      quantity: 2
+      attuned: false
+    - instanceid: 01KYJQ6AWJEWX2N3CYT4JKP482
+      definitionid: component-pouch
+      quantity: 1
+      attuned: false
+    - instanceid: 01KYJQ6AWJEWX2N3CYT7M6GMFF
+      definitionid: backpack
+      quantity: 1
+      attuned: false
+    - instanceid: 01KYJQ6AWJEWX2N3CYT8VZFN2F
+      definitionid: bedroll
+      quantity: 1
+      attuned: false
+    - instanceid: 01KYJQ6AWJEWX2N3CYTBSAS131
+      definitionid: rations-1
+      quantity: 10
+      attuned: false
+    - instanceid: 01KYJQ6AWJEWX2N3CYTCE3BQRD
+      definitionid: waterskin
+      quantity: 1
+      attuned: false
+    - instanceid: 01KYJQ6AWJEWX2N3CYTFZQK17A
+      definitionid: spellbook
+      quantity: 1
+      attuned: false
+pendingchoices: []
+proficiencies:
+    armor: []
+    weapons:
+        - dagger
+        - dart
+        - sling
+        - quarterstaff
+        - light-crossbow
+    tools: []
+    savingthrows:
+        - CON
+        - CHA
+    skills:
+        arcana: proficient
+        deception: proficient
+        insight: proficient
+        intimidation: proficient
+languages:
+    - Common
+    - Quori
+    - Telepathic
+feats:
+    - ability-score-improvement
+    - aberrant-dragonmark
+inspiration: false
+

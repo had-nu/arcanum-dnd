@@ -1,0 +1,87 @@
+id: efa-items
+name: "Eberron: Forge of the Artificer — Magic Items"
+version: "1.0.0"
+license: OGL
+attribution: "Wizards of the Coast — Eberron: Forge of the Artificer"
+
+items:
+  # ── Magic Items ──────────────────────────────────────
+  - id: boots-of-the-winding-path
+    name: Boots of the Winding Path
+    type: wondrous
+    rarity: uncommon
+    requiresAttunement: true
+    description: |
+      While wearing these boots, you can use a bonus action to teleport up to 15 feet to an unoccupied space you can see. You must have seen the destination space at some point during the current or previous turn.
+
+  - id: dazzling-weapon
+    name: Dazzling Weapon
+    type: weapon
+    rarity: uncommon
+    requiresAttunement: true
+    weapon:
+      bonus: 1
+    description: |
+      You gain a +1 bonus to attack and damage rolls made with this magic weapon. When you hit a creature with it, the target must succeed on a DC 15 Constitution saving throw or be blinded until the start of your next turn.
+
+  - id: helm-of-awareness
+    name: Helm of Awareness
+    type: wondrous
+    rarity: uncommon
+    requiresAttunement: true
+    description: |
+      While wearing this helm, you have advantage on initiative rolls and Wisdom (Perception) checks. You can't be surprised while you are conscious.
+
+  - id: manifold-tool
+    name: Manifold Tool
+    type: wondrous
+    rarity: uncommon
+    requiresAttunement: true
+    description: |
+      This tool can transform into any set of artisan's tools (weighing up to 10 pounds) as an action. It can also replicate thieves' tools, navigator's tools, or any other tool set worth 50 gp or less. You have proficiency with any tools this item replicates.
+
+  - id: mind-sharpener
+    name: Mind Sharpener
+    type: wondrous
+    rarity: uncommon
+    requiresAttunement: true
+    description: |
+      This gemstone has 4 charges. While it is on your person, you can use a reaction when you fail a Constitution saving throw to maintain concentration on a spell to expend 1 charge and succeed instead. The gemstone regains 1d4 expended charges daily at dawn.
+
+  - id: repeating-shot
+    name: Repeating Shot
+    type: weapon
+    rarity: uncommon
+    requiresAttunement: true
+    weapon:
+      bonus: 1
+    description: |
+      This weapon grants a +1 bonus to attack and damage rolls. It ignores the loading property if it has it. If you don't have ammunition for it, it produces its own as part of the attack, which vanishes after the attack.
+
+  - id: repulsion-shield
+    name: Repulsion Shield
+    type: shield
+    rarity: uncommon
+    requiresAttunement: true
+    armor:
+      baseAC: 1
+    description: |
+      This shield has 4 charges. While holding it, you can use a reaction when you are hit by a melee attack to expend 1 charge and push the attacker up to 15 feet away from you. The shield regains 1d4 expended charges daily at dawn.
+
+  - id: returning-weapon
+    name: Returning Weapon
+    type: weapon
+    rarity: uncommon
+    requiresAttunement: true
+    weapon:
+      bonus: 1
+    description: |
+      This weapon grants a +1 bonus to attack and damage rolls. It has the thrown property with a normal range of 20 feet and a long range of 60 feet. Immediately after you make a ranged attack with it, the weapon flies back to your hand.
+
+  - id: spell-refueling-ring
+    name: Spell-Refueling Ring
+    type: ring
+    rarity: uncommon
+    requiresAttunement: true
+    description: |
+      This ring stores spellcasting energy. As an action, you can touch the ring to a willing spellcaster and expend a spell slot of yours to restore one expended spell slot of equal or lower level to the target. The ring can't be used this way again until the next dawn.

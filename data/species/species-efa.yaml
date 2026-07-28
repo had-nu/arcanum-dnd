@@ -1,0 +1,135 @@
+id: efa-species
+name: "Eberron: Forge of the Artificer — Species"
+version: "1.0.0"
+license: OGL
+attribution: "Wizards of the Coast — Eberron: Forge of the Artificer"
+
+species:
+  - id: changeling
+    name: Changeling
+    size: Medium
+    speed:
+      walk: 30
+    creatureType: humanoid
+    traits:
+      - kind: GrantProficiency
+        proficiencySkill: deception
+      - kind: Custom
+        handlerId: species.changeling.shapechanger
+      - kind: Custom
+        handlerId: species.changeling.changeling-instincts
+    languages: [Common]
+    variants:
+      - id: changeling-standard
+        name: Changeling
+        traits: []
+
+  - id: kalashtar
+    name: Kalashtar
+    size: Medium
+    speed:
+      walk: 30
+    creatureType: humanoid
+    traits:
+      - kind: GrantProficiency
+        proficiencySkill: insight
+      - kind: Resistance
+        damageType: psychic
+      - kind: Custom
+        handlerId: species.kalashtar.dual-mind
+      - kind: Custom
+        handlerId: species.kalashtar.mind-link
+      - kind: Custom
+        handlerId: species.kalashtar.severed-from-dreams
+    languages: [Common, Quori]
+    variants:
+      - id: kalashtar-standard
+        name: Kalashtar
+        traits: []
+
+  - id: khoravar
+    name: Khoravar
+    size: Medium
+    speed:
+      walk: 30
+    creatureType: humanoid
+    traits:
+      - kind: GrantProficiency
+        proficiencySkill: persuasion
+      - kind: GrantProficiency
+        proficiencySkill: choose:1
+        from: [deception, insight, intimidation, persuasion]
+      - kind: Custom
+        handlerId: species.khoravar.fey-ancestry
+      - kind: Custom
+        handlerId: species.khoravar.khoravar-versatility
+    languages: [Common, Elvish]
+    variants:
+      - id: khoravar-standard
+        name: Khoravar
+        traits: []
+
+  - id: shifter
+    name: Shifter
+    size: Medium
+    speed:
+      walk: 30
+    creatureType: humanoid
+    traits:
+      - kind: GrantSense
+        language: Darkvision 60ft
+      - kind: GrantProficiency
+        proficiencySkill: perception
+      - kind: Custom
+        handlerId: species.shifter.shifting
+      - kind: Custom
+        handlerId: species.shifter.bestial-instincts
+    languages: [Common]
+    variants:
+      - id: beasthide
+        name: Beasthide Shifter
+        traits:
+          - kind: Custom
+            handlerId: species.shifter.beasthide
+      - id: longtooth
+        name: Longtooth Shifter
+        traits:
+          - kind: Custom
+            handlerId: species.shifter.longtooth
+      - id: swiftstride
+        name: Swiftstride Shifter
+        traits:
+          - kind: Custom
+            handlerId: species.shifter.swiftstride
+      - id: wildhunt
+        name: Wildhunt Shifter
+        traits:
+          - kind: Custom
+            handlerId: species.shifter.wildhunt
+
+  - id: warforged
+    name: Warforged
+    size: Medium
+    speed:
+      walk: 30
+    creatureType: construct
+    traits:
+      - kind: Custom
+        handlerId: species.warforged.constructed-resilience
+      - kind: GrantProficiency
+        proficiencySkill: choose:1
+        from: [athletics, history, insight, investigation, medicine, perception, survival]
+      - kind: GrantToolProficiency
+        tool: choose:1
+        from: [artisans-tools, gaming-set, herbalism-kit, musical-instrument, thieves-tools, vehicles-land, vehicles-water]
+      - kind: Custom
+        handlerId: species.warforged.sentry-rest
+      - kind: Custom
+        handlerId: species.warforged.integrated-protection
+      - kind: Custom
+        handlerId: species.warforged.specialized-design
+    languages: [Common]
+    variants:
+      - id: warforged-standard
+        name: Warforged
+        traits: []

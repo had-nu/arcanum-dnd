@@ -17,11 +17,13 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/hadnu/arcanum/internal/auto"
 	contentpack "github.com/hadnu/arcanum/internal/content"
 	"github.com/hadnu/arcanum/internal/database"
 	"github.com/hadnu/arcanum/internal/engine"
 	"github.com/hadnu/arcanum/internal/engine/derive"
 	"github.com/hadnu/arcanum/internal/config"
+	"github.com/hadnu/arcanum/internal/query"
 	"github.com/hadnu/arcanum/internal/rng"
 	"github.com/hadnu/arcanum/internal/schemas/events"
 	scontent "github.com/hadnu/arcanum/internal/schemas/content"
@@ -30,18 +32,24 @@ import (
 )
 
 type Server struct {
-	content      scontent.ResolvedContent
-	engine       *engine.Engine
-	campaign     engine.Campaign
-	config       *config.Config
-	db           *sql.DB
-	eventStore   database.EventStore
+	content       scontent.ResolvedContent
+	engine        *engine.Engine
+	campaign      engine.Campaign
+	config        *config.Config
+	db            *sql.DB
+	eventStore    database.EventStore
 	snapshotStore database.SnapshotStore
+	validator     *engine.BuildValidator
+	autoSelector  *auto.AutoSelector
+	eventGen      *engine.EventGenerator
+	querier       *query.Querier
 }
 
+// API-level build request matching the frontend's simple format.
+// Converted to engine.BuildRequest internally.
 type BuildRequest struct {
 	Name           string              `json:"name"`
-	Classes        []classReq          `json:"classes"`
+	Classes        []ClassBuildEntry   `json:"classes"`
 	BackgroundID   types.BackgroundID  `json:"backgroundId"`
 	SpeciesID      types.SpeciesID     `json:"speciesId"`
 	SpeciesVariant string              `json:"speciesVariant,omitempty"`
@@ -53,9 +61,10 @@ type BuildRequest struct {
 	Feats          []types.FeatID      `json:"feats,omitempty"`
 }
 
-type classReq struct {
-	ID    types.ClassID `json:"id"`
-	Level int           `json:"level"`
+type ClassBuildEntry struct {
+	ID         types.ClassID     `json:"id"`
+	Level      int               `json:"level"`
+	SubclassID *types.SubClassID `json:"subclassId,omitempty"`
 }
 
 type BuildResponse struct {
@@ -250,6 +259,12 @@ func main() {
 	}
 	log.Println("Database seeded from YAML content")
 
+	if err := database.ImportSpellsCSV(db, filepath.Join(cfg.Data.ContentDir, "src", "all-Spells.csv")); err != nil {
+		log.Printf("Warning: CSV spell import failed: %v", err)
+	} else {
+		log.Println("CSV spell import complete")
+	}
+
 	withToolsDir := filepath.Join("..", "5etools-src", "data")
 	if _, err := os.Stat(withToolsDir); err == nil {
 		if err := database.Import5eFeatures(db, withToolsDir); err != nil {
@@ -276,7 +291,19 @@ func main() {
 		log.Fatalf("Failed to create campaign: %v", err)
 	}
 
-	srv := &Server{content: content, engine: e, campaign: campaign, config: cfg, db: db, eventStore: eventStore, snapshotStore: snapshotStore}
+	srv := &Server{
+		content:       content,
+		engine:        e,
+		campaign:      campaign,
+		config:        cfg,
+		db:            db,
+		eventStore:    eventStore,
+		snapshotStore: snapshotStore,
+		validator:     engine.NewBuildValidator(content),
+		autoSelector:  auto.NewAutoSelector(content),
+		eventGen:      engine.NewEventGenerator(content),
+		querier:       query.New(db),
+	}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", srv.handleHealth)
@@ -395,72 +422,138 @@ func (s *Server) handleReactSPA(staticDir string) http.HandlerFunc {
 func (s *Server) handleContent(w http.ResponseWriter, r *http.Request) {
 	resp := ContentResponse{}
 
-	for _, c := range s.content.Classes {
-		saves := make([]string, len(c.SavingThrows))
-		for i, s := range c.SavingThrows { saves[i] = string(s) }
-		primary := make([]string, len(c.PrimaryAbility))
-		for i, a := range c.PrimaryAbility { primary[i] = string(a) }
+	classes, err := s.querier.ListClasses()
+	if err == nil {
+		for _, cr := range classes {
+			saves, _ := s.querier.GetClassSavingThrows(cr.ID)
+			saveStrs := make([]string, len(saves))
+			for i, sv := range saves {
+				saveStrs[i] = string(sv)
+			}
 
-		var skillChoices int
-		var skillPool []string
-		for _, si := range c.Proficiencies.Skills {
-			skillChoices = si.Choose
-			for _, sk := range si.From { skillPool = append(skillPool, string(sk)) }
-			break
-		}
+			primary := []string{}
+			if cr.SpellcastingAbility != "" {
+				primary = []string{cr.SpellcastingAbility}
+			}
 
-		hasSpells := false
-		subclassLevel := 0
-		var features []featureDef
-		for _, lvl := range c.Levels {
-			if len(lvl.SpellSlots) > 0 { hasSpells = true }
-			for _, fid := range lvl.Features {
-				if subclassLevel == 0 && len(fid) > 9 && fid[len(fid)-9:] == ".subclass" {
-					subclassLevel = lvl.Level
-				}
-				if f, ok := s.content.Feats[fid]; ok {
-					features = append(features, featureDef{Level: lvl.Level, ID: string(fid), Name: f.Name})
+			profs, _ := s.querier.GetClassProficiencies(cr.ID)
+			var skillPool []string
+			skillChoices := 0
+			for _, p := range profs {
+				if p.Category == "skill" {
+					if p.SkillChoose > 0 {
+						skillChoices = p.SkillChoose
+					}
+					if p.SkillFrom != "" {
+						skillPool = append(skillPool, string(p.SkillFrom))
+					}
 				}
 			}
-			if lvl.Feat != nil {
-				if f, ok := s.content.Feats[*lvl.Feat]; ok {
-					features = append(features, featureDef{Level: lvl.Level, ID: string(*lvl.Feat), Name: f.Name})
+
+			subs, _ := s.querier.ListSubclasses(cr.ID)
+			subClasses := make([]subClassEntry, len(subs))
+			for i, sc := range subs {
+				subClasses[i] = subClassEntry{ID: string(sc.ID), Name: sc.Name, Description: sc.Description}
+			}
+
+			hasSpells := cr.SpellcastingType != ""
+
+			features := func() []featureDef {
+				frows, err := s.db.Query(`
+					SELECT level, id, name FROM class_features WHERE class_id = ? ORDER BY level, id
+				`, string(cr.ID))
+				if err != nil {
+					return nil
+				}
+				defer frows.Close()
+				var result []featureDef
+				for frows.Next() {
+					var fd featureDef
+					frows.Scan(&fd.Level, &fd.ID, &fd.Name)
+					result = append(result, fd)
+				}
+				return result
+			}()
+
+			var spellcasting *SpellcastingEntry
+			if hasSpells {
+				scEntry := &SpellcastingEntry{
+					Type:    cr.SpellcastingType,
+					Ability: cr.SpellcastingAbility,
+				}
+				for lvl := 1; lvl <= 20; lvl++ {
+					cl, _ := s.querier.GetClassLevel(cr.ID, lvl)
+					if cl == nil {
+						continue
+					}
+					if cl.CantripsKnown > 0 {
+						scEntry.CantripsKnown = append(scEntry.CantripsKnown, cl.CantripsKnown)
+					}
+					if cl.PreparedSpells > 0 {
+						scEntry.PreparedSpells = append(scEntry.PreparedSpells, cl.PreparedSpells)
+					}
+					if cl.SpellsKnown > 0 {
+						scEntry.SpellsKnown = append(scEntry.SpellsKnown, cl.SpellsKnown)
+					}
+				}
+				slots := make(map[string]int)
+				for lvl := 1; lvl <= 20; lvl++ {
+					sl, _ := s.querier.GetClassSpellSlots(cr.ID, lvl)
+					for k, v := range sl {
+						slots[strconv.Itoa(k)] = v
+					}
+				}
+				if len(slots) > 0 {
+					scEntry.SpellSlots = slots
+				}
+				scEntry.RitualCasting = cr.RitualCasting
+				spellcasting = scEntry
+			}
+
+			resp.Classes = append(resp.Classes, contentEntry{
+				ID: string(cr.ID), Name: cr.Name, HitDie: cr.HitDie,
+				SavingThrows: saveStrs, PrimaryAbility: primary,
+				SkillChoices: skillChoices, SkillPool: skillPool,
+				Spellcaster: hasSpells, SubClasses: subClasses, SubclassLevel: cr.SubclassLevel,
+				Features: features, Spellcasting: spellcasting,
+			})
+		}
+	}
+
+	func() {
+		bgRows, err := s.db.Query(`SELECT id, name, feat_id FROM backgrounds ORDER BY name`)
+		if err != nil {
+			return
+		}
+		defer bgRows.Close()
+		for bgRows.Next() {
+			var id, name string
+			var featID sql.NullString
+			bgRows.Scan(&id, &name, &featID)
+			skills, _ := s.querier.GetBackgroundSkills(types.BackgroundID(id))
+			skillStrs := make([]string, len(skills))
+			for i, sk := range skills {
+				skillStrs[i] = string(sk)
+			}
+			feat := ""
+			if featID.Valid {
+				if f, ok := s.content.Feats[types.FeatID(featID.String)]; ok {
+					feat = f.Name
 				}
 			}
+			resp.Backgrounds = append(resp.Backgrounds, contentEntry{
+				ID: id, Name: name, Skills: skillStrs, Feat: feat,
+			})
 		}
+	}()
 
-		var subClasses []subClassEntry
-		for _, sc := range c.SubClasses {
-			subClasses = append(subClasses, subClassEntry{ID: string(sc.ID), Name: sc.Name, Description: sc.Description})
+	spRows, err := s.querier.ListSpecies()
+	if err == nil {
+		for _, sp := range spRows {
+			resp.Species = append(resp.Species, speciesEntry{
+				ID: string(sp.ID), Name: sp.Name, Size: sp.Size, Speed: sp.SpeedWalk,
+			})
 		}
-
-		resp.Classes = append(resp.Classes, contentEntry{
-			ID: string(c.ID), Name: c.Name, HitDie: string(c.HitDie),
-			SavingThrows: saves, PrimaryAbility: primary,
-			SkillChoices: skillChoices, SkillPool: skillPool,
-			Spellcaster: hasSpells, SubClasses: subClasses, SubclassLevel: subclassLevel,
-			Features: features, Spellcasting: buildSpellcastingEntry(c, s.content),
-		})
-	}
-
-	for _, bg := range s.content.Backgrounds {
-		skills := make([]string, len(bg.Skills))
-		for i, sk := range bg.Skills { skills[i] = string(sk) }
-		feat := ""
-		if bg.Feat != nil {
-			if f, ok := s.content.Feats[*bg.Feat]; ok { feat = f.Name }
-		}
-		resp.Backgrounds = append(resp.Backgrounds, contentEntry{
-			ID: string(bg.ID), Name: bg.Name, Skills: skills, Feat: feat,
-		})
-	}
-
-	for _, sp := range s.content.Species {
-		var variants []variantEntry
-		for _, v := range sp.Variants { variants = append(variants, variantEntry{ID: v.ID, Name: v.Name}) }
-		resp.Species = append(resp.Species, speciesEntry{
-			ID: string(sp.ID), Name: sp.Name, Size: string(sp.Size), Speed: sp.Speed.Walk, Variants: variants,
-		})
 	}
 
 	for _, ab := range types.AllAbilityScores {
@@ -486,87 +579,104 @@ func (s *Server) handleContent(w http.ResponseWriter, r *http.Request) {
 		resp.Skills = append(resp.Skills, skillEntry{ID: string(sk), Name: names[sk], Ability: string(types.SkillAbility[sk])})
 	}
 
-	for _, c := range s.content.Classes {
-		for _, lvl := range c.Levels {
-			if len(lvl.SpellSlots) > 0 {
-				resp.SpellCasterClasses = append(resp.SpellCasterClasses, string(c.ID))
-				break
-			}
+	featRows, err := s.querier.ListFeats()
+	if err == nil {
+		feats := make(map[string]featAPIEntry)
+		for _, f := range featRows {
+			feats[string(f.ID)] = featAPIEntry{ID: string(f.ID), Name: f.Name}
 		}
+		resp.Feats = feats
 	}
 
-	feats := make(map[string]featAPIEntry)
-	for fid, f := range s.content.Feats {
-		feats[string(fid)] = featAPIEntry{ID: string(fid), Name: f.Name}
-	}
-	resp.Feats = feats
+	func() {
+		scRows, err := s.db.Query(`SELECT id FROM classes WHERE spellcasting_type != '' ORDER BY name`)
+		if err != nil {
+			return
+		}
+		defer scRows.Close()
+		for scRows.Next() {
+			var id string
+			scRows.Scan(&id)
+			resp.SpellCasterClasses = append(resp.SpellCasterClasses, id)
+		}
+	}()
 
 	writeJSON(w, resp)
 }
 
 func (s *Server) handleSpells(w http.ResponseWriter, r *http.Request) {
-	classID := r.URL.Query().Get("class")
-	maxLevel := r.URL.Query().Get("level")
+	classStr := r.URL.Query().Get("class")
+	maxLevelStr := r.URL.Query().Get("level")
 	levelStr := r.URL.Query().Get("lvl")
 
-	resp := SpellsResponse{Leveled: make([][]spellEntry, 9)}
+	resp := SpellsResponse{
+		Cantrips: []spellEntry{},
+		Leveled:  make([][]spellEntry, 9),
+	}
+	for i := range resp.Leveled {
+		resp.Leveled[i] = []spellEntry{}
+	}
 
-	if classID != "" {
-		cls, ok := s.content.Classes[types.ClassID(classID)]
-		if ok {
-			requestedLevel := 1
-			if levelStr != "" {
-				requestedLevel = atoi(levelStr)
-				if requestedLevel < 1 || requestedLevel > 20 { requestedLevel = 1 }
+	if classStr != "" {
+		classID := types.ClassID(classStr)
+		classLevel := 1
+		if levelStr != "" {
+			classLevel = atoi(levelStr)
+			if classLevel < 1 {
+				classLevel = 1
 			}
-
-			var levelEntry *scontent.LevelEntry
-			for _, lvl := range cls.Levels {
-				if lvl.Level == requestedLevel { levelEntry = &lvl; break }
+			if classLevel > 20 {
+				classLevel = 20
 			}
-			if levelEntry == nil {
-				for _, lvl := range cls.Levels {
-					if lvl.Level <= requestedLevel {
-						if levelEntry == nil || lvl.Level > levelEntry.Level { levelEntry = &lvl }
-					}
+		}
+		spells, err := s.querier.GetClassSpellList(classID, classLevel)
+		if err == nil {
+			for _, sid := range spells {
+				sp, err := s.querier.GetSpell(sid)
+				if err != nil || sp == nil {
+					continue
 				}
-			}
-
-			if levelEntry != nil && len(levelEntry.Spells) > 0 {
-				for _, spellID := range levelEntry.Spells {
-					if sp, ok := s.content.Spells[spellID]; ok {
-						entry := spellEntry{
-							ID: string(sp.ID), Name: sp.Name, Level: sp.Level, School: string(sp.School),
-							Time: sp.CastingTime, Range: sp.Range, Duration: sp.Duration,
-							Concentration: sp.Concentration, Ritual: sp.Ritual, Attack: sp.Attack,
-						}
-						if sp.Damage != nil { entry.Damage = sp.Damage.Dice }
-						if sp.Save != nil { entry.Save = string(*sp.Save) }
-						if sp.Level == 0 {
-							resp.Cantrips = append(resp.Cantrips, entry)
-						} else if sp.Level <= 9 && sp.Level >= 1 {
-							if maxLevel == "" || sp.Level <= atoi(maxLevel) {
-								resp.Leveled[sp.Level-1] = append(resp.Leveled[sp.Level-1], entry)
-							}
-						}
+				entry := spellEntry{
+					ID: string(sp.ID), Name: sp.Name, Level: sp.Level, School: sp.School,
+					Time: sp.CastingTime, Range: sp.Range, Duration: sp.Duration,
+					Concentration: sp.Concentration, Ritual: sp.Ritual, Attack: sp.Attack,
+				}
+				if sp.DamageDice != "" {
+					entry.Damage = sp.DamageDice
+				}
+				if sp.SaveAbility != "" {
+					entry.Save = sp.SaveAbility
+				}
+				if sp.Level == 0 {
+					resp.Cantrips = append(resp.Cantrips, entry)
+				} else if sp.Level >= 1 && sp.Level <= 9 {
+					if maxLevelStr == "" || sp.Level <= atoi(maxLevelStr) {
+						resp.Leveled[sp.Level-1] = append(resp.Leveled[sp.Level-1], entry)
 					}
 				}
 			}
 		}
 	} else {
-		for _, sp := range s.content.Spells {
-			entry := spellEntry{
-				ID: string(sp.ID), Name: sp.Name, Level: sp.Level, School: string(sp.School),
-				Time: sp.CastingTime, Range: sp.Range, Duration: sp.Duration,
-				Concentration: sp.Concentration, Ritual: sp.Ritual, Attack: sp.Attack,
-			}
-			if sp.Damage != nil { entry.Damage = sp.Damage.Dice }
-			if sp.Save != nil { entry.Save = string(*sp.Save) }
-			if sp.Level == 0 {
-				resp.Cantrips = append(resp.Cantrips, entry)
-			} else if sp.Level <= 9 && sp.Level >= 1 {
-				if maxLevel == "" || sp.Level <= atoi(maxLevel) {
-					resp.Leveled[sp.Level-1] = append(resp.Leveled[sp.Level-1], entry)
+		spells, err := s.querier.ListSpells(nil)
+		if err == nil {
+			for _, sp := range spells {
+				entry := spellEntry{
+					ID: string(sp.ID), Name: sp.Name, Level: sp.Level, School: sp.School,
+					Time: sp.CastingTime, Range: sp.Range, Duration: sp.Duration,
+					Concentration: sp.Concentration, Ritual: sp.Ritual, Attack: sp.Attack,
+				}
+				if sp.DamageDice != "" {
+					entry.Damage = sp.DamageDice
+				}
+				if sp.SaveAbility != "" {
+					entry.Save = sp.SaveAbility
+				}
+				if sp.Level == 0 {
+					resp.Cantrips = append(resp.Cantrips, entry)
+				} else if sp.Level >= 1 && sp.Level <= 9 {
+					if maxLevelStr == "" || sp.Level <= atoi(maxLevelStr) {
+						resp.Leveled[sp.Level-1] = append(resp.Leveled[sp.Level-1], entry)
+					}
 				}
 			}
 		}
@@ -601,7 +711,7 @@ func (s *Server) handleFeatures(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rows, err := s.db.Query(`
-		SELECT class_id, name, level, COALESCE(source, ''), COALESCE(entries_json, '')
+		SELECT class_id, name, level, '' as source, COALESCE(details_json, '')
 		FROM class_features
 		WHERE class_id = ?
 		ORDER BY level, id
@@ -648,7 +758,7 @@ func (s *Server) handleFeatures(w http.ResponseWriter, r *http.Request) {
 		resp.SubclassName = subclassName
 
 		srows, err := s.db.Query(`
-			SELECT subclass_id, name, level, COALESCE(source, ''), COALESCE(entries_json, '')
+			SELECT subclass_id, name, level, '' as source, COALESCE(details_json, '')
 			FROM subclass_features
 			WHERE subclass_id = ?
 			ORDER BY level, id
@@ -752,25 +862,89 @@ func (s *Server) handleBuild(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
-	if req.Name == "" { http.Error(w, "Name is required", http.StatusBadRequest); return }
-	if len(req.Classes) == 0 { http.Error(w, "At least one class required", http.StatusBadRequest); return }
-	if _, ok := s.content.Species[req.SpeciesID]; !ok { http.Error(w, "Invalid species", http.StatusBadRequest); return }
-	if req.Level < 1 || req.Level > 20 { req.Level = 1 }
+	if req.Name == "" {
+		http.Error(w, "Name is required", http.StatusBadRequest)
+		return
+	}
+	if len(req.Classes) == 0 {
+		http.Error(w, "At least one class required", http.StatusBadRequest)
+		return
+	}
 
-	totalHP := 0
-	saveSet := map[types.AbilityScore]bool{}
-	var classNames []string
+	// Convert simple API format to engine.BuildRequest
+	engineReq := apiToEngineReq(req, s.content)
+
+	if engineReq.AbilityMethod == "" {
+		engineReq.AbilityMethod = "standard_array"
+	}
+
+	// Phase 1: Validate
+	if err := s.validator.Validate(engineReq); err != nil {
+		http.Error(w, "Validation: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Phase 2: Fill defaults for anything not specified
+	s.autoSelector.FillDefaults(&engineReq, req.Name)
+
+	// Phase 3: Generate events
+	evts, err := s.eventGen.BuildCharacterEvents(engineReq)
+	if err != nil {
+		http.Error(w, "Build error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Phase 4: Commit to engine
+	ctx := r.Context()
+	newCampaign, err := s.engine.Commit(ctx, s.campaign, evts)
+	if err != nil {
+		http.Error(w, "Commit error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	s.campaign = newCampaign
+
+	// Find the character ID from the created event
+	var charID types.CharacterID
+	for _, e := range evts {
+		if ce, ok := e.(*events.CharacterCreatedEvent); ok {
+			charID = ce.CharacterID
+			break
+		}
+	}
+	if charID == (types.CharacterID{}) {
+		http.Error(w, "Character not created", http.StatusInternalServerError)
+		return
+	}
+
+	char, ok := s.campaign.State.Characters[charID]
+	if !ok {
+		http.Error(w, "Character not found in state", http.StatusInternalServerError)
+		return
+	}
+
+	// Phase 5: Derive character sheet
+	sheet := derive.BuildCharacterSheet(*char, s.content)
+
+	// Build response features
+	classNames := make([]string, len(req.Classes))
+	for i, cr := range req.Classes {
+		if cls, ok := s.content.Classes[cr.ID]; ok {
+			classNames[i] = cls.Name
+		} else {
+			classNames[i] = string(cr.ID)
+		}
+	}
+
 	var allFeatures []featureView
-
 	for _, cr := range req.Classes {
 		cls, ok := s.content.Classes[cr.ID]
-		if !ok { http.Error(w, "Invalid class: "+string(cr.ID), http.StatusBadRequest); return }
-		totalHP += computeHP(cls.HitDie, req.AbilityScores.CON, cr.Level)
-		for _, s := range cls.SavingThrows { saveSet[s] = true }
-		classNames = append(classNames, cls.Name)
-
+		if !ok {
+			continue
+		}
 		for _, lvl := range cls.Levels {
-			if lvl.Level > cr.Level { continue }
+			if lvl.Level > cr.Level {
+				continue
+			}
 			for _, fid := range lvl.Features {
 				allFeatures = append(allFeatures, featureView{
 					Class: cls.Name, Level: lvl.Level, ID: string(fid), Name: featureName(s.content, fid),
@@ -784,117 +958,87 @@ func (s *Server) handleBuild(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if totalHP < 1 { totalHP = 1 }
-	saves := make([]types.AbilityScore, 0, len(saveSet))
-	for s := range saveSet { saves = append(saves, s) }
-
-	skillLevels := map[types.Skill]types.ProficiencyLevel{}
-	bg, hasBg := s.content.Backgrounds[req.BackgroundID]
-	if hasBg {
-		for _, sk := range bg.Skills { skillLevels[sk] = types.ProficiencyProficient }
-	}
-	for _, sk := range req.Skills {
-		if _, ok := skillLevels[sk]; !ok { skillLevels[sk] = types.ProficiencyProficient }
-	}
-
-	var featIDs []types.FeatID
-	for _, f := range req.Feats {
-		fid := types.FeatID(f)
-		if _, ok := s.content.Feats[fid]; ok { featIDs = append(featIDs, fid) }
-	}
-	if hasBg && bg.Feat != nil {
-		if _, ok := s.content.Feats[*bg.Feat]; ok { featIDs = append(featIDs, *bg.Feat) }
-	}
-
-	evtEvt := events.CharacterCreatedEvent{
-		CharacterID:    types.NewCharacterID(),
-		Name:           req.Name,
-		SpeciesID:      req.SpeciesID,
-		SpeciesVariant: req.SpeciesVariant,
-		BackgroundID:   req.BackgroundID,
-		Level:          req.Level,
-		AbilityScores:  req.AbilityScores,
-		MaxHP:          totalHP,
-		SavingThrows:   saves,
-		Skills:         skillLevels,
-		Spells:         req.Spells,
-		Feats:          featIDs,
-		AbilityMethod:  req.AbilityMethod,
-	}
-	for _, cr := range req.Classes {
-		evtEvt.Classes = append(evtEvt.Classes, events.ClassEntry{ClassID: cr.ID, Level: cr.Level})
-	}
-
-	evt := &events.CharacterCreatedEvent{
-		CharacterID:    evtEvt.CharacterID,
-		Name:           evtEvt.Name,
-		SpeciesID:      evtEvt.SpeciesID,
-		SpeciesVariant: evtEvt.SpeciesVariant,
-		BackgroundID:   evtEvt.BackgroundID,
-		Classes:        evtEvt.Classes,
-		Level:          evtEvt.Level,
-		AbilityScores:  evtEvt.AbilityScores,
-		MaxHP:          evtEvt.MaxHP,
-		SavingThrows:   evtEvt.SavingThrows,
-		Skills:         evtEvt.Skills,
-		Spells:         evtEvt.Spells,
-		Feats:          evtEvt.Feats,
-		AbilityMethod:  evtEvt.AbilityMethod,
-	}
-	ctx := r.Context()
-	newCampaign, err := s.engine.Commit(ctx, s.campaign, []events.Event{evt})
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	s.campaign = newCampaign
-	char, ok := s.campaign.State.Characters[evtEvt.CharacterID]
-	if !ok { http.Error(w, "Character not found in state", http.StatusInternalServerError); return }
-
-	sheet := derive.BuildCharacterSheet(*char, s.content)
-	for i, cv := range sheet.Classes {
-		if c, ok := s.content.Classes[cv.ID]; ok { sheet.Classes[i].Name = c.Name }
-	}
-
 	yamlBytes, _ := yaml.Marshal(sheet)
 
 	resp := BuildResponse{
-		ID: evtEvt.CharacterID, Sheet: &sheet, Classes: classNames, Event: evt,
-		YAML: string(yamlBytes), Features: allFeatures,
+		ID: charID, Sheet: &sheet, Classes: classNames,
+		Event: evts[0], YAML: string(yamlBytes), Features: allFeatures,
 	}
 	writeJSON(w, resp)
 }
 
-func buildSpellcastingEntry(cls *scontent.Class, content scontent.ResolvedContent) *SpellcastingEntry {
-	if cls.Spellcasting == nil { return nil }
-	entry := &SpellcastingEntry{
-		Type: string(cls.Spellcasting.Type), Ability: string(cls.Spellcasting.Ability),
-		RitualCasting: cls.Spellcasting.RitualCasting,
+func apiToEngineReq(req BuildRequest, content scontent.ResolvedContent) engine.BuildRequest {
+	classes := make([]engine.ClassBuildEntry, len(req.Classes))
+	for i, c := range req.Classes {
+		classes[i] = engine.ClassBuildEntry{
+			ID:         c.ID,
+			Level:      c.Level,
+			SubclassID: c.SubclassID,
+		}
 	}
 
-	for _, lvl := range cls.Levels {
-		if lvl.CantripsKnown > 0 { entry.CantripsKnown = append(entry.CantripsKnown, lvl.CantripsKnown) }
-		if lvl.PreparedSpells > 0 { entry.PreparedSpells = append(entry.PreparedSpells, lvl.PreparedSpells) }
-		if lvl.SpellsKnown > 0 { entry.SpellsKnown = append(entry.SpellsKnown, lvl.SpellsKnown) }
-		if lvl.SpellSlots != nil {
-			if entry.SpellSlots == nil { entry.SpellSlots = make(map[string]int) }
-			for k, v := range lvl.SpellSlots { entry.SpellSlots[strconv.Itoa(k)] = v }
-		}
-		if len(lvl.Spells) > 0 {
-			if entry.SpellLists == nil { entry.SpellLists = make(map[int][]string) }
-			spellNames := make([]string, len(lvl.Spells))
-			for i, spellID := range lvl.Spells {
-				if sp, ok := content.Spells[spellID]; ok {
-					spellNames[i] = sp.Name
-				} else {
-					spellNames[i] = string(spellID)
+	skills := make([]engine.SkillChoice, len(req.Skills))
+	for i, sk := range req.Skills {
+		source := "class"
+		if bg, ok := content.Backgrounds[req.BackgroundID]; ok {
+			for _, bgSk := range bg.Skills {
+				if bgSk == sk {
+					source = "background"
+					break
 				}
 			}
-			entry.SpellLists[lvl.Level] = spellNames
+		}
+		skills[i] = engine.SkillChoice{Skill: sk, Source: source}
+	}
+
+	spells := make([]engine.SpellChoice, len(req.Spells))
+	for i, sp := range req.Spells {
+		lvl := 0
+		if spell, ok := content.Spells[sp]; ok {
+			lvl = spell.Level
+		}
+		spells[i] = engine.SpellChoice{SpellID: sp, Source: "class", Level: lvl}
+	}
+
+	feats := make([]engine.FeatChoice, len(req.Feats))
+	for i, f := range req.Feats {
+		feats[i] = engine.FeatChoice{FeatID: f, Level: 1}
+	}
+
+	// Infer subclass choices from class entries
+	subclassChoices := make([]engine.SubclassChoice, 0)
+	for _, c := range req.Classes {
+		if c.SubclassID != nil {
+			subclassChoices = append(subclassChoices, engine.SubclassChoice{
+				ClassID:    c.ID,
+				SubclassID: *c.SubclassID,
+				Level:      0,
+			})
 		}
 	}
-	if cls.Spellcasting.RitualCasting { entry.RitualCasting = true }
-	return entry
+
+	return engine.BuildRequest{
+		Name:            req.Name,
+		SpeciesID:       req.SpeciesID,
+		SpeciesVariant:  stringPtr(req.SpeciesVariant),
+		BackgroundID:    req.BackgroundID,
+		Classes:         classes,
+		Level:           req.Level,
+		AbilityScores:   req.AbilityScores,
+		AbilityMethod:   req.AbilityMethod,
+		Skills:          skills,
+		Spells:          spells,
+		Feats:           feats,
+		Equipment:       []engine.EquipmentChoice{},
+		SubclassChoices: subclassChoices,
+	}
+}
+
+func stringPtr(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
 }
 
 func featureName(content scontent.ResolvedContent, fid types.FeatID) string {
@@ -1006,10 +1150,16 @@ func sanitizeName(name string) string {
 	return s
 }
 
-func charactersDir() string { return "data/characters" }
+func (s *Server) charactersDir() string {
+	dir := s.config.Data.CharactersDir
+	if dir == "" {
+		dir = "char"
+	}
+	return dir
+}
 
 func (s *Server) handleListCharacters(w http.ResponseWriter, r *http.Request) {
-	dir := charactersDir()
+	dir := s.charactersDir()
 	entries, err := os.ReadDir(dir)
 	if err != nil { writeJSON(w, []CharacterSummary{}); return }
 
@@ -1034,43 +1184,195 @@ func (s *Server) handleGetCharacter(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 	if name == "" { http.Error(w, "Name required", http.StatusBadRequest); return }
 	safe := sanitizeName(name)
-	data, err := os.ReadFile(filepath.Join(charactersDir(), safe+".yaml"))
+	data, err := os.ReadFile(filepath.Join(s.charactersDir(), safe+".yaml"))
 	if err != nil { http.Error(w, "Character not found", http.StatusNotFound); return }
 	var ch SavedCharacter
 	if err := yaml.Unmarshal(data, &ch); err != nil { http.Error(w, "Invalid character data", http.StatusInternalServerError); return }
 	writeJSON(w, ch)
 }
 
+// SaveCharacterPayload is what the frontend sends to save a character.
+type SaveCharacterPayload struct {
+	Request BuildRequest          `json:"request"`
+	Sheet   *derive.CharacterSheet `json:"sheet,omitempty"`
+}
+
 func (s *Server) handleSaveCharacter(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
-	var ch SavedCharacter
-	if err := json.NewDecoder(r.Body).Decode(&ch); err != nil { http.Error(w, "Invalid JSON", http.StatusBadRequest); return }
-	if name == "" { name = ch.Name }
+
+	var payload SaveCharacterPayload
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	req := payload.Request
+	if name == "" { name = req.Name }
 	if name == "" { http.Error(w, "Name required", http.StatusBadRequest); return }
-	if ch.Abilities == nil { ch.Abilities = make(map[string]int) }
-	if ch.ProgressionType == "" { ch.ProgressionType = "milestone" }
-	if ch.CreatedAt == "" { ch.CreatedAt = time.Now().Format(time.RFC3339) }
-	ch.UpdatedAt = time.Now().Format(time.RFC3339)
 
-	totalLevel := 0
-	for _, c := range ch.Classes { totalLevel += c.Level }
-	ch.Level = totalLevel
+	// If no sheet provided, run the build pipeline
+	var sheet derive.CharacterSheet
+	if payload.Sheet != nil {
+		sheet = *payload.Sheet
+	} else {
+		engineReq := apiToEngineReq(req, s.content)
+		if engineReq.AbilityMethod == "" {
+			engineReq.AbilityMethod = "standard_array"
+		}
+		if err := s.validator.Validate(engineReq); err != nil {
+			http.Error(w, "Validation: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+		s.autoSelector.FillDefaults(&engineReq, req.Name)
+		evts, err := s.eventGen.BuildCharacterEvents(engineReq)
+		if err != nil {
+			http.Error(w, "Build error: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		ctx := r.Context()
+		newCampaign, err := s.engine.Commit(ctx, s.campaign, evts)
+		if err != nil {
+			http.Error(w, "Commit error: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		s.campaign = newCampaign
 
-	data, err := yaml.Marshal(ch)
-	if err != nil { http.Error(w, "Failed to marshal character", http.StatusInternalServerError); return }
+		var charID types.CharacterID
+		for _, e := range evts {
+			if ce, ok := e.(*events.CharacterCreatedEvent); ok {
+				charID = ce.CharacterID
+				break
+			}
+		}
+		if charID == (types.CharacterID{}) {
+			http.Error(w, "Character not created", http.StatusInternalServerError)
+			return
+		}
+		char, ok := s.campaign.State.Characters[charID]
+		if !ok {
+			http.Error(w, "Character not found in state", http.StatusInternalServerError)
+			return
+		}
+		sheet = derive.BuildCharacterSheet(*char, s.content)
+	}
 
+	subclassID := ""
+	if len(sheet.Classes) > 0 && sheet.Classes[0].SubClass != nil {
+		subclassID = string(*sheet.Classes[0].SubClass)
+	}
+	ch := SavedCharacter{
+		Name:           name,
+		Level:          sheet.Level,
+		BackgroundID:   sheet.Background,
+		SpeciesID:      sheet.Species,
+		SubclassID:     subclassID,
+		AbilityMethod:  "standard",
+		Abilities:      make(map[string]int),
+		Skills:         make([]string, 0),
+		ProgressionType: "milestone",
+		CreatedAt:      time.Now().Format(time.RFC3339),
+		UpdatedAt:      time.Now().Format(time.RFC3339),
+	}
+	for _, c := range sheet.Classes {
+		scSub := ""
+		if c.SubClass != nil {
+			scSub = string(*c.SubClass)
+		}
+		sc := SavedClass{ID: string(c.ID), Name: c.Name, Level: c.Level, SubclassID: scSub}
+		ch.Classes = append(ch.Classes, sc)
+	}
+	ch.Abilities["STR"] = sheet.AbilityScores.STR
+	ch.Abilities["DEX"] = sheet.AbilityScores.DEX
+	ch.Abilities["CON"] = sheet.AbilityScores.CON
+	ch.Abilities["INT"] = sheet.AbilityScores.INT
+	ch.Abilities["WIS"] = sheet.AbilityScores.WIS
+	ch.Abilities["CHA"] = sheet.AbilityScores.CHA
+	ch.Skills = make([]string, 0, len(sheet.Skills))
+	for sk := range sheet.Skills {
+		ch.Skills = append(ch.Skills, string(sk))
+	}
+	ch.Spells = sheet.Spells
+	if len(sheet.Features) > 0 {
+		ch.Feats = make([]string, 0)
+		for _, f := range sheet.Features {
+			ch.Feats = append(ch.Feats, f.ID)
+		}
+	}
+
+	yamlBytes, err := yaml.Marshal(ch)
+	if err != nil {
+		http.Error(w, "Failed to marshal character", http.StatusInternalServerError)
+		return
+	}
+
+	dir := s.charactersDir()
+	os.MkdirAll(dir, 0755)
 	safe := sanitizeName(name)
-	os.MkdirAll(charactersDir(), 0755)
-	path := filepath.Join(charactersDir(), safe+".yaml")
-	if err := os.WriteFile(path, data, 0644); err != nil { http.Error(w, "Failed to save character", http.StatusInternalServerError); return }
+	path := filepath.Join(dir, safe+".yaml")
+	if err := os.WriteFile(path, yamlBytes, 0644); err != nil {
+		http.Error(w, "Failed to save character", http.StatusInternalServerError)
+		return
+	}
+
+	// Upsert character_sheets table
+	s.upsertCharacterSheet(sheet, safe)
+
 	writeJSON(w, map[string]string{"status": "saved", "path": path})
+}
+
+func (s *Server) upsertCharacterSheet(sheet derive.CharacterSheet, safeName string) {
+	classesJSON, _ := json.Marshal(sheet.Classes)
+	abilitiesJSON, _ := json.Marshal(sheet.AbilityScores)
+	// Build a flat skills map (skill name -> total bonus) for storage
+	skillsFlat := make(map[string]int)
+	for sk, sv := range sheet.Skills {
+		skillsFlat[string(sk)] = sv.Total
+	}
+	skillsJSON, _ := json.Marshal(skillsFlat)
+	// Build a flat saves map
+	savesFlat := make(map[string]int)
+	for ab, v := range sheet.SavingThrows {
+		savesFlat[string(ab)] = v
+	}
+	savesJSON, _ := json.Marshal(savesFlat)
+	spellsJSON, _ := json.Marshal(sheet.Spells)
+	updatedAt := time.Now().Format(time.RFC3339)
+
+	initBonus := (sheet.AbilityScores.DEX-10)/2 + sheet.ProficiencyBonus*sheet.InitBonus
+	speed := 30
+	if sheet.Speed > 0 {
+		speed = sheet.Speed
+	}
+
+	s.db.Exec(`
+		INSERT INTO character_sheets
+			(character_id, name, level, classes_json, species_id, background_id,
+			 ability_scores, hp_current, hp_max, hp_temp, ac, speed, initiative,
+			 proficiency_bonus, skills_json, saves_json, spells_json, conditions_json,
+			 resources_json, equipment_json, event_version, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
+		ON CONFLICT(character_id) DO UPDATE SET
+			name=excluded.name, level=excluded.level, classes_json=excluded.classes_json,
+			species_id=excluded.species_id, background_id=excluded.background_id,
+			ability_scores=excluded.ability_scores, hp_current=excluded.hp_current,
+			hp_max=excluded.hp_max, ac=excluded.ac, speed=excluded.speed,
+			initiative=excluded.initiative, proficiency_bonus=excluded.proficiency_bonus,
+			skills_json=excluded.skills_json, saves_json=excluded.saves_json,
+			spells_json=excluded.spells_json, equipment_json=excluded.equipment_json,
+			updated_at=excluded.updated_at
+	`, safeName, sheet.Name, sheet.Level, string(classesJSON),
+		string(sheet.Species), string(sheet.Background),
+		string(abilitiesJSON), sheet.HP.Max, sheet.HP.Max, 0, sheet.AC, speed, initBonus,
+		sheet.ProficiencyBonus,
+		string(skillsJSON), string(savesJSON), string(spellsJSON),
+		"[]", "{}", "[]", updatedAt)
 }
 
 func (s *Server) handleDeleteCharacter(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 	if name == "" { http.Error(w, "Name required", http.StatusBadRequest); return }
 	safe := sanitizeName(name)
-	path := filepath.Join(charactersDir(), safe+".yaml")
+	path := filepath.Join(s.charactersDir(), safe+".yaml")
 	if err := os.Remove(path); err != nil { http.Error(w, "Character not found", http.StatusNotFound); return }
 	writeJSON(w, map[string]string{"status": "deleted"})
 }

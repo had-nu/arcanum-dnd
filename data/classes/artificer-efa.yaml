@@ -1,0 +1,63 @@
+id: efa-artificer
+name: "Eberron: Forge of the Artificer — Artificer"
+version: "1.0.0"
+license: OGL
+attribution: "Wizards of the Coast — Eberron: Forge of the Artificer"
+
+classes:
+  - id: artificer
+    name: Artificer
+    hitDie: d8
+    primaryAbility: [INT]
+    savingThrows: [CON, INT]
+    spellcasting:
+      type: half
+      ability: INT
+    proficiencies:
+      armor: [light, medium, shield]
+      weapons: [simple]
+      tools:
+        - thieves-tools
+        - tinkers-tools
+        - artisans-tools:choose:1
+      skills:
+        - skill: investigation
+          choose: 2
+          from: [arcana, history, investigation, medicine, nature, perception, sleight-of-hand]
+    subClasses:
+      - id: alchemist
+        name: Alchemist
+        description: An artificer who specializes in creating potent concoctions and magical elixirs.
+      - id: armorer
+        name: Armorer
+        description: An artificer who modifies armor to function as a second skin, enhancing their defense and offense.
+      - id: artillerist
+        name: Artillerist
+        description: An artificer who specializes in creating explosive and projectile magical devices.
+      - id: battle-smith
+        name: Battle Smith
+        description: An artificer who creates a magical steel defender to fight alongside them.
+      - id: cartographer
+        name: Cartographer
+        description: An artificer who maps the world and charts the planes, wielding the power of cartography and exploration.
+    levels:
+      - { level: 1, profBonus: 2, features: [class.artificer.magical-tinkering, class.artificer.spellcasting], cantripsKnown: 2, preparedSpells: 4, spellSlots: {1: 2}, spellList: [mending, thorn-whip, cure-wounds, detect-magic, identify, shield] }
+      - { level: 2, profBonus: 2, features: [class.artificer.infuse-item, class.artificer.right-tool-for-the-job], spellSlots: {1: 2}, cantripsKnown: 2, preparedSpells: 5, spellList: [arcane-lock, enhance-ability, heat-metal, see-invisibility, spider-climb] }
+      - { level: 3, profBonus: 2, features: [class.artificer.subclass, class.artificer.artificer-specialist], spellSlots: {1: 3, 2: 2}, cantripsKnown: 2, preparedSpells: 6, spellList: [blink, fly, haste, tiny-servant, water-breathing] }
+      - { level: 4, profBonus: 2, feat: ability-score-improvement, spellSlots: {1: 3, 2: 3}, cantripsKnown: 3, preparedSpells: 7, spellList: [arcane-eye, fabricate, freedom-of-movement, mordenkainens-faithful-hound, stone-shape] }
+      - { level: 5, profBonus: 3, features: [class.artificer.artificer-specialist-improved], spellSlots: {1: 4, 2: 3, 3: 2}, cantripsKnown: 3, preparedSpells: 9, spellList: [animate-objects, creation, greater-restoration, wall-of-stone, skill-empowerment] }
+      - { level: 6, profBonus: 3, feat: ability-score-improvement, spellSlots: {1: 4, 2: 3, 3: 3}, cantripsKnown: 3, preparedSpells: 10, spellList: [blade-barrier, disintegrate, globe-of-invulnerability, move-earth, true-seeing] }
+      - { level: 7, profBonus: 3, features: [class.artificer.flash-of-genius], spellSlots: {1: 4, 2: 3, 3: 3, 4: 1}, cantripsKnown: 3, preparedSpells: 11, spellList: [forcecage, mirage-arcane, plane-shift, regenerate, teleport] }
+      - { level: 8, profBonus: 3, feat: ability-score-improvement, spellSlots: {1: 4, 2: 3, 3: 3, 4: 2}, cantripsKnown: 3, preparedSpells: 12, spellList: [dominate-monster, earthquake, feeblemind, incubus, power-word-stun] }
+      - { level: 9, profBonus: 4, features: [class.artificer.artificer-specialist-improved], spellSlots: {1: 4, 2: 3, 3: 3, 4: 3, 5: 1}, cantripsKnown: 4, preparedSpells: 14, spellList: [clone, foresight, mass-cure-wounds, power-word-heal, true-resurrection] }
+      - { level: 10, profBonus: 4, features: [class.artificer.magic-item-adept], spellSlots: {1: 4, 2: 3, 3: 3, 4: 3, 5: 2}, cantripsKnown: 4, preparedSpells: 15, spellList: [] }
+      - { level: 11, profBonus: 4, features: [class.artificer.spell-storing-item], spellSlots: {1: 4, 2: 3, 3: 3, 4: 3, 5: 3}, cantripsKnown: 4, preparedSpells: 16, spellList: [] }
+      - { level: 12, profBonus: 4, feat: ability-score-improvement, spellSlots: {1: 4, 2: 3, 3: 3, 4: 3, 5: 3}, cantripsKnown: 4, preparedSpells: 16, spellList: [] }
+      - { level: 13, profBonus: 5, features: [class.artificer.magic-item-savant], spellSlots: {1: 4, 2: 3, 3: 3, 4: 3, 5: 3, 6: 1}, cantripsKnown: 4, preparedSpells: 17, spellList: [] }
+      - { level: 14, profBonus: 5, feat: ability-score-improvement, spellSlots: {1: 4, 2: 3, 3: 3, 4: 3, 5: 3, 6: 1}, cantripsKnown: 4, preparedSpells: 17, spellList: [] }
+      - { level: 15, profBonus: 5, features: [class.artificer.artificer-specialist-improved], spellSlots: {1: 4, 2: 3, 3: 3, 4: 3, 5: 3, 6: 1, 7: 1}, cantripsKnown: 4, preparedSpells: 18, spellList: [] }
+      - { level: 16, profBonus: 5, feat: ability-score-improvement, spellSlots: {1: 4, 2: 3, 3: 3, 4: 3, 5: 3, 6: 1, 7: 1}, cantripsKnown: 4, preparedSpells: 18, spellList: [] }
+      - { level: 17, profBonus: 6, features: [class.artificer.magic-item-master], spellSlots: {1: 4, 2: 3, 3: 3, 4: 3, 5: 3, 6: 1, 7: 1, 8: 1}, cantripsKnown: 4, preparedSpells: 19, spellList: [] }
+      - { level: 18, profBonus: 6, feat: ability-score-improvement, spellSlots: {1: 4, 2: 3, 3: 3, 4: 3, 5: 3, 6: 1, 7: 1, 8: 1, 9: 1}, cantripsKnown: 4, preparedSpells: 20, spellList: [] }
+      - { level: 19, profBonus: 6, feat: ability-score-improvement, spellSlots: {1: 4, 2: 3, 3: 3, 4: 3, 5: 3, 6: 1, 7: 1, 8: 1, 9: 1}, cantripsKnown: 4, preparedSpells: 20, spellList: [] }
+      - { level: 20, profBonus: 6, features: [class.artificer.soul-of-artifice], spellSlots: {1: 4, 2: 3, 3: 3, 4: 3, 5: 3, 6: 1, 7: 1, 8: 1, 9: 1}, cantripsKnown: 4, preparedSpells: 22, spellList: [] }

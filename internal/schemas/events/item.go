@@ -23,17 +23,14 @@ func (e ItemAcquiredEvent) Validate() error {
 
 // ItemEquippedEvent represents an item being equipped.
 type ItemEquippedEvent struct {
-	CharacterID types.CharacterID  `json:"characterId" validate:"required"`
+	CharacterID types.CharacterID    `json:"characterId" validate:"required"`
 	InstanceID  types.ItemInstanceID `json:"instanceId" validate:"required"`
-	Slot        string             `json:"slot" validate:"required"`
+	Slot        string               `json:"slot,omitempty"`
 }
 
 func (e ItemEquippedEvent) EventType() EventType { return EventItemEquipped }
 func (e ItemEquippedEvent) SchemaVersion() int   { return 1 }
-func (e ItemEquippedEvent) Validate() error {
-	if e.Slot == "" { return errors.New("slot required") }
-	return nil
-}
+func (e ItemEquippedEvent) Validate() error       { return nil }
 
 // ItemUnequippedEvent represents an item being unequipped.
 type ItemUnequippedEvent struct {

@@ -288,34 +288,38 @@ export const useBuilderStore = create<BuilderStore>()(
 
         save: async () => {
           const { draft, preview } = get();
-          if (!draft.name || !preview) return;
+          if (!draft.name) return;
 
-          const saveRequest = {
-            name: draft.name,
-            classes: draft.classes.map((c) => ({ id: c.id, level: c.level, subclassId: c.subclassId })),
-            backgroundId: draft.backgroundId,
-            speciesId: draft.speciesId,
-            speciesVariant: draft.speciesVariant,
-            level: draft.classes.reduce((sum, c) => sum + c.level, 0),
-            abilityMethod: draft.abilityMethod,
-            abilities: draft.abilityScores,
-            skills: draft.skills,
-            spells: draft.spells,
-            feats: draft.feats,
-            equipment: [],
-            progressionType: 'milestone' as const,
+          const payload = {
+            request: {
+              name: draft.name,
+              classes: draft.classes.map((c) => ({ id: c.id, level: c.level, subclassId: c.subclassId })),
+              backgroundId: draft.backgroundId,
+              speciesId: draft.speciesId,
+              speciesVariant: draft.speciesVariant,
+              level: draft.classes.reduce((sum, c) => sum + c.level, 0),
+              abilityScores: draft.abilityScores,
+              abilityMethod: draft.abilityMethod,
+              skills: draft.skills,
+              spells: draft.spells ?? [],
+              feats: draft.feats ?? [],
+            },
+            sheet: preview ?? undefined,
           };
 
           const response = await fetch('/api/characters', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(saveRequest),
+            body: JSON.stringify(payload),
           });
 
           if (!response.ok) throw new Error('Save failed');
         },
 
-        reset: () => set({ draft: initialDraft, preview: null, pendingChoices: [] }),
+        reset: () => {
+          set({ draft: initialDraft, preview: null, pendingChoices: [] });
+          useBuilderStore.persist.clearStorage();
+        },
 
         loadFromCharacter: (character) => {
           set({

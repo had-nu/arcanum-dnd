@@ -1,0 +1,327 @@
+id: efa-feats
+name: "Eberron: Forge of the Artificer — Feats"
+version: "1.0.0"
+license: OGL
+attribution: "Wizards of the Coast — Eberron: Forge of the Artificer"
+
+feats:
+  # ── Dragonmark Feats (Origin Feats) ─────────────────
+  - id: aberrant-dragonmark
+    name: Aberrant Dragonmark
+    prerequisites:
+      level: 1
+    effects:
+      - kind: Custom
+        handlerId: feat.aberrant-dragonmark.spellcasting
+      - kind: Custom
+        handlerId: feat.aberrant-dragonmark.drawback
+    description: You manifest an aberrant dragonmark, a chaotic mark that grants unpredictable powers.
+
+  - id: mark-of-detection
+    name: Mark of Detection
+    prerequisites:
+      level: 1
+    effects:
+      - kind: Custom
+        handlerId: feat.mark-of-detection.spellcasting
+      - kind: GrantProficiency
+        proficiencySkill: insight
+      - kind: GrantProficiency
+        proficiencySkill: investigation
+    description: You bear the Mark of Detection, granting you magical senses and insight. Associated with House Medani.
+
+  - id: mark-of-finding
+    name: Mark of Finding
+    prerequisites:
+      level: 1
+    effects:
+      - kind: Custom
+        handlerId: feat.mark-of-finding.spellcasting
+      - kind: GrantProficiency
+        proficiencySkill: perception
+      - kind: GrantProficiency
+        proficiencySkill: survival
+    description: You bear the Mark of Finding, granting you unerring ability to locate people and objects. Associated with House Tharashk.
+
+  - id: mark-of-handling
+    name: Mark of Handling
+    prerequisites:
+      level: 1
+    effects:
+      - kind: Custom
+        handlerId: feat.mark-of-handling.spellcasting
+      - kind: GrantProficiency
+        proficiencySkill: animal-handling
+      - kind: GrantProficiency
+        proficiencySkill: nature
+    description: You bear the Mark of Handling, granting you a supernatural connection with beasts. Associated with House Vadalis.
+
+  - id: mark-of-healing
+    name: Mark of Healing
+    prerequisites:
+      level: 1
+    effects:
+      - kind: Custom
+        handlerId: feat.mark-of-healing.spellcasting
+      - kind: GrantProficiency
+        proficiencySkill: medicine
+    description: You bear the Mark of Healing, granting you the power to mend wounds and cure ailments. Associated with House Jorasco.
+
+  - id: mark-of-hospitality
+    name: Mark of Hospitality
+    prerequisites:
+      level: 1
+    effects:
+      - kind: Custom
+        handlerId: feat.mark-of-hospitality.spellcasting
+      - kind: GrantProficiency
+        proficiencySkill: persuasion
+      - kind: Custom
+        handlerId: feat.mark-of-hospitality.everfull-pouch
+    description: You bear the Mark of Hospitality, granting you the magic of welcome and sustenance. Associated with House Ghallanda.
+
+  - id: mark-of-making
+    name: Mark of Making
+    prerequisites:
+      level: 1
+    effects:
+      - kind: Custom
+        handlerId: feat.mark-of-making.spellcasting
+      - kind: GrantProficiency
+        proficiencyTool: artisans-tools
+      - kind: Custom
+        handlerId: feat.mark-of-making.artisans-intuition
+    description: You bear the Mark of Making, granting you mastery over crafting and fabrication. Associated with House Cannith.
+
+  - id: mark-of-passage
+    name: Mark of Passage
+    prerequisites:
+      level: 1
+    effects:
+      - kind: Custom
+        handlerId: feat.mark-of-passage.spellcasting
+      - kind: GrantProficiency
+        proficiencySkill: acrobatics
+      - kind: Custom
+        handlerId: feat.mark-of-passage.fleet-of-foot
+    description: You bear the Mark of Passage, granting you supernatural speed and mobility. Associated with House Orien.
+
+  - id: mark-of-scribing
+    name: Mark of Scribing
+    prerequisites:
+      level: 1
+    effects:
+      - kind: Custom
+        handlerId: feat.mark-of-scribing.spellcasting
+      - kind: GrantProficiency
+        proficiencyTool: calligraphers-supplies
+      - kind: Custom
+        handlerId: feat.mark-of-scribing.scribing
+    description: You bear the Mark of Scribing, granting you power over written communication and secrets. Associated with House Sivis.
+
+  - id: mark-of-sentinel
+    name: Mark of Sentinel
+    prerequisites:
+      level: 1
+    effects:
+      - kind: Custom
+        handlerId: feat.mark-of-sentinel.spellcasting
+      - kind: GrantProficiency
+        proficiencySkill: perception
+      - kind: Custom
+        handlerId: feat.mark-of-sentinel.guardian-shield
+    description: You bear the Mark of Sentinel, granting you protective magic to shield allies. Associated with House Deneith.
+
+  - id: mark-of-shadow
+    name: Mark of Shadow
+    prerequisites:
+      level: 1
+    effects:
+      - kind: Custom
+        handlerId: feat.mark-of-shadow.spellcasting
+      - kind: GrantProficiency
+        proficiencySkill: stealth
+      - kind: Custom
+        handlerId: feat.mark-of-shadow.shape-shadow
+    description: You bear the Mark of Shadow, granting you illusion and shadow magic. Associated with House Phiarlan and House Thuranni.
+
+  - id: mark-of-storm
+    name: Mark of Storm
+    prerequisites:
+      level: 1
+    effects:
+      - kind: Custom
+        handlerId: feat.mark-of-storm.spellcasting
+      - kind: GrantProficiency
+        proficiencySkill: acrobatics
+      - kind: Custom
+        handlerId: feat.mark-of-storm.wind-walker
+    description: You bear the Mark of Storm, granting you command over wind and lightning. Associated with House Lyrandar.
+
+  - id: mark-of-warding
+    name: Mark of Warding
+    prerequisites:
+      level: 1
+    effects:
+      - kind: Custom
+        handlerId: feat.mark-of-warding.spellcasting
+      - kind: GrantProficiency
+        proficiencyTool: thieves-tools
+      - kind: Custom
+        handlerId: feat.mark-of-warding.warding-rune
+    description: You bear the Mark of Warding, granting you protective wards and alarm magic. Associated with House Kundarak.
+
+  # ── Greater Dragonmark Feats (General Feats, level 4+) ──
+  - id: greater-aberrant-mark
+    name: Greater Aberrant Mark
+    prerequisites:
+      level: 4
+      feat: aberrant-dragonmark
+    effects:
+      - kind: Custom
+        handlerId: feat.greater-aberrant-mark.spellcasting
+      - kind: Custom
+        handlerId: feat.greater-aberrant-mark.powerful-mark
+    description: Your aberrant dragonmark grows in power, granting greater but more dangerous abilities.
+
+  - id: greater-mark-of-detection
+    name: Greater Mark of Detection
+    prerequisites:
+      level: 4
+      feat: mark-of-detection
+    effects:
+      - kind: Custom
+        handlerId: feat.greater-mark-of-detection.spellcasting
+    description: Your Mark of Detection expands, granting you enhanced divinatory powers.
+
+  - id: greater-mark-of-finding
+    name: Greater Mark of Finding
+    prerequisites:
+      level: 4
+      feat: mark-of-finding
+    effects:
+      - kind: Custom
+        handlerId: feat.greater-mark-of-finding.spellcasting
+    description: Your Mark of Finding grows stronger, allowing you to locate anything across vast distances.
+
+  - id: greater-mark-of-handling
+    name: Greater Mark of Handling
+    prerequisites:
+      level: 4
+      feat: mark-of-handling
+    effects:
+      - kind: Custom
+        handlerId: feat.greater-mark-of-handling.spellcasting
+    description: Your Mark of Handling deepens your bond with beasts, allowing you to command even monstrous creatures.
+
+  - id: greater-mark-of-healing
+    name: Greater Mark of Healing
+    prerequisites:
+      level: 4
+      feat: mark-of-healing
+    effects:
+      - kind: Custom
+        handlerId: feat.greater-mark-of-healing.spellcasting
+    description: Your Mark of Healing blossoms, granting you the power to heal grievous wounds and even raise the dead.
+
+  - id: greater-mark-of-hospitality
+    name: Greater Mark of Hospitality
+    prerequisites:
+      level: 4
+      feat: mark-of-hospitality
+    effects:
+      - kind: Custom
+        handlerId: feat.greater-mark-of-hospitality.spellcasting
+    description: Your Mark of Hospitality expands, allowing you to create magnificent feasts and sanctuaries.
+
+  - id: greater-mark-of-making
+    name: Greater Mark of Making
+    prerequisites:
+      level: 4
+      feat: mark-of-making
+    effects:
+      - kind: Custom
+        handlerId: feat.greater-mark-of-making.spellcasting
+    description: Your Mark of Making reaches its zenith, letting you fabricate complex items instantly.
+
+  - id: greater-mark-of-passage
+    name: Greater Mark of Passage
+    prerequisites:
+      level: 4
+      feat: mark-of-passage
+    effects:
+      - kind: Custom
+        handlerId: feat.greater-mark-of-passage.spellcasting
+    description: Your Mark of Passage allows you to teleport yourself and others across great distances.
+
+  - id: greater-mark-of-scribing
+    name: Greater Mark of Scribing
+    prerequisites:
+      level: 4
+      feat: mark-of-scribing
+    effects:
+      - kind: Custom
+        handlerId: feat.greater-mark-of-scribing.spellcasting
+    description: Your Mark of Scribing grants you mastery over all forms of written communication and secrets.
+
+  - id: greater-mark-of-sentinel
+    name: Greater Mark of Sentinel
+    prerequisites:
+      level: 4
+      feat: mark-of-sentinel
+    effects:
+      - kind: Custom
+        handlerId: feat.greater-mark-of-sentinel.spellcasting
+    description: Your Mark of Sentinel becomes an impenetrable bulwark, protecting allies from the deadliest threats.
+
+  - id: greater-mark-of-shadow
+    name: Greater Mark of Shadow
+    prerequisites:
+      level: 4
+      feat: mark-of-shadow
+    effects:
+      - kind: Custom
+        handlerId: feat.greater-mark-of-shadow.spellcasting
+    description: Your Mark of Shadow deepens, allowing you to manipulate darkness and create powerful illusions.
+
+  - id: greater-mark-of-storm
+    name: Greater Mark of Storm
+    prerequisites:
+      level: 4
+      feat: mark-of-storm
+    effects:
+      - kind: Custom
+        handlerId: feat.greater-mark-of-storm.spellcasting
+    description: Your Mark of Storm lets you command the raw fury of thunder and lightning.
+
+  - id: greater-mark-of-warding
+    name: Greater Mark of Warding
+    prerequisites:
+      level: 4
+      feat: mark-of-warding
+    effects:
+      - kind: Custom
+        handlerId: feat.greater-mark-of-warding.spellcasting
+    description: Your Mark of Warding creates impregnable magical defenses and seals.
+
+  - id: potent-dragonmark
+    name: Potent Dragonmark
+    prerequisites:
+      level: 4
+      anyFeat: [mark-of-detection, mark-of-finding, mark-of-handling, mark-of-healing, mark-of-hospitality, mark-of-making, mark-of-passage, mark-of-scribing, mark-of-sentinel, mark-of-shadow, mark-of-storm, mark-of-warding]
+    effects:
+      - kind: Custom
+        handlerId: feat.potent-dragonmark.enhanced-spellcasting
+    description: Your dragonmark's power increases, allowing you to cast its spells using spell slots.
+
+  # ── Epic Boon Feat ─────────────────────────────────
+  - id: boon-of-siberys
+    name: Boon of Siberys
+    prerequisites:
+      level: 19
+    effects:
+      - kind: Custom
+        handlerId: feat.boon-of-siberys.siberys-mark
+      - kind: Custom
+        handlerId: feat.boon-of-siberys.epic-power
+    description: You manifest a Siberys dragonmark or a supremely powerful aberrant mark, gaining godlike power.
