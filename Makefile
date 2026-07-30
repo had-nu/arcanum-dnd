@@ -1,52 +1,68 @@
-.PHONY: build build-frontend build-backend test lint security quality run-player run-master run-spells run-server dev clean ci
+.PHONY: build build-frontend build-backend test lint security quality run-player run-master run-spells run-server dev clean ci run
 
 BUILD_DIR := dist
 FRONTEND_DIR := frontend
+IMAGE_NAME := arcanum-dnd-app-prod:latest
 
 build: build-frontend build-backend
 
 build-frontend:
-	cd $(FRONTEND_DIR) && npm ci && npm run build
+	docker compose -f docker-compose.yml --profile prod build app-prod
+	mkdir -p $(BUILD_DIR)
+	docker create --name arcanum-frontend-extract $(IMAGE_NAME)
+	docker cp arcanum-frontend-extract:/app/frontend/dist $(BUILD_DIR)/frontend
+	docker rm arcanum-frontend-extract
 
 build-backend:
-	CGO_ENABLED=0 go build -o $(BUILD_DIR)/server ./cmd/server
-	CGO_ENABLED=0 go build -o $(BUILD_DIR)/tui-player ./cmd/tui-player
-	CGO_ENABLED=0 go build -o $(BUILD_DIR)/spells ./cmd/spells
+	docker compose -f docker-compose.yml --profile prod build app-prod
+	mkdir -p $(BUILD_DIR)
+	docker create --name arcanum-backend-extract $(IMAGE_NAME)
+	docker cp arcanum-backend-extract:/app/server $(BUILD_DIR)/server
+	docker rm arcanum-backend-extract
 
 test:
-	go test -race -coverprofile=coverage.out ./...
+	docker compose -f docker-compose.yml --profile prod build app-prod
+	docker run --rm $(IMAGE_NAME) go test -race -coverprofile=coverage.out ./...
 
 test-ci:
-	go test -race -coverprofile=coverage.out -covermode=atomic ./...
+	docker compose -f docker-compose.yml --profile prod build app-prod
+	docker run --rm $(IMAGE_NAME) go test -race -coverprofile=coverage.out -covermode=atomic ./...
 
 security:
-	gosec -fmt sarif -out security.sarif -exclude=G404,G301,G304,G306,G703,G104,G706 ./... || true
-	cd $(FRONTEND_DIR) && npm audit --audit-level=critical
+	docker compose -f docker-compose.yml --profile prod build app-prod
+	docker run --rm $(IMAGE_NAME) gosec -fmt sarif -out security.sarif -exclude=G404,G301,G304,G306,G703,G104,G706 ./... || true
+	docker run --rm -v $(PWD)/$(FRONTEND_DIR):/app -w /app node:22-alpine npm audit --audit-level=critical
 
 quality:
-	golangci-lint run ./... || true
-	cd $(FRONTEND_DIR) && npx eslint src --ext .ts,.tsx || true
+	docker compose -f docker-compose.yml --profile prod build app-prod
+	docker run --rm $(IMAGE_NAME) golangci-lint run ./... || true
+	docker run --rm -v $(PWD)/$(FRONTEND_DIR):/app -w /app node:22-alpine npx eslint src --ext .ts,.tsx || true
 
 lint: quality
 
 run-server:
-	go run ./cmd/server
+	docker compose up backend-dev
 
 run-player:
-	go run ./cmd/tui-player/
+	docker compose -f docker-compose.yml --profile prod build app-prod
+	docker run --rm -it -v $(PWD)/data:/app/data -v $(PWD)/var:/app/var $(IMAGE_NAME) ./server
 
 run-master:
-	go run ./cmd/tui-master/
+	docker compose -f docker-compose.yml --profile prod build app-prod
+	docker run --rm -it -v $(PWD)/data:/app/data -v $(PWD)/var:/app/var $(IMAGE_NAME) ./server --master
 
 run-spells:
-	go run ./cmd/spells/
+	docker compose -f docker-compose.yml --profile prod build app-prod
+	docker run --rm -it -v $(PWD)/data:/app/data -v $(PWD)/var:/app/var $(IMAGE_NAME) ./server --spells
 
 dev:
-	air -c .air.toml & \
-	cd $(FRONTEND_DIR) && npm run dev
+	docker compose --profile dev up
+
+run:
+	docker compose --profile dev up --build
 
 clean:
-	go clean
+	docker compose down -v
 	rm -rf $(BUILD_DIR)/
 	rm -rf $(FRONTEND_DIR)/dist
 
