@@ -439,12 +439,14 @@ func (s *Server) handleContent(w http.ResponseWriter, r *http.Request) {
 			profs, _ := s.querier.GetClassProficiencies(cr.ID)
 			var skillPool []string
 			skillChoices := 0
+			seen := map[string]bool{}
 			for _, p := range profs {
 				if p.Category == "skill" {
 					if p.SkillChoose > 0 {
 						skillChoices = p.SkillChoose
 					}
-					if p.SkillFrom != "" {
+					if p.SkillFrom != "" && !seen[string(p.SkillFrom)] {
+						seen[string(p.SkillFrom)] = true
 						skillPool = append(skillPool, string(p.SkillFrom))
 					}
 				}
@@ -827,7 +829,8 @@ func (s *Server) handleMetamagicOptions(w http.ResponseWriter, r *http.Request) 
 
 func (s *Server) handleFeats(w http.ResponseWriter, r *http.Request) {
 	rows, err := s.db.Query(`
-		SELECT id, name, COALESCE(entries_json, ''), COALESCE(prerequisites_json, '')
+		SELECT id, name,
+			prereq_level, prereq_ability, prereq_ability_min, prereq_feat, prereq_class, prereq_spellcasting, prereq_proficiency, source
 		FROM feats
 		ORDER BY name
 	`)
@@ -838,17 +841,53 @@ func (s *Server) handleFeats(w http.ResponseWriter, r *http.Request) {
 	defer rows.Close()
 
 	type FeatEntry struct {
-		ID            string `json:"id"`
-		Name          string `json:"name"`
-		Description   string `json:"description"`
-		Prerequisites string `json:"prerequisites"`
+		ID               string `json:"id"`
+		Name             string `json:"name"`
+		PrereqLevel      *int   `json:"prereqLevel,omitempty"`
+		PrereqAbility    string `json:"prereqAbility,omitempty"`
+		PrereqAbilityMin *int   `json:"prereqAbilityMin,omitempty"`
+		PrereqFeat       string `json:"prereqFeat,omitempty"`
+		PrereqClass      string `json:"prereqClass,omitempty"`
+		PrereqSpellcasting bool   `json:"prereqSpellcasting,omitempty"`
+		PrereqProficiency string `json:"prereqProficiency,omitempty"`
+		Source           string `json:"source,omitempty"`
 	}
 
-	var feats []FeatEntry
+	var feats = []FeatEntry{}
 	for rows.Next() {
 		var f FeatEntry
-		if err := rows.Scan(&f.ID, &f.Name, &f.Description, &f.Prerequisites); err != nil {
+		var pl, pam sql.NullInt64
+		var pa, pf, pc, pp, src sql.NullString
+		var psc int
+		if err := rows.Scan(&f.ID, &f.Name,
+			&pl, &pa, &pam,
+			&pf, &pc, &psc,
+			&pp, &src); err != nil {
 			continue
+		}
+		if pl.Valid {
+			v := int(pl.Int64)
+			f.PrereqLevel = &v
+		}
+		if pa.Valid {
+			f.PrereqAbility = pa.String
+		}
+		if pam.Valid {
+			v := int(pam.Int64)
+			f.PrereqAbilityMin = &v
+		}
+		if pf.Valid {
+			f.PrereqFeat = pf.String
+		}
+		if pc.Valid {
+			f.PrereqClass = pc.String
+		}
+		f.PrereqSpellcasting = psc == 1
+		if pp.Valid {
+			f.PrereqProficiency = pp.String
+		}
+		if src.Valid {
+			f.Source = src.String
 		}
 		feats = append(feats, f)
 	}
