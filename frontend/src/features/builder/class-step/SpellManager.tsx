@@ -66,8 +66,8 @@ export function SpellManager({ classData, classDef, preview }: SpellManagerProps
     <div className="space-y-4">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="font-label text-lg text-white">Prepared Spells ({preparedCount}/{maxPrepared})</h3>
-          <p className="text-sm text-stone-400">
+          <h3 className="font-label text-lg text-[var(--text)]">Prepared Spells ({preparedCount}/{maxPrepared})</h3>
+          <p className="text-sm text-[var(--text-muted)]">
             Cantrips known: {getCantripsKnown(classData.level, classDef)} · Spell slots: {getSpellSlotsSummary(preview)}
           </p>
         </div>
@@ -83,15 +83,15 @@ export function SpellManager({ classData, classDef, preview }: SpellManagerProps
 
       <div className="prepared-spells-list space-y-2 max-h-60 overflow-y-auto">
         {preparedSpells.length === 0 ? (
-          <p className="text-stone-500 text-center py-4">No spells prepared. Click "Add Spells" to choose.</p>
+          <p className="text-[var(--text-dim)] text-center py-4">No spells prepared. Click "Add Spells" to choose.</p>
         ) : (
           preparedSpells.map((spellId) => {
             const spell = availableSpells.find((s) => s.id === spellId);
             return (
-              <div key={spellId} className="flex items-center justify-between p-3 bg-stone-800/50 rounded-md">
+              <div key={spellId} className="flex items-center justify-between p-3 bg-[var(--bg-elevated)]/50 rounded-[var(--radius)]">
                 <div className="flex items-center gap-3">
                   <span className={`px-2 py-1 text-xs font-label rounded ${
-                    spell?.level === 0 ? 'bg-purple-500/20 text-purple-400' : 'bg-blue-500/20 text-blue-400'
+                    spell?.level === 0 ? 'bg-[var(--purple)]/20 text-[var(--purple)]' : 'bg-[var(--blue)]/20 text-[var(--blue)]'
                   }`}>
                     {spell?.level === 0 ? 'Cantrip' : `Lv.${spell?.level}`}
                   </span>
@@ -109,8 +109,8 @@ export function SpellManager({ classData, classDef, preview }: SpellManagerProps
           <div className="fixed inset-0 bg-black/80" onClick={() => setShowModal(false)} />
           <Card className="w-full max-w-2xl max-h-[80vh] overflow-hidden" variant="elevated">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-heading text-xl text-white">Add Spells</h3>
-              <button onClick={() => setShowModal(false)} className="text-stone-400 hover:text-white">
+              <h3 className="font-heading text-xl text-[var(--text)]">Add Spells</h3>
+              <button onClick={() => setShowModal(false)} className="text-[var(--text-muted)] hover:text-[var(--text)]" aria-label="Close">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18" />
                   <line x1="6" y1="6" x2="18" y2="18" />
@@ -129,7 +129,7 @@ export function SpellManager({ classData, classDef, preview }: SpellManagerProps
               <select
                 value={spellLevelFilter}
                 onChange={(e) => setSpellLevelFilter(e.target.value)}
-                className="w-full px-3 py-2 bg-stone-900 border border-stone-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text)] rounded-[var(--radius)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)] focus-visible:border-transparent min-h-[44px]"
               >
                 <option value="all">All Levels</option>
                 <option value="0">Cantrips</option>
@@ -141,9 +141,9 @@ export function SpellManager({ classData, classDef, preview }: SpellManagerProps
 
             <div className="spells-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
               {isLoadingSpells ? (
-                <div className="col-span-full text-center py-8 text-stone-400">Loading spells...</div>
+                <div className="col-span-full text-center py-8 text-[var(--text-muted)]">Loading spells...</div>
               ) : filteredSpells.length === 0 ? (
-                <div className="col-span-full text-center py-8 text-stone-400">No spells match your filters</div>
+                <div className="col-span-full text-center py-8 text-[var(--text-muted)]">No spells match your filters</div>
               ) : (
                 filteredSpells.map((spell) => (
                   <button
@@ -152,11 +152,11 @@ export function SpellManager({ classData, classDef, preview }: SpellManagerProps
                       addPreparedSpell(spell.id);
                       setShowModal(false);
                     }}
-                    className="p-3 bg-stone-800/50 border border-stone-700 rounded-md text-left hover:border-red-500 hover:bg-stone-800 transition-colors"
+                    className="p-3 bg-[var(--bg-elevated)]/50 border border-[var(--border)] rounded-[var(--radius)] text-left hover:border-[var(--red)] hover:bg-[var(--bg-elevated)] transition-colors"
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <span className={`px-2 py-1 text-xs font-label rounded ${
-                        spell.level === 0 ? 'bg-purple-500/20 text-purple-400' : 'bg-blue-500/20 text-blue-400'
+                        spell.level === 0 ? 'bg-[var(--purple)]/20 text-[var(--purple)]' : 'bg-[var(--blue)]/20 text-[var(--blue)]'
                       }`}>
                         {spell.level === 0 ? 'Cantrip' : `Lv.${spell.level}`}
                       </span>

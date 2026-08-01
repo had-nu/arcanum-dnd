@@ -106,23 +106,23 @@ export function ClassStep() {
             const subClass = cd?.subClasses?.find((sc) => sc.id === c.subclassId);
 
             return (
-              <div key={c.id} className="selected-class-row bg-stone-900/50 border border-stone-700 rounded-lg overflow-hidden">
-                <div className="selected-class-hdr p-4 border-b border-stone-700 flex flex-wrap items-center gap-4">
-                  <div className="selected-class-name flex items-center gap-3">
-                    <ClassGlyph classId={c.id} size="md" />
-                    <span className="font-label text-lg text-white">{className}</span>
-                  </div>
-                  <div className="selected-class-sub flex items-center gap-2">
-                    <span className="text-stone-400">Level</span>
-                    <LevelSelect level={c.level} onChange={(lvl) => setClassLevel(c.id, lvl)} />
-                  </div>
-                  <div className="selected-class-hp flex items-center gap-2">
-                    <span className="text-stone-400">HP</span>
-                    <strong className="text-white text-xl">{calculateHP(c.id, c.level, draft.abilityScores.CON)}</strong>
-                    <span className="hp-detail text-stone-500 text-sm">({cd?.hitDie} + CON)</span>
-                  </div>
-                  <Button variant="danger" size="sm" onClick={() => removeClass(c.id)}><XIcon size={14} /></Button>
+            <div key={c.id} className="selected-class-row bg-[var(--bg-surface)]/50 border border-[var(--border)] rounded-lg overflow-hidden">
+              <div className="selected-class-hdr p-4 border-b border-[var(--border)] flex flex-wrap items-center gap-4">
+                <div className="selected-class-name flex items-center gap-3">
+                  <ClassGlyph classId={c.id} size="md" />
+                  <span className="font-label text-lg text-[var(--text)]">{className}</span>
                 </div>
+                <div className="selected-class-sub flex items-center gap-2">
+                  <span className="text-[var(--text-muted)]">Level</span>
+                  <LevelSelect level={c.level} onChange={(lvl) => setClassLevel(c.id, lvl)} />
+                </div>
+                <div className="selected-class-hp flex items-center gap-2">
+                  <span className="text-[var(--text-muted)]">HP</span>
+                  <strong className="text-[var(--text)] text-xl">{calculateHP(c.id, c.level, draft.abilityScores.CON)}</strong>
+                  <span className="hp-detail text-[var(--text-dim)] text-sm">({cd?.hitDie} + CON)</span>
+                </div>
+                <Button variant="danger" size="sm" onClick={() => removeClass(c.id)} aria-label="Remove class"><XIcon size={14} /></Button>
+              </div>
 
                 <div className="selected-class-body p-4">
                   <Tabs defaultTab={activeClassTab} onTabChange={(tab) => setActiveClassTab(tab as any)}>
@@ -154,12 +154,12 @@ export function ClassStep() {
                         })()}
 
                         {showSubclass && (
-                          <div className="subclass-select-row pt-4 border-t border-stone-700">
-                            <label className="block text-sm font-medium text-stone-300 mb-1">Subclass</label>
+                          <div className="subclass-select-row pt-4 border-t border-[var(--border)]">
+                            <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Subclass</label>
                             <select
                               value={c.subclassId || ''}
                               onChange={(e) => setSubclass(c.id, e.target.value)}
-                              className="w-full px-3 py-2 bg-stone-900 border border-stone-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                              className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text)] rounded-[var(--radius)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)] focus-visible:border-transparent min-h-[44px]"
                             >
                               <option value="">-- Choose --</option>
                               {cd?.subClasses?.map((sc) => (
@@ -170,12 +170,12 @@ export function ClassStep() {
                         )}
 
                         {c.subclassId && subClass && (
-                          <div className="subclass-section mt-4 pt-4 border-t border-stone-700">
-                            <div className="subclass-desc-box mb-3 p-3 bg-stone-800/50 rounded-md border border-stone-700">
-                              <div className="subclass-desc-title font-label text-amber-500 mb-1">{subClass.name}</div>
-                              <div className="subclass-desc-text text-stone-300">{subClass.description}</div>
+                          <div className="subclass-section mt-4 pt-4 border-t border-[var(--border)]">
+                            <div className="subclass-desc-box mb-3 p-3 bg-[var(--bg-elevated)]/50 rounded-[var(--radius)] border border-[var(--border)]">
+                              <div className="subclass-desc-title font-label text-[var(--gold)] mb-1">{subClass.name}</div>
+                              <div className="subclass-desc-text text-[var(--text-muted)]">{subClass.description}</div>
                             </div>
-                            <h4 className="font-heading text-xs text-amber-400 mb-2">Subclass Features</h4>
+                            <h4 className="font-heading text-xs text-[var(--gold)] mb-2">Subclass Features</h4>
                             <div className="space-y-2">
                               {(subclassFeaturesMap[c.id + '-' + c.subclassId] ?? []).map((f, i) => (
                                 <FeatureRenderer
@@ -199,7 +199,7 @@ export function ClassStep() {
 
                     {showSubclass && (
                       <TabPanel value="optional-features">
-                        <div className="text-stone-400 text-center py-8">
+                        <div className="text-[var(--text-muted)] text-center py-8">
                           Optional features coming soon (feats, fighting styles, etc.)
                         </div>
                       </TabPanel>
@@ -220,24 +220,24 @@ export function ClassStep() {
         </div>
       )}
 
-      <div className="preview-stats mt-6 p-4 bg-stone-900/50 border border-stone-700 rounded-lg">
-        <h3 className="font-label text-amber-500 mb-3">Live Preview (from /build)</h3>
+      <div className="preview-stats mt-6 p-4 bg-[var(--bg-surface)]/50 border border-[var(--border)] rounded-[var(--radius-lg)]">
+        <h3 className="font-label text-[var(--gold)] mb-3">Live Preview (from /build)</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
           <div>
-            <div className="text-3xl font-heading text-white">{preview?.level || totalLevel}</div>
-            <div className="text-stone-400 text-sm">Level</div>
+            <div className="text-3xl font-heading text-[var(--text)]">{preview?.level || totalLevel}</div>
+            <div className="text-[var(--text-muted)] text-sm">Level</div>
           </div>
           <div>
-            <div className="text-3xl font-heading text-white">{preview?.hp?.max || '—'}</div>
-            <div className="text-stone-400 text-sm">Max HP</div>
+            <div className="text-3xl font-heading text-[var(--text)]">{preview?.hp?.max || '—'}</div>
+            <div className="text-[var(--text-muted)] text-sm">Max HP</div>
           </div>
           <div>
-            <div className="text-3xl font-heading text-white">{preview?.ac || '—'}</div>
-            <div className="text-stone-400 text-sm">AC</div>
+            <div className="text-3xl font-heading text-[var(--text)]">{preview?.ac || '—'}</div>
+            <div className="text-[var(--text-muted)] text-sm">AC</div>
           </div>
           <div>
-            <div className="text-3xl font-heading text-white">{hitDice}</div>
-            <div className="text-stone-400 text-sm">Hit Dice</div>
+            <div className="text-3xl font-heading text-[var(--text)]">{hitDice}</div>
+            <div className="text-[var(--text-muted)] text-sm">Hit Dice</div>
           </div>
         </div>
       </div>

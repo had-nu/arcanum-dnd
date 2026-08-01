@@ -52,7 +52,7 @@ export function TopChrome() {
   if (!draft.name && draft.classes.length === 0) return null;
 
   return (
-    <header className="bg-stone-900/95 backdrop-blur-sm border-b border-stone-700 px-4 py-3">
+    <header className="bg-[var(--bg-surface)]/95 backdrop-blur-sm border-b border-[var(--border)] px-4 py-3">
       <div className="container mx-auto flex flex-col md:flex-row md:items-center gap-4">
         <div className="flex items-center gap-4 flex-1 min-w-0">
           {isEditing ? (
@@ -63,39 +63,39 @@ export function TopChrome() {
               onChange={(e) => setEditName(e.target.value)}
               onBlur={handleFinishEdit}
               onKeyDown={handleKeyDown}
-              className="font-heading text-xl text-white bg-stone-800 border border-stone-600 rounded px-2 py-1 outline-none focus:border-red-500 w-full max-w-xs"
+              className="font-heading text-xl text-[var(--text)] bg-[var(--bg-elevated)] border border-[var(--border)] rounded-[var(--radius)] px-2 py-1 outline-none focus:border-[var(--red)] w-full max-w-xs"
               placeholder="Character name"
             />
           ) : (
             <h1
-              className="font-heading text-xl text-white truncate cursor-pointer hover:text-red-400 transition-colors"
+              className="font-heading text-xl text-[var(--text)] truncate cursor-pointer hover:text-[var(--red)] transition-colors"
               onClick={handleStartEdit}
               title="Click to rename"
             >
               {draft.name || 'Unnamed Character'}
             </h1>
           )}
-          <span className="px-3 py-1 bg-red-600 text-white text-sm font-label rounded-full">Level {totalLevel}</span>
+          <span className="px-3 py-1 bg-[var(--red)] text-white text-sm font-label rounded-full">Level {totalLevel}</span>
         </div>
 
         <div className="flex flex-wrap items-center gap-6 text-sm">
-          <div className="flex items-center gap-2 text-stone-400">
-            <span className="font-label text-white">HP:</span>
-            <span className="text-lg font-bold text-white">{maxHP}</span>
+          <div className="flex items-center gap-2 text-[var(--text-muted)]">
+            <span className="font-label text-[var(--text)]">HP:</span>
+            <span className="text-lg font-bold text-[var(--text)]">{maxHP}</span>
           </div>
-          <div className="flex items-center gap-2 text-stone-400">
-            <span className="font-label text-white">AC:</span>
-            <span className="text-lg font-bold text-white">{ac}</span>
+          <div className="flex items-center gap-2 text-[var(--text-muted)]">
+            <span className="font-label text-[var(--text)]">AC:</span>
+            <span className="text-lg font-bold text-[var(--text)]">{ac}</span>
           </div>
-          <div className="flex items-center gap-2 text-stone-400">
-            <span className="font-label text-white">Hit Dice:</span>
-            <span className="font-mono text-white">{hitDice}</span>
+          <div className="flex items-center gap-2 text-[var(--text-muted)]">
+            <span className="font-label text-[var(--text)]">Hit Dice:</span>
+            <span className="font-mono text-[var(--text)]">{hitDice}</span>
           </div>
 
           {preview && preview.spellSlots && (
-            <div className="flex items-center gap-2 text-stone-400">
-              <span className="font-label text-white">Slots:</span>
-              <span className="font-mono text-white text-xs">
+            <div className="flex items-center gap-2 text-[var(--text-muted)]">
+              <span className="font-label text-[var(--text)]">Slots:</span>
+              <span className="font-mono text-[var(--text)] text-xs">
                 {Object.entries(preview.spellSlots)
                   .filter(([k]) => parseInt(k) > 0)
                   .map(([level, count]) => `L${level}:${count}`)

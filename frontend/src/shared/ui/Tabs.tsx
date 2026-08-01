@@ -39,7 +39,7 @@ interface TabListProps {
 
 export function TabList({ children, className = '' }: TabListProps) {
   return (
-    <div role="tablist" className={clsx('flex border-b border-stone-700', className)}>
+    <div role="tablist" className={clsx('flex border-b border-[var(--border)]', className)}>
       {children}
     </div>
   );
@@ -67,10 +67,10 @@ export function Tab({ value, children, disabled = false, className = '' }: TabPr
       onClick={() => !disabled && onTabChange(value)}
       disabled={disabled}
       className={clsx(
-        'px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-stone-900',
+        'px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-root)]',
         isActive
-          ? 'text-red-500 border-b-2 border-red-500'
-          : 'text-stone-400 hover:text-white hover:bg-stone-800',
+          ? 'text-[var(--red)] border-b-2 border-[var(--red)]'
+          : 'text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--bg-hover)]',
         disabled && 'opacity-50 cursor-not-allowed',
         className
       )}
