@@ -30,7 +30,7 @@ security:
 quality:
 	PATH="$(GO_PATH)" $(GO_BIN) install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 	PATH="$(GO_PATH)" $(HOME)/go/bin/golangci-lint run ./... || true
-	cd $(FRONTEND_DIR) && $(NPM_BIN) exec eslint src --ext .ts,.tsx || true
+	cd $(FRONTEND_DIR) && $(NPM_BIN) exec eslint "src/**/*.ts" "src/**/*.tsx" || true
 
 lint: quality
 

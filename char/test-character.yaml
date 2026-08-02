@@ -1,0 +1,42 @@
+name: Test Character
+classes:
+    - id: fighter
+      name: Fighter
+      level: 1
+backgroundId: Acolyte
+speciesId: Human
+level: 1
+abilityMethod: standard
+abilities:
+    CHA: 8
+    CON: 13
+    DEX: 14
+    INT: 12
+    STR: 15
+    WIS: 10
+skills:
+    - acrobatics
+    - athletics
+    - intimidation
+    - medicine
+    - perception
+    - survival
+    - animal-handling
+    - deception
+    - nature
+    - performance
+    - persuasion
+    - history
+    - investigation
+    - religion
+    - sleight-of-hand
+    - arcana
+    - insight
+    - stealth
+feats:
+    - class.fighter.fighting-style
+    - class.fighter.second-wind
+xp: 0
+progressionType: milestone
+createdAt: "2026-07-30T18:09:21Z"
+updatedAt: "2026-07-30T18:09:21Z"
