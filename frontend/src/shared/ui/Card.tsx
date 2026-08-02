@@ -11,8 +11,8 @@ interface CardProps extends Omit<HTMLAttributes<HTMLDivElement>, 'ref'> {
 
 type CardRef = Ref<HTMLDivElement | HTMLButtonElement>;
 
-const ALLOWED_DIV_PROPS = ['id', 'style', 'className', 'role', 'aria-label', 'aria-labelledby', 'aria-describedby', 'data-*'];
-const ALLOWED_BUTTON_PROPS = ['id', 'style', 'className', 'role', 'aria-label', 'aria-labelledby', 'aria-describedby', 'data-*', 'disabled', 'type'];
+const ALLOWED_DIV_PROPS = ['id', 'style', 'className', 'role', 'aria-*', 'data-*'];
+const ALLOWED_BUTTON_PROPS = ['id', 'style', 'className', 'role', 'aria-*', 'data-*', 'disabled', 'type'];
 
 function filterProps(props: HTMLAttributes<HTMLDivElement>, allowed: string[]): Record<string, unknown> {
   const filtered: Record<string, unknown> = {};

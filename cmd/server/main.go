@@ -442,7 +442,7 @@ func (s *Server) handleContent(w http.ResponseWriter, r *http.Request) {
 			seen := map[string]bool{}
 			for _, p := range profs {
 				if p.Category == "skill" {
-					if p.SkillChoose > 0 {
+					if p.SkillChoose > skillChoices {
 						skillChoices = p.SkillChoose
 					}
 					if p.SkillFrom != "" && !seen[string(p.SkillFrom)] {
@@ -829,7 +829,7 @@ func (s *Server) handleMetamagicOptions(w http.ResponseWriter, r *http.Request) 
 
 func (s *Server) handleFeats(w http.ResponseWriter, r *http.Request) {
 	rows, err := s.db.Query(`
-		SELECT id, name,
+		SELECT id, name, description,
 			prereq_level, prereq_ability, prereq_ability_min, prereq_feat, prereq_class, prereq_spellcasting, prereq_proficiency, source
 		FROM feats
 		ORDER BY name
@@ -840,30 +840,44 @@ func (s *Server) handleFeats(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 
+	type Prerequisites struct {
+		Level       *int    `json:"level,omitempty"`
+		Ability     string  `json:"ability,omitempty"`
+		AbilityMin  *int    `json:"abilityMin,omitempty"`
+		Feat        string  `json:"feat,omitempty"`
+		Class       string  `json:"class,omitempty"`
+		Spellcasting *bool  `json:"spellcasting,omitempty"`
+		Proficiency string  `json:"proficiency,omitempty"`
+	}
+
 	type FeatEntry struct {
-		ID               string `json:"id"`
-		Name             string `json:"name"`
-		PrereqLevel      *int   `json:"prereqLevel,omitempty"`
-		PrereqAbility    string `json:"prereqAbility,omitempty"`
-		PrereqAbilityMin *int   `json:"prereqAbilityMin,omitempty"`
-		PrereqFeat       string `json:"prereqFeat,omitempty"`
-		PrereqClass      string `json:"prereqClass,omitempty"`
-		PrereqSpellcasting bool   `json:"prereqSpellcasting,omitempty"`
-		PrereqProficiency string `json:"prereqProficiency,omitempty"`
-		Source           string `json:"source,omitempty"`
+		ID              string          `json:"id"`
+		Name            string          `json:"name"`
+		Description     string          `json:"description,omitempty"`
+		Prerequisites   *Prerequisites  `json:"prerequisites,omitempty"`
+		PrereqLevel     *int            `json:"prereqLevel,omitempty"`
+		PrereqAbility   string          `json:"prereqAbility,omitempty"`
+		PrereqAbilityMin *int           `json:"prereqAbilityMin,omitempty"`
+		PrereqFeat      string          `json:"prereqFeat,omitempty"`
+		PrereqClass     string          `json:"prereqClass,omitempty"`
+		PrereqSpellcasting bool         `json:"prereqSpellcasting,omitempty"`
+		PrereqProficiency string         `json:"prereqProficiency,omitempty"`
+		Source          string          `json:"source,omitempty"`
 	}
 
 	var feats = []FeatEntry{}
 	for rows.Next() {
 		var f FeatEntry
-		var pl, pam sql.NullInt64
-		var pa, pf, pc, pp, src sql.NullString
-		var psc int
-		if err := rows.Scan(&f.ID, &f.Name,
+		var pl, pam, psc sql.NullInt64
+		var pa, pf, pc, pp, src, desc sql.NullString
+		if err := rows.Scan(&f.ID, &f.Name, &desc,
 			&pl, &pa, &pam,
 			&pf, &pc, &psc,
 			&pp, &src); err != nil {
 			continue
+		}
+		if desc.Valid {
+			f.Description = desc.String
 		}
 		if pl.Valid {
 			v := int(pl.Int64)
@@ -882,13 +896,30 @@ func (s *Server) handleFeats(w http.ResponseWriter, r *http.Request) {
 		if pc.Valid {
 			f.PrereqClass = pc.String
 		}
-		f.PrereqSpellcasting = psc == 1
+		if psc.Valid {
+			f.PrereqSpellcasting = psc.Int64 == 1
+		}
 		if pp.Valid {
 			f.PrereqProficiency = pp.String
 		}
 		if src.Valid {
 			f.Source = src.String
 		}
+
+		// Build prerequisites object for frontend
+		hasPrereq := pl.Valid || pa.Valid || pam.Valid || pf.Valid || pc.Valid || psc.Valid || pp.Valid
+		if hasPrereq {
+			f.Prerequisites = &Prerequisites{
+				Level:       f.PrereqLevel,
+				Ability:     f.PrereqAbility,
+				AbilityMin:  f.PrereqAbilityMin,
+				Feat:        f.PrereqFeat,
+				Class:       f.PrereqClass,
+				Spellcasting: func() *bool { if psc.Valid { v := psc.Int64 == 1; return &v } else { return nil } }(),
+				Proficiency: f.PrereqProficiency,
+			}
+		}
+
 		feats = append(feats, f)
 	}
 

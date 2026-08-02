@@ -3,17 +3,27 @@
 
 set -e
 
-# Add Go to PATH
-export PATH=$PATH:~/.local/go/bin
-
-PROJECT_ROOT="/home/lobo/projects/arcanum-dnd"
-BACKEND_BIN="$PROJECT_ROOT/server"
+# Resolve project root from script location
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$SCRIPT_DIR"
+BUILD_DIR="$PROJECT_ROOT/build"
+BACKEND_BIN="$BUILD_DIR/server"
 FRONTEND_DIR="$PROJECT_ROOT/frontend"
+
+# Ensure Go is in PATH (standard locations)
+export PATH="$PATH:/usr/local/go/bin:$HOME/go/bin"
 
 echo "Starting Arcanum D&D Character Builder..."
 echo "Backend: http://localhost:8080"
 echo "Frontend: http://localhost:5173"
 echo ""
+
+# Build backend if not present
+if [[ ! -x "$BACKEND_BIN" ]]; then
+    echo "Building backend..."
+    cd "$PROJECT_ROOT"
+    make build-backend
+fi
 
 # Start backend
 cd "$PROJECT_ROOT"
@@ -21,8 +31,15 @@ echo "Starting backend on :8080..."
 "$BACKEND_BIN" &
 BACKEND_PID=$!
 
-# Wait a moment for backend to start
-sleep 2
+# Wait for backend to be ready (health check instead of sleep)
+echo "Waiting for backend to be ready..."
+for i in {1..30}; do
+    if curl -sf http://localhost:8080/health >/dev/null 2>&1; then
+        echo "Backend ready"
+        break
+    fi
+    sleep 0.2
+done
 
 # Start frontend
 cd "$FRONTEND_DIR"

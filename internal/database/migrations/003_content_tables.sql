@@ -38,6 +38,7 @@ CREATE INDEX IF NOT EXISTS idx_spells_school ON spells(school);
 CREATE TABLE IF NOT EXISTS feats (
     id                TEXT PRIMARY KEY,
     name              TEXT NOT NULL,
+    description       TEXT DEFAULT '',
     prereq_level      INTEGER,
     prereq_ability    TEXT,
     prereq_ability_min INTEGER,

@@ -137,9 +137,10 @@ type LevelEntry struct {
 }
 
 type Feat struct {
-	ID          types.FeatID     `yaml:"id" validate:"required"`
-	Name        string           `yaml:"name" validate:"required"`
-	Prerequisites *Prerequisites `yaml:"prerequisites,omitempty"`
+	ID            types.FeatID     `yaml:"id" validate:"required"`
+	Name          string           `yaml:"name" validate:"required"`
+	Description   string           `yaml:"description,omitempty"`
+	Prerequisites *Prerequisites   `yaml:"prerequisites,omitempty"`
 	Effects       []schemas.Effect `yaml:"effects,omitempty"`
 	ReplacesID    *types.FeatID   `yaml:"replacesId,omitempty"`
 }
