@@ -18,7 +18,7 @@ type AttackIntent struct {
 	DamageBonus int                 `json:"damageBonus"`
 }
 
-func PlanAttack(state runtime.CampaignState, r rng.RNG, intent AttackIntent) events.Event {
+func PlanAttack(state runtime.CampaignState, r *rng.DefaultRNG, intent AttackIntent) events.Event {
 	roll := rng.RollD20(r)
 	total := roll + intent.AttackBonus
 	isCrit := roll == 20
@@ -45,7 +45,7 @@ func PlanAttack(state runtime.CampaignState, r rng.RNG, intent AttackIntent) eve
 	}
 }
 
-func planDamage(r rng.RNG, intent AttackIntent, isCrit bool) *events.DamageRolledEvent {
+func planDamage(r *rng.DefaultRNG, intent AttackIntent, isCrit bool) *events.DamageRolledEvent {
 	count := 1
 	if isCrit {
 		count = 2
