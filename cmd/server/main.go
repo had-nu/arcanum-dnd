@@ -909,14 +909,19 @@ func (s *Server) handleFeats(w http.ResponseWriter, r *http.Request) {
 		// Build prerequisites object for frontend
 		hasPrereq := pl.Valid || pa.Valid || pam.Valid || pf.Valid || pc.Valid || psc.Valid || pp.Valid
 		if hasPrereq {
+			var spellcasting *bool
+			if psc.Valid {
+				v := psc.Int64 == 1
+				spellcasting = &v
+			}
 			f.Prerequisites = &Prerequisites{
-				Level:       f.PrereqLevel,
-				Ability:     f.PrereqAbility,
-				AbilityMin:  f.PrereqAbilityMin,
-				Feat:        f.PrereqFeat,
-				Class:       f.PrereqClass,
-				Spellcasting: func() *bool { if psc.Valid { v := psc.Int64 == 1; return &v } else { return nil } }(),
-				Proficiency: f.PrereqProficiency,
+				Level:          f.PrereqLevel,
+				Ability:        f.PrereqAbility,
+				AbilityMin:     f.PrereqAbilityMin,
+				Feat:           f.PrereqFeat,
+				Class:          f.PrereqClass,
+				Spellcasting:   spellcasting,
+				Proficiency:    f.PrereqProficiency,
 			}
 		}
 

@@ -45,7 +45,7 @@ func PlanAttack(state runtime.CampaignState, r *rng.DefaultRNG, intent AttackInt
 	}
 }
 
-func planDamage(r *rng.DefaultRNG, intent AttackIntent, isCrit bool) *events.DamageRolledEvent {
+func planDamage(r rng.RNG, intent AttackIntent, isCrit bool) *events.DamageRolledEvent {
 	count := 1
 	if isCrit {
 		count = 2

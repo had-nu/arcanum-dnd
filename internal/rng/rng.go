@@ -4,6 +4,11 @@ import (
 	"math/rand"
 )
 
+// RNG is the interface for random number generation, allowing dependency injection for testing.
+type RNG interface {
+	Intn(n int) int
+}
+
 type DefaultRNG struct {
 	rng *rand.Rand
 }
@@ -16,11 +21,11 @@ func (d *DefaultRNG) Intn(n int) int {
 	return d.rng.Intn(n)
 }
 
-func RollD20(rng *DefaultRNG) int {
+func RollD20(rng RNG) int {
 	return rng.Intn(20) + 1
 }
 
-func RollDie(rng *DefaultRNG, sides int) int {
+func RollDie(rng RNG, sides int) int {
 	return rng.Intn(sides) + 1
 }
 
@@ -30,7 +35,7 @@ type DiceRollResult struct {
 	Modifier int   `json:"modifier,omitempty"`
 }
 
-func RollDice(rng *DefaultRNG, count, sides, modifier int) DiceRollResult {
+func RollDice(rng RNG, count, sides, modifier int) DiceRollResult {
 	rolls := make([]int, count)
 	total := 0
 	for i := 0; i < count; i++ {

@@ -29,7 +29,7 @@ type PlanResult struct {
 
 type Engine struct {
 	content       scontent.ResolvedContent
-	rng           *rng.DefaultRNG
+	rng           rng.RNG
 	eventStore    database.EventStore
 	snapshotStore database.SnapshotStore
 	Plan          *Planner
@@ -45,7 +45,7 @@ type Deriver struct {
 	engine *Engine
 }
 
-func NewEngine(content scontent.ResolvedContent, r *rng.DefaultRNG, eventStore database.EventStore, snapshotStore database.SnapshotStore) *Engine {
+func NewEngine(content scontent.ResolvedContent, r rng.RNG, eventStore database.EventStore, snapshotStore database.SnapshotStore) *Engine {
 	e := &Engine{
 		content:       content,
 		rng:           r,

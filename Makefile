@@ -1,9 +1,12 @@
 .PHONY: build build-frontend build-backend test lint security quality run-server run-player run-spells dev run clean ci
 
 BUILD_DIR := $(CURDIR)/build
+TOOLS_DIR := $(BUILD_DIR)/tools
 FRONTEND_DIR := frontend
-GO_BIN := $(shell which go 2>/dev/null || ls /usr/local/go/bin/go /home/linuxbrew/.linuxbrew/bin/go /opt/homebrew/bin/go /home/lobo/.local/go/bin/go 2>/dev/null | head -1)
-NPM_BIN := $(shell which npm || echo /usr/bin/npm)
+GO_BIN := $(shell which go 2>/dev/null || ls /usr/local/go/bin/go /home/linuxbrew/.linuxbrew/bin/go /opt/homebrew/bin/go $(HOME)/.local/go/bin/go 2>/dev/null | head -1)
+NPM_BIN := $(shell which npm 2>/dev/null || echo npm)
+GOSEC_BIN := $(TOOLS_DIR)/gosec
+GOLANGCI_LINT_BIN := $(TOOLS_DIR)/golangci-lint
 
 build: build-frontend build-backend
 
@@ -23,14 +26,20 @@ test:
 test-ci:
 	CGO_ENABLED=1 $(GO_BIN) test -race -coverprofile=coverage.out -covermode=atomic ./...
 
-security:
-	$(GO_BIN) install github.com/securego/gosec/v2/cmd/gosec@latest
-	$(HOME)/go/bin/gosec -fmt sarif -out security.sarif -exclude=G404,G301,G304,G306,G703,G104,G706 ./... || true
+$(GOSEC_BIN):
+	mkdir -p $(TOOLS_DIR)
+	GOBIN=$(TOOLS_DIR) $(GO_BIN) install github.com/securego/gosec/v2/cmd/gosec@latest
+
+security: $(GOSEC_BIN)
+	$(GOSEC_BIN) -fmt sarif -out security.sarif -exclude=G404,G301,G304,G306,G703,G104,G706 ./... || true
 	cd $(FRONTEND_DIR) && $(NPM_BIN) audit --audit-level=critical
 
-quality:
-	$(GO_BIN) install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-	$(HOME)/go/bin/golangci-lint run ./... || true
+$(GOLANGCI_LINT_BIN):
+	mkdir -p $(TOOLS_DIR)
+	GOBIN=$(TOOLS_DIR) $(GO_BIN) install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+
+quality: $(GOLANGCI_LINT_BIN)
+	$(GOLANGCI_LINT_BIN) run ./... || true
 	cd $(FRONTEND_DIR) && $(NPM_BIN) exec eslint "src/**/*.ts" "src/**/*.tsx" || true
 
 lint: quality

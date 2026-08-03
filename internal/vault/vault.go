@@ -1,6 +1,7 @@
 package vault
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -8,6 +9,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/hadnu/arcanum/internal/database"
+	"github.com/hadnu/arcanum/internal/schemas/events"
 	"github.com/hadnu/arcanum/internal/schemas/vault"
 	"github.com/hadnu/arcanum/internal/types"
 	"gopkg.in/yaml.v3"
@@ -257,6 +260,148 @@ func (v *Vault) Import(data []byte) (*vault.CharacterVaultEntry, error) {
 	return &entry, nil
 }
 
+// PromoteToCompleted converts a draft character to completed by emitting events to the event store.
+// This is the bridge between vault (YAML) and event store (SQLite).
+func (v *Vault) PromoteToCompleted(ctx context.Context, id types.CharacterID, eventStore database.EventStore) error {
+	entry, err := v.Get(id)
+	if err != nil {
+		return err
+	}
+
+	if entry.Metadata.Status == vault.StatusCompleted {
+		return nil // already completed
+	}
+
+	// Validate completeness
+	if err := v.validateComplete(entry); err != nil {
+		return fmt.Errorf("character not complete: %w", err)
+	}
+
+	// Convert to events
+	domainEvents := entryToEvents(entry)
+
+	// Wrap in envelopes and emit
+	now := time.Now()
+	envelopes := make([]events.EventEnvelope, len(domainEvents))
+	for i, evt := range domainEvents {
+		env := events.EventEnvelope{
+			ID:            types.NewEventID(),
+			AggregateID:   id.String(),
+			AggregateType: events.AggregateCharacter,
+			Version:       i + 1,
+			OccurredAt:    now,
+		}
+		env, err = events.MarshalEvent(evt, env)
+		if err != nil {
+			return fmt.Errorf("marshal event %s: %w", evt.EventType(), err)
+		}
+		envelopes[i] = env
+	}
+
+	// Append to event store
+	if err := eventStore.Append(ctx, id.String(), 0, envelopes); err != nil {
+		return fmt.Errorf("append events: %w", err)
+	}
+
+	// Update status
+	entry.Metadata.Status = vault.StatusCompleted
+	entry.Metadata.EventVersion = len(domainEvents)
+	entry.Metadata.UpdatedAt = time.Now()
+
+	return v.Save(entry)
+}
+
+// entryToEvents converts a vault entry to a sequence of domain events (full history replay).
+func entryToEvents(entry *vault.CharacterVaultEntry) []events.Event {
+	var domainEvents []events.Event
+
+	// 1. CharacterCreatedEvent (at level 1)
+	created := &events.CharacterCreatedEvent{
+		CharacterID:    entry.Metadata.ID,
+		Name:           entry.Identity.Name,
+		SpeciesID:      types.SpeciesID(entry.Origin.Species),
+		BackgroundID:   types.BackgroundID(entry.Origin.Background),
+		Level:          1,
+		AbilityScores:  abilitiesToAbilityScores(entry.Abilities),
+		MaxHP:          computeMaxHPAtLevel(entry, 1),
+		SavingThrows:   computeSavingThrows(entry),
+		Skills:         skillsToProficiencyMap(entry.Skills),
+		Feats:          featsToFeatIDs(entry.Feats),
+		AbilityMethod:  entry.Origin.AbilityMethod,
+		Classes:        classesToClassEntries(entry.Classes),
+	}
+	domainEvents = append(domainEvents, created)
+
+	// 2. CharacterLeveledUpEvent for each level 2..N
+	for lvl := 2; lvl <= entry.Identity.Level; lvl++ {
+		var classID types.ClassID
+		if len(entry.Classes) > 0 {
+			classID = types.ClassID(entry.Classes[0].ClassID)
+		}
+		leveled := &events.CharacterLeveledUpEvent{
+			CharacterID:    entry.Metadata.ID,
+			ClassID:        classID,
+			NewLevel:       lvl,
+			HPGained:       computeHPGain(entry, lvl),
+			SubclassChoice: subclassAtLevel(entry, lvl),
+			FeatChoice:     featAtLevel(entry, lvl),
+		}
+		domainEvents = append(domainEvents, leveled)
+	}
+
+	// 3. SubclassChosenEvent (if applicable)
+	if sc := getSubclass(entry); sc != "" {
+		var classID types.ClassID
+		if len(entry.Classes) > 0 {
+			classID = types.ClassID(entry.Classes[0].ClassID)
+		}
+		domainEvents = append(domainEvents, &events.SubclassChosenEvent{
+			CharacterID: entry.Metadata.ID,
+			ClassID:     classID,
+			SubclassID:  types.SubClassID(sc),
+			Level:       getSubclassLevel(entry),
+		})
+	}
+
+	// 4. FeatTakenEvent for background feats not covered by level-up
+	for _, f := range entry.Feats {
+		if f.Source == "background" {
+			domainEvents = append(domainEvents, &events.FeatTakenEvent{
+				CharacterID: entry.Metadata.ID,
+				FeatID:      types.FeatID(f.FeatID),
+				Level:       f.Level,
+			})
+		}
+	}
+
+	return domainEvents
+}
+
+// validateComplete checks if a character has all required fields for completion.
+func (v *Vault) validateComplete(entry *vault.CharacterVaultEntry) error {
+	if entry.Identity.Name == "" {
+		return fmt.Errorf("name required")
+	}
+	if entry.Identity.Level < 1 {
+		return fmt.Errorf("level must be >= 1")
+	}
+	if len(entry.Classes) == 0 {
+		return fmt.Errorf("at least one class required")
+	}
+	if entry.Origin.Species == "" {
+		return fmt.Errorf("species required")
+	}
+	if entry.Origin.Background == "" {
+		return fmt.Errorf("background required")
+	}
+	// Check abilities are set
+	if entry.Abilities.STR == 0 && entry.Abilities.DEX == 0 && entry.Abilities.CON == 0 &&
+		entry.Abilities.INT == 0 && entry.Abilities.WIS == 0 && entry.Abilities.CHA == 0 {
+		return fmt.Errorf("ability scores required")
+	}
+	return nil
+}
+
 // slugifyID converts a CharacterID to a filesystem-safe slug.
 func slugifyID(id types.CharacterID) string {
 	s := id.String()
@@ -289,29 +434,31 @@ func computeHPGain(entry *vault.CharacterVaultEntry, level int) int {
 	return 4 + conMod // average d6 + CON
 }
 
-func computeSavingThrows(entry *vault.CharacterVaultEntry) []string {
+func computeSavingThrows(entry *vault.CharacterVaultEntry) []types.AbilityScore {
 	if len(entry.Classes) > 0 {
 		// Sorcerer: CON, CHA
-		return []string{"CON", "CHA"}
+		return []types.AbilityScore{types.CON, types.CHA}
 	}
-	return []string{}
+	return []types.AbilityScore{}
 }
 
-func subclassAtLevel(entry *vault.CharacterVaultEntry, level int) string {
+func subclassAtLevel(entry *vault.CharacterVaultEntry, level int) *types.SubClassID {
 	for _, c := range entry.Classes {
 		if c.SubclassChosenAt == level && c.SubclassID != "" {
-			return c.SubclassID
+			sc := types.SubClassID(c.SubclassID)
+			return &sc
 		}
 	}
-	return ""
+	return nil
 }
 
-func featAtLevel(entry *vault.CharacterVaultEntry, level int) string {
+func featAtLevel(entry *vault.CharacterVaultEntry, level int) *types.FeatID {
 	// Check for ASI at levels 4, 8, 12, 16, 19
 	if level == 4 || level == 8 || level == 12 || level == 16 || level == 19 {
 		for _, f := range entry.Feats {
 			if f.Level == level && f.FeatID == "ability-score-improvement" {
-				return f.FeatID
+				fid := types.FeatID(f.FeatID)
+				return &fid
 			}
 		}
 	}
@@ -319,11 +466,12 @@ func featAtLevel(entry *vault.CharacterVaultEntry, level int) string {
 	if level == 1 {
 		for _, f := range entry.Feats {
 			if f.Source == "background" {
-				return f.FeatID
+				fid := types.FeatID(f.FeatID)
+				return &fid
 			}
 		}
 	}
-	return ""
+	return nil
 }
 
 func getSubclass(entry *vault.CharacterVaultEntry) string {
@@ -357,13 +505,13 @@ func abilitiesToAbilityScores(a vault.Abilities) types.AbilityScores {
 	}
 }
 
-func skillsToProficiencyMap(s vault.Skills) map[string]vault.ProficiencyLevel {
-	m := make(map[string]vault.ProficiencyLevel)
+func skillsToProficiencyMap(s vault.Skills) map[types.Skill]types.ProficiencyLevel {
+	m := make(map[types.Skill]types.ProficiencyLevel)
 	for _, skill := range s.Proficient {
-		m[skill] = vault.ProficiencyProficient
+		m[types.Skill(skill)] = types.ProficiencyProficient
 	}
 	for _, skill := range s.Expertise {
-		m[skill] = vault.ProficiencyExpert
+		m[types.Skill(skill)] = types.ProficiencyExpertise
 	}
 	return m
 }
@@ -376,8 +524,21 @@ func featsToFeatIDs(feats []vault.FeatEntry) []types.FeatID {
 	return ids
 }
 
-func classesToClassEntries(classes []vault.ClassEntry) []vault.ClassEntry {
-	return classes
+func classesToClassEntries(classes []vault.ClassEntry) []events.ClassEntry {
+	result := make([]events.ClassEntry, len(classes))
+	for i, c := range classes {
+		var subclassID *types.SubClassID
+		if c.SubclassID != "" {
+			sc := types.SubClassID(c.SubclassID)
+			subclassID = &sc
+		}
+		result[i] = events.ClassEntry{
+			ClassID:    types.ClassID(c.ClassID),
+			Level:      c.Level,
+			SubclassID: subclassID,
+		}
+	}
+	return result
 }
 
 // Domain event types (simplified - would be in schemas/events)
