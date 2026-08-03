@@ -9,12 +9,16 @@ import (
 	"sync"
 	"time"
 
-	"github.com/hadnu/arcanum/internal/database"
 	"github.com/hadnu/arcanum/internal/schemas/events"
 	"github.com/hadnu/arcanum/internal/schemas/vault"
 	"github.com/hadnu/arcanum/internal/types"
 	"gopkg.in/yaml.v3"
 )
+
+// EventStore is the interface for appending events, allowing testability.
+type EventStore interface {
+	Append(ctx context.Context, aggregateID string, expectedVersion int, evts []events.EventEnvelope) error
+}
 
 // Vault manages the character vault (char/ directory with YAML files + _index.yaml).
 type Vault struct {
@@ -262,7 +266,7 @@ func (v *Vault) Import(data []byte) (*vault.CharacterVaultEntry, error) {
 
 // PromoteToCompleted converts a draft character to completed by emitting events to the event store.
 // This is the bridge between vault (YAML) and event store (SQLite).
-func (v *Vault) PromoteToCompleted(ctx context.Context, id types.CharacterID, eventStore database.EventStore) error {
+func (v *Vault) PromoteToCompleted(ctx context.Context, id types.CharacterID, eventStore EventStore) error {
 	entry, err := v.Get(id)
 	if err != nil {
 		return err

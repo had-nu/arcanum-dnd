@@ -851,18 +851,11 @@ func (s *Server) handleFeats(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type FeatEntry struct {
-		ID              string          `json:"id"`
-		Name            string          `json:"name"`
-		Description     string          `json:"description,omitempty"`
-		Prerequisites   *Prerequisites  `json:"prerequisites,omitempty"`
-		PrereqLevel     *int            `json:"prereqLevel,omitempty"`
-		PrereqAbility   string          `json:"prereqAbility,omitempty"`
-		PrereqAbilityMin *int           `json:"prereqAbilityMin,omitempty"`
-		PrereqFeat      string          `json:"prereqFeat,omitempty"`
-		PrereqClass     string          `json:"prereqClass,omitempty"`
-		PrereqSpellcasting bool         `json:"prereqSpellcasting,omitempty"`
-		PrereqProficiency string         `json:"prereqProficiency,omitempty"`
-		Source          string          `json:"source,omitempty"`
+		ID            string         `json:"id"`
+		Name          string         `json:"name"`
+		Description   string         `json:"description,omitempty"`
+		Prerequisites *Prerequisites `json:"prerequisites,omitempty"`
+		Source        string         `json:"source,omitempty"`
 	}
 
 	var feats = []FeatEntry{}
@@ -879,29 +872,6 @@ func (s *Server) handleFeats(w http.ResponseWriter, r *http.Request) {
 		if desc.Valid {
 			f.Description = desc.String
 		}
-		if pl.Valid {
-			v := int(pl.Int64)
-			f.PrereqLevel = &v
-		}
-		if pa.Valid {
-			f.PrereqAbility = pa.String
-		}
-		if pam.Valid {
-			v := int(pam.Int64)
-			f.PrereqAbilityMin = &v
-		}
-		if pf.Valid {
-			f.PrereqFeat = pf.String
-		}
-		if pc.Valid {
-			f.PrereqClass = pc.String
-		}
-		if psc.Valid {
-			f.PrereqSpellcasting = psc.Int64 == 1
-		}
-		if pp.Valid {
-			f.PrereqProficiency = pp.String
-		}
 		if src.Valid {
 			f.Source = src.String
 		}
@@ -915,13 +885,13 @@ func (s *Server) handleFeats(w http.ResponseWriter, r *http.Request) {
 				spellcasting = &v
 			}
 			f.Prerequisites = &Prerequisites{
-				Level:          f.PrereqLevel,
-				Ability:        f.PrereqAbility,
-				AbilityMin:     f.PrereqAbilityMin,
-				Feat:           f.PrereqFeat,
-				Class:          f.PrereqClass,
-				Spellcasting:   spellcasting,
-				Proficiency:    f.PrereqProficiency,
+				Level:       intPtr(pl),
+				Ability:     abilityPtr(pa),
+				AbilityMin:  intPtr(pam),
+				Feat:        featPtr(pf),
+				Class:       classPtr(pc),
+				Spellcasting: spellcasting,
+				Proficiency: proficiencyPtr(pp),
 			}
 		}
 
@@ -1223,6 +1193,32 @@ func sanitizeName(name string) string {
 	s = strings.Trim(s, "-")
 	if s == "" { s = "unnamed" }
 	return s
+}
+
+func intPtr(n sql.NullInt64) *int {
+	if !n.Valid { return nil }
+	v := int(n.Int64)
+	return &v
+}
+
+func abilityPtr(a sql.NullString) string {
+	if !a.Valid { return "" }
+	return a.String
+}
+
+func featPtr(f sql.NullString) string {
+	if !f.Valid { return "" }
+	return f.String
+}
+
+func classPtr(c sql.NullString) string {
+	if !c.Valid { return "" }
+	return c.String
+}
+
+func proficiencyPtr(p sql.NullString) string {
+	if !p.Valid { return "" }
+	return p.String
 }
 
 func (s *Server) charactersDir() string {

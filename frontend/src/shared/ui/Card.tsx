@@ -36,7 +36,7 @@ export const Card = forwardRef<CardRef, CardProps>(
           type="button"
           onClick={onClick}
           onKeyDown={(e: React.KeyboardEvent<HTMLButtonElement>) => (e.key === 'Enter' || e.key === ' ') && onClick?.()}
-          className={clsx(baseClasses, 'cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-root)]')}
+          className={clsx(baseClasses, 'cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--border-focus)] focus:ring-offset-2 focus:ring-offset-[var(--bg-root)] focus-visible:ring-2 focus-visible:ring-[var(--border-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-root)]')}
           {...buttonProps}
         >
           {selected && (

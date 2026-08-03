@@ -408,6 +408,7 @@
   .focus-ring-dnd {
     outline: none;
   }
+  .focus-ring-dnd:focus,
   .focus-ring-dnd:focus-visible {
     outline: none;
     box-shadow: 0 0 0 2px var(--bg-root), 0 0 0 4px var(--red);

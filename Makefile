@@ -34,7 +34,7 @@ quality:
 lint: quality
 
 run-server:
-	$(BUILD_DIR)/server
+	@if [[ -x "$(BUILD_DIR)/server" ]]; then $(BUILD_DIR)/server; else $(GO_BIN) run ./cmd/server; fi
 
 run-player: build-backend
 	$(BUILD_DIR)/tui-player

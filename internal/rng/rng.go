@@ -7,6 +7,7 @@ import (
 // RNG is the interface for random number generation, allowing dependency injection for testing.
 type RNG interface {
 	Intn(n int) int
+	Seed(seed int64)
 }
 
 type DefaultRNG struct {
@@ -19,6 +20,10 @@ func NewSeededRNG(seed int64) *DefaultRNG {
 
 func (d *DefaultRNG) Intn(n int) int {
 	return d.rng.Intn(n)
+}
+
+func (d *DefaultRNG) Seed(seed int64) {
+	d.rng.Seed(seed)
 }
 
 func RollD20(rng RNG) int {
