@@ -280,7 +280,7 @@ func (v *Vault) PromoteToCompleted(ctx context.Context, id types.CharacterID, ev
 	// Convert to events
 	domainEvents := entryToEvents(entry)
 
-	// Wrap in envelopes and emit
+	// Use Engine's event emission logic (build envelopes + append)
 	now := time.Now()
 	envelopes := make([]events.EventEnvelope, len(domainEvents))
 	for i, evt := range domainEvents {
@@ -316,6 +316,43 @@ func entryToEvents(entry *vault.CharacterVaultEntry) []events.Event {
 	var domainEvents []events.Event
 
 	// 1. CharacterCreatedEvent (at level 1)
+
+	// Inline computeSavingThrows
+	var savingThrows []types.AbilityScore
+	if len(entry.Classes) > 0 {
+		savingThrows = []types.AbilityScore{types.CON, types.CHA}
+	}
+
+	// Inline skillsToProficiencyMap
+	skills := make(map[types.Skill]types.ProficiencyLevel)
+	for _, skill := range entry.Skills.Proficient {
+		skills[types.Skill(skill)] = types.ProficiencyProficient
+	}
+	for _, skill := range entry.Skills.Expertise {
+		skills[types.Skill(skill)] = types.ProficiencyExpertise
+	}
+
+	// Inline featsToFeatIDs
+	feats := make([]types.FeatID, len(entry.Feats))
+	for i, f := range entry.Feats {
+		feats[i] = types.FeatID(f.FeatID)
+	}
+
+	// Inline classesToClassEntries
+	classEntries := make([]events.ClassEntry, len(entry.Classes))
+	for i, c := range entry.Classes {
+		var subclassID *types.SubClassID
+		if c.SubclassID != "" {
+			sc := types.SubClassID(c.SubclassID)
+			subclassID = &sc
+		}
+		classEntries[i] = events.ClassEntry{
+			ClassID:    types.ClassID(c.ClassID),
+			Level:      c.Level,
+			SubclassID: subclassID,
+		}
+	}
+
 	created := &events.CharacterCreatedEvent{
 		CharacterID:    entry.Metadata.ID,
 		Name:           entry.Identity.Name,
@@ -324,11 +361,11 @@ func entryToEvents(entry *vault.CharacterVaultEntry) []events.Event {
 		Level:          1,
 		AbilityScores:  abilitiesToAbilityScores(entry.Abilities),
 		MaxHP:          computeMaxHPAtLevel(entry, 1),
-		SavingThrows:   computeSavingThrows(entry),
-		Skills:         skillsToProficiencyMap(entry.Skills),
-		Feats:          featsToFeatIDs(entry.Feats),
+		SavingThrows:   savingThrows,
+		Skills:         skills,
+		Feats:          feats,
 		AbilityMethod:  entry.Origin.AbilityMethod,
-		Classes:        classesToClassEntries(entry.Classes),
+		Classes:        classEntries,
 	}
 	domainEvents = append(domainEvents, created)
 
@@ -338,19 +375,60 @@ func entryToEvents(entry *vault.CharacterVaultEntry) []events.Event {
 		if len(entry.Classes) > 0 {
 			classID = types.ClassID(entry.Classes[0].ClassID)
 		}
+
+		// Inline subclassAtLevel
+		var subclassChoice *types.SubClassID
+		for _, c := range entry.Classes {
+			if c.SubclassChosenAt == lvl && c.SubclassID != "" {
+				sc := types.SubClassID(c.SubclassID)
+				subclassChoice = &sc
+				break
+			}
+		}
+
+		// Inline featAtLevel
+		var featChoice *types.FeatID
+		if lvl == 4 || lvl == 8 || lvl == 12 || lvl == 16 || lvl == 19 {
+			for _, f := range entry.Feats {
+				if f.Level == lvl && f.FeatID == "ability-score-improvement" {
+					fid := types.FeatID(f.FeatID)
+					featChoice = &fid
+					break
+				}
+			}
+		}
+		if lvl == 1 {
+			for _, f := range entry.Feats {
+				if f.Source == "background" {
+					fid := types.FeatID(f.FeatID)
+					featChoice = &fid
+					break
+				}
+			}
+		}
+
 		leveled := &events.CharacterLeveledUpEvent{
 			CharacterID:    entry.Metadata.ID,
 			ClassID:        classID,
 			NewLevel:       lvl,
 			HPGained:       computeHPGain(entry, lvl),
-			SubclassChoice: subclassAtLevel(entry, lvl),
-			FeatChoice:     featAtLevel(entry, lvl),
+			SubclassChoice: subclassChoice,
+			FeatChoice:     featChoice,
 		}
 		domainEvents = append(domainEvents, leveled)
 	}
 
 	// 3. SubclassChosenEvent (if applicable)
-	if sc := getSubclass(entry); sc != "" {
+	var subclass string
+	var subclassLevel int
+	for _, c := range entry.Classes {
+		if c.SubclassID != "" {
+			subclass = c.SubclassID
+			subclassLevel = c.SubclassChosenAt
+			break
+		}
+	}
+	if subclass != "" {
 		var classID types.ClassID
 		if len(entry.Classes) > 0 {
 			classID = types.ClassID(entry.Classes[0].ClassID)
@@ -358,8 +436,8 @@ func entryToEvents(entry *vault.CharacterVaultEntry) []events.Event {
 		domainEvents = append(domainEvents, &events.SubclassChosenEvent{
 			CharacterID: entry.Metadata.ID,
 			ClassID:     classID,
-			SubclassID:  types.SubClassID(sc),
-			Level:       getSubclassLevel(entry),
+			SubclassID:  types.SubClassID(subclass),
+			Level:       subclassLevel,
 		})
 	}
 
@@ -376,6 +454,7 @@ func entryToEvents(entry *vault.CharacterVaultEntry) []events.Event {
 
 	return domainEvents
 }
+
 
 // validateComplete checks if a character has all required fields for completion.
 func (v *Vault) validateComplete(entry *vault.CharacterVaultEntry) error {
@@ -434,66 +513,6 @@ func computeHPGain(entry *vault.CharacterVaultEntry, level int) int {
 	return 4 + conMod // average d6 + CON
 }
 
-func computeSavingThrows(entry *vault.CharacterVaultEntry) []types.AbilityScore {
-	if len(entry.Classes) > 0 {
-		// Sorcerer: CON, CHA
-		return []types.AbilityScore{types.CON, types.CHA}
-	}
-	return []types.AbilityScore{}
-}
-
-func subclassAtLevel(entry *vault.CharacterVaultEntry, level int) *types.SubClassID {
-	for _, c := range entry.Classes {
-		if c.SubclassChosenAt == level && c.SubclassID != "" {
-			sc := types.SubClassID(c.SubclassID)
-			return &sc
-		}
-	}
-	return nil
-}
-
-func featAtLevel(entry *vault.CharacterVaultEntry, level int) *types.FeatID {
-	// Check for ASI at levels 4, 8, 12, 16, 19
-	if level == 4 || level == 8 || level == 12 || level == 16 || level == 19 {
-		for _, f := range entry.Feats {
-			if f.Level == level && f.FeatID == "ability-score-improvement" {
-				fid := types.FeatID(f.FeatID)
-				return &fid
-			}
-		}
-	}
-	// Background feats at level 1
-	if level == 1 {
-		for _, f := range entry.Feats {
-			if f.Source == "background" {
-				fid := types.FeatID(f.FeatID)
-				return &fid
-			}
-		}
-	}
-	return nil
-}
-
-func getSubclass(entry *vault.CharacterVaultEntry) string {
-	for _, c := range entry.Classes {
-		if c.SubclassID != "" {
-			return c.SubclassID
-		}
-	}
-	return ""
-}
-
-func getSubclassLevel(entry *vault.CharacterVaultEntry) int {
-	for _, c := range entry.Classes {
-		if c.SubclassID != "" {
-			return c.SubclassChosenAt
-		}
-	}
-	return 0
-}
-
-// Conversion helpers
-
 func abilitiesToAbilityScores(a vault.Abilities) types.AbilityScores {
 	return types.AbilityScores{
 		STR: a.STR,
@@ -504,96 +523,3 @@ func abilitiesToAbilityScores(a vault.Abilities) types.AbilityScores {
 		CHA: a.CHA,
 	}
 }
-
-func skillsToProficiencyMap(s vault.Skills) map[types.Skill]types.ProficiencyLevel {
-	m := make(map[types.Skill]types.ProficiencyLevel)
-	for _, skill := range s.Proficient {
-		m[types.Skill(skill)] = types.ProficiencyProficient
-	}
-	for _, skill := range s.Expertise {
-		m[types.Skill(skill)] = types.ProficiencyExpertise
-	}
-	return m
-}
-
-func featsToFeatIDs(feats []vault.FeatEntry) []types.FeatID {
-	ids := make([]types.FeatID, len(feats))
-	for i, f := range feats {
-		ids[i] = types.FeatID(f.FeatID)
-	}
-	return ids
-}
-
-func classesToClassEntries(classes []vault.ClassEntry) []events.ClassEntry {
-	result := make([]events.ClassEntry, len(classes))
-	for i, c := range classes {
-		var subclassID *types.SubClassID
-		if c.SubclassID != "" {
-			sc := types.SubClassID(c.SubclassID)
-			subclassID = &sc
-		}
-		result[i] = events.ClassEntry{
-			ClassID:    types.ClassID(c.ClassID),
-			Level:      c.Level,
-			SubclassID: subclassID,
-		}
-	}
-	return result
-}
-
-// Domain event types (simplified - would be in schemas/events)
-
-type CharacterCreatedEvent struct {
-	CharacterID    types.CharacterID
-	Name           string
-	SpeciesID      string
-	BackgroundID   string
-	Level          int
-	AbilityScores  types.AbilityScores
-	MaxHP          int
-	SavingThrows   []string
-	Skills         map[string]vault.ProficiencyLevel
-	Feats          []types.FeatID
-	AbilityMethod  string
-	Classes        []vault.ClassEntry
-}
-
-func (e *CharacterCreatedEvent) EventType() string { return "CharacterCreated" }
-
-type CharacterLeveledUpEvent struct {
-	CharacterID    types.CharacterID
-	ClassID        string
-	NewLevel       int
-	HPGained       int
-	SubclassChoice string
-	FeatChoice     string
-}
-
-func (e *CharacterLeveledUpEvent) EventType() string { return "CharacterLeveledUp" }
-
-type SubclassChosenEvent struct {
-	CharacterID types.CharacterID
-	ClassID     string
-	SubclassID  string
-	Level       int
-}
-
-func (e *SubclassChosenEvent) EventType() string { return "SubclassChosen" }
-
-type FeatTakenEvent struct {
-	CharacterID types.CharacterID
-	FeatID      string
-	Level       int
-}
-
-func (e *FeatTakenEvent) EventType() string { return "FeatTaken" }
-
-// ProficiencyLevel constants
-const (
-	ProficiencyNone       vault.ProficiencyLevel = 0
-	ProficiencyProficient vault.ProficiencyLevel = 1
-	ProficiencyExpert     vault.ProficiencyLevel = 2
-	ProficiencyMaster     vault.ProficiencyLevel = 3
-)
-
-// Helper: parseTime (for migration) — see migrator.go for implementation

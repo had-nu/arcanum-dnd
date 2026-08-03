@@ -1,6 +1,6 @@
 "use client";
 
-import React, { forwardRef, type HTMLAttributes, type Ref } from 'react';
+import React, { forwardRef, type HTMLAttributes, type Ref, type ButtonHTMLAttributes } from 'react';
 import { clsx } from 'clsx';
 
 interface CardProps extends Omit<HTMLAttributes<HTMLDivElement>, 'ref'> {
@@ -10,19 +10,6 @@ interface CardProps extends Omit<HTMLAttributes<HTMLDivElement>, 'ref'> {
 }
 
 type CardRef = Ref<HTMLDivElement | HTMLButtonElement>;
-
-const ALLOWED_DIV_PROPS = ['id', 'style', 'className', 'role', 'aria-*', 'data-*'];
-const ALLOWED_BUTTON_PROPS = ['id', 'style', 'className', 'role', 'aria-*', 'data-*', 'disabled', 'type'];
-
-function filterProps(props: HTMLAttributes<HTMLDivElement>, allowed: string[]): Record<string, unknown> {
-  const filtered: Record<string, unknown> = {};
-  for (const key of Object.keys(props)) {
-    if (allowed.some(a => a === key || (a.endsWith('-*') && key.startsWith(a.slice(0, -1))))) {
-      filtered[key] = (props as Record<string, unknown>)[key];
-    }
-  }
-  return filtered;
-}
 
 export const Card = forwardRef<CardRef, CardProps>(
   ({ className = '', variant = 'default', selected = false, onClick, children, ...props }, ref) => {
@@ -42,6 +29,7 @@ export const Card = forwardRef<CardRef, CardProps>(
     );
 
     if (isInteractive) {
+      const buttonProps = props as ButtonHTMLAttributes<HTMLButtonElement>;
       return (
         <button
           ref={ref as Ref<HTMLButtonElement>}
@@ -49,7 +37,7 @@ export const Card = forwardRef<CardRef, CardProps>(
           onClick={onClick}
           onKeyDown={(e: React.KeyboardEvent<HTMLButtonElement>) => (e.key === 'Enter' || e.key === ' ') && onClick?.()}
           className={clsx(baseClasses, 'cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-root)]')}
-          {...filterProps(props as HTMLAttributes<HTMLDivElement>, ALLOWED_BUTTON_PROPS)}
+          {...buttonProps}
         >
           {selected && (
             <span className="absolute top-2 right-2 text-[var(--gold)]" aria-hidden="true">
@@ -64,7 +52,7 @@ export const Card = forwardRef<CardRef, CardProps>(
     }
 
     return (
-      <div ref={ref as Ref<HTMLDivElement>} className={baseClasses} {...filterProps(props, ALLOWED_DIV_PROPS)}>
+      <div ref={ref as Ref<HTMLDivElement>} className={baseClasses} {...props}>
         {selected && (
           <span className="absolute top-2 right-2 text-[var(--gold)]" aria-hidden="true">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
