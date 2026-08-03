@@ -2,7 +2,7 @@
 
 BUILD_DIR := $(CURDIR)/build
 FRONTEND_DIR := frontend
-GO_BIN := $(shell which go || echo /usr/local/go/bin/go)
+GO_BIN := $(shell which go 2>/dev/null || ls /usr/local/go/bin/go /home/linuxbrew/.linuxbrew/bin/go /opt/homebrew/bin/go /home/lobo/.local/go/bin/go 2>/dev/null | head -1)
 NPM_BIN := $(shell which npm || echo /usr/bin/npm)
 
 build: build-frontend build-backend
