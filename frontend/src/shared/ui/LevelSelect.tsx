@@ -16,8 +16,8 @@ export function LevelSelect({ value, level, onChange, min = 1, max = 20, classNa
       value={currentValue}
       onChange={(e) => onChange(parseInt(e.target.value, 10))}
       className={clsx(
-        'px-2 py-1 bg-stone-900 border border-stone-700 text-white rounded-md',
-        'focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent',
+        'px-2 py-1 bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text)] rounded-[var(--radius)] min-h-[44px]',
+        'focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)] focus-visible:border-transparent',
         'text-sm',
         className
       )}

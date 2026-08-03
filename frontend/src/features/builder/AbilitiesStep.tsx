@@ -69,33 +69,33 @@ export function AbilitiesStep() {
             onClick={() => setAbilityMethod(m.id)}
             className={`px-4 py-3 rounded-lg border-2 text-left transition-colors ${
               draft.abilityMethod === m.id
-                ? 'border-red-600 bg-red-600/10'
-                : 'border-stone-700 hover:border-red-600/50'
+                ? 'border-[var(--red)] bg-[var(--red)]/10'
+                : 'border-[var(--border)] hover:border-[var(--red)]/50'
             }`}
           >
-            <div className="font-label font-medium text-white">{m.name}</div>
-            <div className="text-sm text-stone-400">{m.desc}</div>
+            <div className="font-label font-medium text-[var(--text)]">{m.name}</div>
+            <div className="text-sm text-[var(--text-muted)]">{m.desc}</div>
           </button>
         ))}
       </div>
 
       <div className="ability-assign grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="ability-pool">
-          <div className="pool-label font-label text-stone-300 mb-3">Available Scores</div>
+          <div className="pool-label font-label text-[var(--text-muted)] mb-3">Available Scores</div>
           <div className="pool-chips flex flex-wrap gap-2" id="pool-chips">
             {getPoolChips().map(({ value, available, cost }, i) => (
               <button
                 key={i}
                 className={`pool-chip px-3 py-2 rounded-md font-mono text-lg transition-colors ${
                   available
-                    ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30 hover:bg-amber-500/30 cursor-pointer'
-                    : 'bg-stone-800 text-stone-500 border border-stone-700 cursor-not-allowed'
+                    ? 'bg-[var(--gold)]/20 text-[var(--gold)] border border-[var(--gold)]/30 hover:bg-[var(--gold)]/30 cursor-pointer'
+                    : 'bg-[var(--bg-elevated)] text-[var(--text-dim)] border border-[var(--border)] cursor-not-allowed'
                 }`}
                 onClick={() => available && assignFromPool(value)}
                 disabled={!available}
               >
                 {value}
-                {cost !== undefined && <span className="ml-1 text-xs text-stone-400">({cost})</span>}
+                {cost !== undefined && <span className="ml-1 text-xs text-[var(--text-muted)]">({cost})</span>}
               </button>
             ))}
           </div>
@@ -103,13 +103,14 @@ export function AbilitiesStep() {
 
         <div className="ability-slots grid grid-cols-2 gap-3">
           {abilities.map((ab) => (
-            <div key={ab} className="ability-slot bg-stone-800/50 border border-stone-700 rounded-lg p-4">
+            <div key={ab} className="ability-slot bg-[var(--bg-elevated)]/50 border border-[var(--border)] rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="font-label text-white">{abilityNames[ab]}</span>
+                <span className="font-label text-[var(--text)]">{abilityNames[ab]}</span>
                 {draft.abilityScores[ab] !== 10 && (
                   <button
                     onClick={() => unassignAbility(ab)}
-                    className="text-stone-500 hover:text-red-500 transition-colors"
+                    className="text-[var(--text-dim)] hover:text-[var(--red)] transition-colors"
+                    aria-label={`Remove ${abilityNames[ab]} score`}
                   >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <line x1="18" y1="6" x2="6" y2="18" />
@@ -118,10 +119,10 @@ export function AbilitiesStep() {
                   </button>
                 )}
               </div>
-              <div className="text-4xl font-bold font-heading text-white text-center">
+              <div className="text-4xl font-bold font-heading text-[var(--text)] text-center">
                 {draft.abilityScores[ab]}
               </div>
-              <div className="text-center text-stone-400 mt-1">{getMod(draft.abilityScores[ab])}</div>
+              <div className="text-center text-[var(--text-muted)] mt-1">{getMod(draft.abilityScores[ab])}</div>
             </div>
           ))}
         </div>

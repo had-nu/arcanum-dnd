@@ -2,9 +2,9 @@ package rng
 
 import (
 	"math/rand"
-	"time"
 )
 
+// RNG is the interface for random number generation, allowing dependency injection for testing.
 type RNG interface {
 	Intn(n int) int
 	Seed(seed int64)
@@ -12,10 +12,6 @@ type RNG interface {
 
 type DefaultRNG struct {
 	rng *rand.Rand
-}
-
-func NewDefaultRNG() *DefaultRNG {
-	return &DefaultRNG{rng: rand.New(rand.NewSource(time.Now().UnixNano()))}
 }
 
 func NewSeededRNG(seed int64) *DefaultRNG {
@@ -27,7 +23,7 @@ func (d *DefaultRNG) Intn(n int) int {
 }
 
 func (d *DefaultRNG) Seed(seed int64) {
-	d.rng = rand.New(rand.NewSource(seed))
+	d.rng.Seed(seed)
 }
 
 func RollD20(rng RNG) int {

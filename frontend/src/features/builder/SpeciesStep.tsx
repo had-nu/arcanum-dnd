@@ -15,7 +15,7 @@ export function SpeciesStep() {
             <input
               type="text"
               placeholder="Search species..."
-              className="w-full px-3 py-2 bg-stone-900 border border-stone-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+              className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text)] rounded-[var(--radius)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)] focus-visible:border-transparent min-h-[44px]"
             />
           </div>
           <div className="card-grid" id="species-picker-list">
@@ -25,7 +25,7 @@ export function SpeciesStep() {
                 onClick={() => setSpecies(sp.id!)}
               >
                 <div className="flex items-center gap-3 mb-2">
-                  <DnaIcon size={24} className="text-stone-400" />
+                  <DnaIcon size={24} className="text-[var(--text-muted)]" />
                   <CardTitle>{sp.name}</CardTitle>
                 </div>
                 <CardMeta>{sp.size} · {sp.speed} ft · {sp.variants?.length || 0} variants</CardMeta>
@@ -42,26 +42,26 @@ export function SpeciesStep() {
   return (
     <div className="species-section">
       <h2 className="sec-title">Species: {sp?.name}</h2>
-      <div className="selected-species-row bg-stone-900/50 border border-stone-700 rounded-lg p-4">
+      <div className="selected-species-row bg-[var(--bg-surface)]/50 border border-[var(--border)] rounded-[var(--radius-lg)] p-4">
         <div className="selected-species-hdr flex items-start justify-between mb-4">
           <div>
-            <div className="selected-species-name font-label text-lg text-white">{sp?.name}</div>
+            <div className="selected-species-name font-label text-lg text-[var(--text)]">{sp?.name}</div>
             <div className="selected-species-meta flex gap-2 mt-1">
               <span className="tag tag-gold">{sp?.size}</span>
               <span className="tag tag-green">{sp?.speed} ft</span>
             </div>
           </div>
-          <Button variant="danger" size="sm" onClick={() => setSpecies('')}><XIcon size={14} /></Button>
+          <Button variant="danger" size="sm" onClick={() => setSpecies('')} aria-label="Remove species"><XIcon size={14} /></Button>
         </div>
         <div className="selected-species-body">
           <CardMeta className="mb-4">{sp?.name} - {sp?.size}, {sp?.speed} ft speed</CardMeta>
           {sp?.variants?.length && (
             <div className="species-variant-section mb-4">
-              <label className="block text-sm font-medium text-stone-300 mb-1">Variant / Subspecies</label>
+              <label className="block text-sm font-medium text-[var(--text-muted)] mb-1">Variant / Subspecies</label>
               <select
                 value={draft.speciesVariant || ''}
                 onChange={(e) => setSpecies(sp!.id!, e.target.value || undefined)}
-                className="w-full px-3 py-2 bg-stone-900 border border-stone-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                className="w-full px-3 py-2 bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text)] rounded-[var(--radius)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-focus)] focus-visible:border-transparent min-h-[44px]"
               >
                 <option value="">Base {sp.name}</option>
                 {sp.variants?.map((v) => (

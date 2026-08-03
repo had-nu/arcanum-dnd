@@ -439,12 +439,14 @@ func (s *Server) handleContent(w http.ResponseWriter, r *http.Request) {
 			profs, _ := s.querier.GetClassProficiencies(cr.ID)
 			var skillPool []string
 			skillChoices := 0
+			seen := map[string]bool{}
 			for _, p := range profs {
 				if p.Category == "skill" {
-					if p.SkillChoose > 0 {
+					if p.SkillChoose > skillChoices {
 						skillChoices = p.SkillChoose
 					}
-					if p.SkillFrom != "" {
+					if p.SkillFrom != "" && !seen[string(p.SkillFrom)] {
+						seen[string(p.SkillFrom)] = true
 						skillPool = append(skillPool, string(p.SkillFrom))
 					}
 				}
@@ -827,7 +829,8 @@ func (s *Server) handleMetamagicOptions(w http.ResponseWriter, r *http.Request) 
 
 func (s *Server) handleFeats(w http.ResponseWriter, r *http.Request) {
 	rows, err := s.db.Query(`
-		SELECT id, name, COALESCE(entries_json, ''), COALESCE(prerequisites_json, '')
+		SELECT id, name, description,
+			prereq_level, prereq_ability, prereq_ability_min, prereq_feat, prereq_class, prereq_spellcasting, prereq_proficiency, source
 		FROM feats
 		ORDER BY name
 	`)
@@ -837,19 +840,61 @@ func (s *Server) handleFeats(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 
-	type FeatEntry struct {
-		ID            string `json:"id"`
-		Name          string `json:"name"`
-		Description   string `json:"description"`
-		Prerequisites string `json:"prerequisites"`
+	type Prerequisites struct {
+		Level       *int    `json:"level,omitempty"`
+		Ability     string  `json:"ability,omitempty"`
+		AbilityMin  *int    `json:"abilityMin,omitempty"`
+		Feat        string  `json:"feat,omitempty"`
+		Class       string  `json:"class,omitempty"`
+		Spellcasting *bool  `json:"spellcasting,omitempty"`
+		Proficiency string  `json:"proficiency,omitempty"`
 	}
 
-	var feats []FeatEntry
+	type FeatEntry struct {
+		ID            string         `json:"id"`
+		Name          string         `json:"name"`
+		Description   string         `json:"description,omitempty"`
+		Prerequisites *Prerequisites `json:"prerequisites,omitempty"`
+		Source        string         `json:"source,omitempty"`
+	}
+
+	var feats = []FeatEntry{}
 	for rows.Next() {
 		var f FeatEntry
-		if err := rows.Scan(&f.ID, &f.Name, &f.Description, &f.Prerequisites); err != nil {
+		var pl, pam, psc sql.NullInt64
+		var pa, pf, pc, pp, src, desc sql.NullString
+		if err := rows.Scan(&f.ID, &f.Name, &desc,
+			&pl, &pa, &pam,
+			&pf, &pc, &psc,
+			&pp, &src); err != nil {
 			continue
 		}
+		if desc.Valid {
+			f.Description = desc.String
+		}
+		if src.Valid {
+			f.Source = src.String
+		}
+
+		// Build prerequisites object for frontend
+		hasPrereq := pl.Valid || pa.Valid || pam.Valid || pf.Valid || pc.Valid || psc.Valid || pp.Valid
+		if hasPrereq {
+			var spellcasting *bool
+			if psc.Valid {
+				v := psc.Int64 == 1
+				spellcasting = &v
+			}
+			f.Prerequisites = &Prerequisites{
+				Level:       intPtr(pl),
+				Ability:     abilityPtr(pa),
+				AbilityMin:  intPtr(pam),
+				Feat:        featPtr(pf),
+				Class:       classPtr(pc),
+				Spellcasting: spellcasting,
+				Proficiency: proficiencyPtr(pp),
+			}
+		}
+
 		feats = append(feats, f)
 	}
 
@@ -1148,6 +1193,32 @@ func sanitizeName(name string) string {
 	s = strings.Trim(s, "-")
 	if s == "" { s = "unnamed" }
 	return s
+}
+
+func intPtr(n sql.NullInt64) *int {
+	if !n.Valid { return nil }
+	v := int(n.Int64)
+	return &v
+}
+
+func abilityPtr(a sql.NullString) string {
+	if !a.Valid { return "" }
+	return a.String
+}
+
+func featPtr(f sql.NullString) string {
+	if !f.Valid { return "" }
+	return f.String
+}
+
+func classPtr(c sql.NullString) string {
+	if !c.Valid { return "" }
+	return c.String
+}
+
+func proficiencyPtr(p sql.NullString) string {
+	if !p.Valid { return "" }
+	return p.String
 }
 
 func (s *Server) charactersDir() string {

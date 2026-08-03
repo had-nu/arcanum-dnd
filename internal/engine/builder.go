@@ -122,10 +122,6 @@ func (g *EventGenerator) BuildCharacterEvents(req BuildRequest) ([]events.Event,
 	return evts, nil
 }
 
-type subclassLvler interface {
-	SubclassLevel() int
-}
-
 func subclassLevel(cls *scontent.Class) int {
 	for _, lvl := range cls.Levels {
 		for _, f := range lvl.Features {

@@ -102,8 +102,8 @@ export function BuilderPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-red-600 border-t-transparent mx-auto mb-4" />
-          <p className="text-stone-400">Loading content...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-[var(--red)] border-t-transparent mx-auto mb-4" />
+          <p className="text-[var(--text-muted)]">Loading content...</p>
         </div>
       </div>
     );
@@ -129,7 +129,7 @@ export function BuilderPage() {
   };
 
   return (
-    <div className="min-h-screen bg-stone-950 flex flex-col">
+    <div className="min-h-screen bg-[var(--bg-root)] flex flex-col">
       <TopChrome />
       <nav className="steps-bar" aria-label="Character creation steps">
         <div className="container mx-auto px-4">
@@ -155,13 +155,13 @@ export function BuilderPage() {
         </div>
       </nav>
 
-      <main className="flex-1 overflow-y-auto">
+      <main id="main-content" className="flex-1 overflow-y-auto">
         <div className="container mx-auto px-4 pb-8">
           <div className="step-content pt-6">
             {renderStep()}
           </div>
 
-          <div className="actions flex justify-between pt-6 border-t border-stone-700 mt-8">
+          <div className="actions flex justify-between pt-6 border-t border-[var(--border)] mt-8">
             {currentStepIndex > 0 && (
               <Button onClick={() => goToStep(STEPS[currentStepIndex - 1].id)}>Back</Button>
             )}

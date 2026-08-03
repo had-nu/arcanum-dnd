@@ -29,66 +29,6 @@ const (
 	EffectCustom           EffectKind = "Custom"
 )
 
-type ModifierTarget interface {
-	isModifierTarget()
-}
-
-type ModifierTargetAC struct{ ModifierTarget }
-
-func (ModifierTargetAC) isModifierTarget() {}
-
-type ModifierTargetAttack struct{ ModifierTarget }
-
-func (ModifierTargetAttack) isModifierTarget() {}
-
-type ModifierTargetDamage struct{ ModifierTarget }
-
-func (ModifierTargetDamage) isModifierTarget() {}
-
-type ModifierTargetSave struct {
-	Ability types.AbilityScore `yaml:"ability,omitempty"`
-}
-
-func (ModifierTargetSave) isModifierTarget() {}
-
-type ModifierTargetCheck struct {
-	Ability types.AbilityScore `yaml:"ability,omitempty"`
-}
-
-func (ModifierTargetCheck) isModifierTarget() {}
-
-type ModifierTargetSkill struct {
-	Skill types.Skill `yaml:"skill"`
-}
-
-func (ModifierTargetSkill) isModifierTarget() {}
-
-type RollTarget interface {
-	isRollTarget()
-}
-
-type RollTargetAttack struct{ RollTarget }
-
-func (RollTargetAttack) isRollTarget() {}
-
-type RollTargetSave struct {
-	Ability types.AbilityScore `yaml:"ability,omitempty"`
-}
-
-func (RollTargetSave) isRollTarget() {}
-
-type RollTargetCheck struct {
-	Ability types.AbilityScore `yaml:"ability,omitempty"`
-}
-
-func (RollTargetCheck) isRollTarget() {}
-
-type RollTargetSkill struct {
-	Skill types.Skill `yaml:"skill"`
-}
-
-func (RollTargetSkill) isRollTarget() {}
-
 type Effect struct {
 	Kind    EffectKind `yaml:"kind" validate:"required"`
 	Value   float64    `yaml:"value,omitempty"`
@@ -115,25 +55,6 @@ type Effect struct {
 
 	Duration       *string `yaml:"duration,omitempty"`
 	RequiresConcentration bool `yaml:"requiresConcentration,omitempty"`
-}
-
-func (e Effect) ToModifierTarget() ModifierTarget {
-	switch {
-	case e.TargetAC:
-		return ModifierTargetAC{}
-	case e.TargetAttack:
-		return ModifierTargetAttack{}
-	case e.TargetDamage:
-		return ModifierTargetDamage{}
-	case e.TargetSave != nil:
-		return ModifierTargetSave{Ability: *e.TargetSave}
-	case e.TargetCheck != nil:
-		return ModifierTargetCheck{Ability: *e.TargetCheck}
-	case e.TargetSkill != nil:
-		return ModifierTargetSkill{Skill: *e.TargetSkill}
-	default:
-		return nil
-	}
 }
 
 type EffectStack struct {

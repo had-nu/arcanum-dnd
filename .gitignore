@@ -45,3 +45,4 @@ arcsrv
 
 # Docker
 .docker/
+build/tools/

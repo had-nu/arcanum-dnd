@@ -16,29 +16,29 @@ export function FeatureRenderer({ feature, isUnlocked, level }: FeatureRendererP
   return (
     <div
       className={`feature-row border rounded-lg overflow-hidden transition-colors ${
-        isUnlocked ? 'border-stone-700 bg-stone-800/30' : 'border-stone-700/50 bg-stone-800/10 opacity-60'
+        isUnlocked ? 'border-[var(--border)] bg-[var(--bg-elevated)]/30' : 'border-[var(--border)]/50 bg-[var(--bg-elevated)]/10 opacity-60'
       }`}
     >
       <button
         type="button"
         onClick={() => canExpand && setExpanded(!expanded)}
         className={`feature-header w-full flex items-center gap-3 p-3 text-left ${
-          canExpand ? 'cursor-pointer hover:bg-stone-700/30' : 'cursor-default'
+          canExpand ? 'cursor-pointer hover:bg-[var(--border)]/30' : 'cursor-default'
         }`}
       >
-        <span className="feat-level-badge shrink-0 px-2 py-1 bg-stone-700 rounded text-xs font-mono text-stone-300">
+        <span className="feat-level-badge shrink-0 px-2 py-1 bg-[var(--border)] rounded text-xs font-mono text-[var(--text-muted)]">
           Lv.{level}
         </span>
-        <span className={`feat-name flex-1 font-heading text-sm ${isUnlocked ? 'text-white' : 'text-stone-400'}`}>
+        <span className={`feat-name flex-1 font-heading text-sm ${isUnlocked ? 'text-[var(--text)]' : 'text-[var(--text-muted)]'}`}>
           {feature.name}
         </span>
         {isUnlocked ? (
-          <span className="feat-unlocked text-green-500 shrink-0 text-xs">Unlocked</span>
+          <span className="feat-unlocked text-[var(--green)] shrink-0 text-xs">Unlocked</span>
         ) : (
-          <span className="feat-locked text-stone-500 shrink-0 text-xs">Locked</span>
+          <span className="feat-locked text-[var(--text-dim)] shrink-0 text-xs">Locked</span>
         )}
         {canExpand && (
-          <span className={`shrink-0 text-stone-400 transition-transform ${expanded ? 'rotate-180' : ''}`}>
+          <span className={`shrink-0 text-[var(--text-muted)] transition-transform ${expanded ? 'rotate-180' : ''}`}>
             ▼
           </span>
         )}
@@ -46,7 +46,7 @@ export function FeatureRenderer({ feature, isUnlocked, level }: FeatureRendererP
 
       {expanded && canExpand && (
         <div className="feature-body px-3 pb-3">
-          <div className="max-w-none text-stone-300 text-xs leading-relaxed space-y-2">
+          <div className="max-w-none text-[var(--text-muted)] text-xs leading-relaxed space-y-2">
             <EntryRenderer entries={feature.entries} />
           </div>
         </div>
@@ -69,7 +69,7 @@ function EntryRenderer({ entries }: EntryRendererProps) {
           const cleaned = strip5eMarkup(entry);
           if (!cleaned) return null;
           if (cleaned.startsWith('*') && cleaned.endsWith('*')) {
-            return <p key={i} className="italic text-stone-400">{cleaned.slice(1, -1)}</p>;
+            return <p key={i} className="italic text-[var(--text-muted)]">{cleaned.slice(1, -1)}</p>;
           }
           return <p key={i} className="last:mb-0">{cleaned}</p>;
         }
@@ -88,13 +88,13 @@ function EntryRenderer({ entries }: EntryRendererProps) {
               return <OptionsRenderer key={i} entry={e} />;
             case 'refClassFeature':
             case 'refFeature':
-              return <p key={i} className="italic text-stone-400">See: {String(e.classFeature ?? e.feature ?? '')}</p>;
+              return <p key={i} className="italic text-[var(--text-muted)]">See: {String(e.classFeature ?? e.feature ?? '')}</p>;
             case 'refOptionalFeature':
-              return <p key={i} className="text-amber-400/80 italic">{String(e.optionalfeature ?? '').split('|')[0]}</p>;
+              return <p key={i} className="text-[var(--gold)]/80 italic">{String(e.optionalfeature ?? '').split('|')[0]}</p>;
             case 'abilityDc':
-              return <p key={i} className="text-amber-400 text-xs">Spell save DC: {formatAttributes(e.attributes)}</p>;
+              return <p key={i} className="text-[var(--gold)] text-xs">Spell save DC: {formatAttributes(e.attributes)}</p>;
             case 'abilityAttackMod':
-              return <p key={i} className="text-amber-400 text-xs">Spell attack modifier: {formatAttributes(e.attributes)}</p>;
+              return <p key={i} className="text-[var(--gold)] text-xs">Spell attack modifier: {formatAttributes(e.attributes)}</p>;
             case 'ability':
               return null;
             case 'inset':
@@ -124,7 +124,7 @@ function NamedEntryRenderer({ entry }: { entry: Record<string, unknown> }) {
 
   return (
     <div className="last:mb-0">
-      {name && <h4 className="font-medium text-amber-300 mb-0.5 text-xs">{name}</h4>}
+      {name && <h4 className="font-medium text-[var(--gold)] mb-0.5 text-xs">{name}</h4>}
       {subEntries && (
         <div className="space-y-1">
           <EntryRenderer entries={subEntries} />
@@ -162,14 +162,14 @@ function TableRenderer({ entry }: { entry: Record<string, unknown> }) {
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-xs border-collapse border border-stone-600">
+      <table className="w-full text-xs border-collapse border border-[var(--border)]">
         {typeof entry.caption === 'string' && (
-          <caption className="text-stone-400 text-xs py-1 italic">{entry.caption}</caption>
+          <caption className="text-[var(--text-muted)] text-xs py-1 italic">{entry.caption}</caption>
         )}
         <thead>
-          <tr className="bg-stone-700/50">
+          <tr className="bg-[var(--border)]/50">
             {headers.map((h, i) => (
-              <th key={i} className="px-2 py-1 border border-stone-600 text-stone-200 font-medium text-left">
+              <th key={i} className="px-2 py-1 border border-[var(--border)] text-[var(--text)] font-medium text-left">
                 {h}
               </th>
             ))}
@@ -177,9 +177,9 @@ function TableRenderer({ entry }: { entry: Record<string, unknown> }) {
         </thead>
         <tbody>
           {rows.map((row, ri) => (
-            <tr key={ri} className={ri % 2 === 0 ? 'bg-stone-800/30' : ''}>
+            <tr key={ri} className={ri % 2 === 0 ? 'bg-[var(--bg-elevated)]/30' : ''}>
               {row.map((cell, ci) => (
-                <td key={ci} className="px-2 py-1 border border-stone-600 text-stone-300">
+                <td key={ci} className="px-2 py-1 border border-[var(--border)] text-[var(--text-muted)]">
                   {typeof cell === 'object' && cell !== null
                     ? <EntryRenderer entries={[cell as Record<string, unknown>]} />
                     : strip5eMarkup(String(cell ?? ''))}
@@ -210,8 +210,8 @@ function InsetRenderer({ entry }: { entry: Record<string, unknown> }) {
   const subEntries = entry.entries as unknown[] | undefined;
 
   return (
-    <div className="p-3 bg-stone-800/60 border-l-4 border-amber-600 rounded-r-md">
-      {name && <h4 className="font-medium text-amber-400 mb-0.5 text-xs">{name}</h4>}
+    <div className="p-3 bg-[var(--bg-elevated)]/60 border-l-4 border-[var(--gold)] rounded-r-[var(--radius)]">
+      {name && <h4 className="font-medium text-[var(--gold)] mb-0.5 text-xs">{name}</h4>}
       {subEntries && (
         <div className="space-y-1">
           <EntryRenderer entries={subEntries} />
@@ -226,9 +226,9 @@ function QuoteRenderer({ entry }: { entry: Record<string, unknown> }) {
   const by = entry.by as string | undefined;
 
   return (
-    <blockquote className="border-l-4 border-stone-500 pl-4 italic text-stone-400">
+    <blockquote className="border-l-4 border-[var(--text-dim)] pl-4 italic text-[var(--text-muted)]">
       {subEntries && <EntryRenderer entries={subEntries} />}
-      {by && <footer className="text-xs text-stone-500 mt-1 not-italic">— {by}</footer>}
+      {by && <footer className="text-xs text-[var(--text-dim)] mt-1 not-italic">— {by}</footer>}
     </blockquote>
   );
 }
