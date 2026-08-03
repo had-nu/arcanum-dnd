@@ -1,5 +1,6 @@
 .PHONY: build build-frontend build-backend test lint security quality run-server run-player run-spells dev run clean ci
 
+SHELL := /bin/bash
 BUILD_DIR := $(CURDIR)/build
 FRONTEND_DIR := frontend
 GO_BIN := $(shell which go 2>/dev/null || echo go)
@@ -34,7 +35,7 @@ quality:
 lint: quality
 
 run-server:
-	@if [[ -x "$(BUILD_DIR)/server" ]]; then $(BUILD_DIR)/server; else $(GO_BIN) run ./cmd/server; fi
+	@if [ -x "$(BUILD_DIR)/server" ]; then $(BUILD_DIR)/server; else $(GO_BIN) run ./cmd/server; fi
 
 run-player: build-backend
 	$(BUILD_DIR)/tui-player
@@ -43,17 +44,18 @@ run-spells: build-backend
 	$(BUILD_DIR)/spells
 
 dev:
-	@echo "Starting Arcanum D&D Character Builder..."
-	@echo "Backend: http://localhost:8080"
-	@echo "Frontend: http://localhost:5173"
-	@echo ""
-	@if [[ ! -x "$(BUILD_DIR)/server" ]]; then echo "Building backend..."; $(MAKE) build-backend; fi
-	@cd $(CURDIR) && $(BUILD_DIR)/server & echo $$! > /tmp/arcanum_backend.pid
-	@echo "Waiting for backend to be ready..."
-	@for i in {1..30}; do if curl -sf http://localhost:8080/health >/dev/null 2>&1; then echo "Backend ready"; break; fi; sleep 0.2; done
-	@cd $(FRONTEND_DIR) && $(NPM_BIN) run dev & echo $$! > /tmp/arcanum_frontend.pid
-	@trap "echo 'Shutting down...'; kill $$(cat /tmp/arcanum_backend.pid) $$(cat /tmp/arcanum_frontend.pid) 2>/dev/null; exit 0" INT TERM
-	@wait $$(cat /tmp/arcanum_backend.pid) $$(cat /tmp/arcanum_frontend.pid)
+	@set -e; \
+	echo "Starting Arcanum D&D Character Builder..."; \
+	echo "Backend: http://localhost:8080"; \
+	echo "Frontend: http://localhost:5173"; \
+	echo ""; \
+	if [ ! -x "$(BUILD_DIR)/server" ]; then echo "Building backend..."; $(MAKE) build-backend; fi; \
+	cd $(CURDIR) && $(BUILD_DIR)/server & echo $$! > /tmp/arcanum_backend.pid; \
+	echo "Waiting for backend to be ready..."; \
+	for i in $$(seq 1 30); do if curl -sf http://localhost:8080/health >/dev/null 2>&1; then echo "Backend ready"; break; fi; sleep 0.2; done; \
+	cd $(FRONTEND_DIR) && $(NPM_BIN) run dev & echo $$! > /tmp/arcanum_frontend.pid; \
+	trap "echo 'Shutting down...'; kill $$(cat /tmp/arcanum_backend.pid) $$(cat /tmp/arcanum_frontend.pid) 2>/dev/null; exit 0" INT TERM; \
+	wait $$(cat /tmp/arcanum_backend.pid) $$(cat /tmp/arcanum_frontend.pid)
 
 run: dev
 
